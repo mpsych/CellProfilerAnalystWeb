@@ -2,6 +2,7 @@ module.exports = {
   siteMetadata: {
     title: "Gatsby Test",
   },
+  pathPrefix: "/CellProfilerAnalystForTheWeb",
   plugins: [
     "gatsby-plugin-styled-components",
     "gatsby-plugin-image",

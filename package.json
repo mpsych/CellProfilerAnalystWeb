@@ -4,17 +4,22 @@
   "private": true,
   "description": "Gatsby Test",
   "author": "YahtzeeRage",
+  "homepage": "https://cs410-broad-institute-team.github.io/CellProfilerAnalystPOC/",
   "keywords": [
     "gatsby"
   ],
   "scripts": {
     "develop": "gatsby develop",
-    "start": "gatsby develop",
+    "start": "gatsby develop --open",
     "build": "gatsby build",
     "serve": "gatsby serve",
-    "clean": "gatsby clean"
+    "clean": "gatsby clean",
+    "deploy": "gh-pages -d public",
+    "predeploy": "gatsby build --prefix-paths"
   },
   "dependencies": {
+    "@material-ui/core": "^4.11.3",
+    "@tensorflow/tfjs": "^3.3.0",
     "babel-plugin-styled-components": "^1.12.0",
     "gatsby": "^3.2.1",
     "gatsby-plugin-image": "^1.2.1",
@@ -22,6 +27,7 @@
     "gatsby-plugin-styled-components": "^4.2.0",
     "gatsby-source-filesystem": "^3.2.0",
     "gatsby-transformer-sharp": "^3.2.0",
+    "gh-pages": "^3.1.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "styled-components": "^5.2.3"
