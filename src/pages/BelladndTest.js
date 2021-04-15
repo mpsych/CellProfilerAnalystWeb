@@ -10,17 +10,15 @@ import {
   move
 } from "react-grid-dnd";
 
-import "./dndstyles.css";
+import "../dndstyles.css";
 import { unregisterKernel } from '@tensorflow/tfjs';
 
+import { Row} from "reactstrap";
 
 
 
 
-
-
-
-function App() {
+function BelladndTest() {
 
     //function getURL(){
         // for (i = 0; i < urls.length; i++)  
@@ -146,17 +144,15 @@ function App() {
         });
       }
  
-    var value = 1;
-    console.log(value)
-
     return( 
    
   
     
     <GridContextProvider onChange={onChange}>
-      <button>PRESS</button>
         <div>
-      
+        
+        <p style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom: 0} }>Unclassified</p>
+        
         <div className="topContainer">
        
         <GridDropZone
@@ -165,6 +161,7 @@ function App() {
             boxesPerRow={8}
             rowHeight={70}
           >
+             
             {items.unclassifed.map(item => (
               <GridItem key={item.id}>
                 <div className="grid-item" >
@@ -177,13 +174,21 @@ function App() {
           </GridDropZone>
           </div>
         
-          <div className="container">
+        <Row>
+          <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "11%"} }>Positive</label> 
+
+          <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "34.5%", marginBottom: 0} }>Negative</label>
+          </Row>
+         
+         <Row>
+
           <GridDropZone
             className="dropzone positive"
             id="positive"
             boxesPerRow={4}
             rowHeight={70}
           >
+            
             {items.positive.map(item => (
               <GridItem key={item.id}>
                 <div className="grid-item"> 
@@ -194,7 +199,8 @@ function App() {
               </GridItem>
             ))}
           </GridDropZone>
-         
+   
+      
           <GridDropZone
             className="dropzone negative"
             id="negative"
@@ -212,8 +218,9 @@ function App() {
             ))}
           </GridDropZone>
 
-          
-        </div>
+     
+      
+        </Row>
         </div>
       </GridContextProvider>
     );
@@ -221,6 +228,8 @@ function App() {
     }
 
 
+export default BelladndTest; 
 
 
-export default App
+
+
