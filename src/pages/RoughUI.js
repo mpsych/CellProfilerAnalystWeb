@@ -13,6 +13,8 @@ function TestUI(){
 
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
+        // fetch?
+        console.log(event.currentTarget)
     };
 
     const handleClose = () => {
