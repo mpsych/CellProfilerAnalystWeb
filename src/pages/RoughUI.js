@@ -13,12 +13,13 @@ function TestUI(){
 
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
-        // fetch?
-        console.log(event.currentTarget)
+        
     };
 
-    const handleClose = () => {
+    const handleClose = (fetchType) => {
         setAnchorEl(null);
+
+        console.log("fetch " + fetchType)
     };
     
     return (
@@ -59,9 +60,9 @@ function TestUI(){
             open={Boolean(anchorEl)}
             onClose={handleClose}
             >
-            <MenuItem onClick={handleClose}>Random</MenuItem>
-            <MenuItem onClick={handleClose}>Positive</MenuItem>
-            <MenuItem onClick={handleClose}>Negative</MenuItem>
+            <MenuItem onClick={()=>handleClose("Random")}>Random</MenuItem>
+            <MenuItem onClick={()=>handleClose("Positive")}>Positive</MenuItem>
+            <MenuItem onClick={()=>handleClose("Negative")}>Negative</MenuItem>
             </Menu>
     </Grid>
 
