@@ -26,11 +26,11 @@ function TestUI(){
        
         
         <Col>
-        <Image src={logo} style={{marginRight:"40%", height:'90px'}}></Image>
+        <Image src={logo} style={{marginLeft:"20%", height:'90%', width:'20%',position:"relative"}}></Image>
         </Col>
 
         <Col >
-        <IconButton style={{color: "black", marginLeft:"50%"}}> <SaveAltIcon /></IconButton> 
+        <IconButton style={{color: "black", marginLeft:"70%", height:'10%', width:'10%', backgroundPosition: "100%"}}> <SaveAltIcon /></IconButton> 
         </Col>
 
 
@@ -69,7 +69,7 @@ function TestUI(){
         </Grid>
 
         <Grid key={2} item>
-        <Button variant="contained">Evulate</Button>
+        <Button variant="contained">EVALUATE</Button>
         </Grid>
     </Grid>
     </Row>

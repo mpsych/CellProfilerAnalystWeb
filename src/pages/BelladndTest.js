@@ -13,7 +13,7 @@ import {
 import "../dndstyles.css";
 import { unregisterKernel } from '@tensorflow/tfjs';
 
-import { Row} from "reactstrap";
+import { Row, Col} from "reactstrap";
 
 
 
@@ -175,9 +175,12 @@ function BelladndTest() {
           </div>
         
         <Row>
-          <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "11%"} }>Positive</label> 
-
-          <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "34.5%", marginBottom: 0} }>Negative</label>
+     
+          <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "11%", userSelect: "none", marginBottom:"0.5%"} }>Positive</label> 
+    
+        
+          <label style = {{textAlign:"left", backgroundColor: 'white', paddingRight: "8.25%", marginBottom: 0, userSelect: "none", margin: "auto",  marginBottom:"0.5%"} }>Negative</label>
+       
           </Row>
          
          <Row>
