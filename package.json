@@ -23,7 +23,7 @@
     "@tensorflow/tfjs": "^3.3.0",
     "babel-plugin-styled-components": "^1.12.0",
     "bootstrap": "^4.6.0",
-    "gatsby": "^3.2.1",
+    "gatsby": "^3.3.0",
     "gatsby-plugin-image": "^1.2.1",
     "gatsby-plugin-sharp": "^3.2.1",
     "gatsby-plugin-styled-components": "^4.2.0",
@@ -31,7 +31,11 @@
     "gatsby-transformer-sharp": "^3.2.0",
     "gh-pages": "^3.1.0",
     "react": "^17.0.1",
+    "react-bootstrap": "^1.5.2",
     "react-dom": "^17.0.1",
+    "react-gesture-responder": "^2.1.0",
+    "react-grid-dnd": "^2.1.2",
+    "react-spinners": "^0.10.6",
     "reactstrap": "^8.9.0",
     "styled-components": "^5.2.3"
   }
