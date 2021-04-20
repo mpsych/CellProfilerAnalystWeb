@@ -154,7 +154,6 @@ function App() {
   
     
     <GridContextProvider onChange={onChange}>
-      <button>PRESS</button>
         <div>
       
         <div className="topContainer">
