@@ -38,7 +38,11 @@
     "node-localstorage": "^2.1.6",
     "papaparse": "^5.3.0",
     "react": "^17.0.1",
+    "react-bootstrap": "^1.5.2",
     "react-dom": "^17.0.1",
+    "react-gesture-responder": "^2.1.0",
+    "react-grid-dnd": "^2.1.2",
+    "react-spinners": "^0.10.6",
     "reactstrap": "^8.9.0",
     "seedrandom": "2.4.3",
     "styled-components": "^5.2.3"

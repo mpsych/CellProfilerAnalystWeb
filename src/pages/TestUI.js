@@ -1,10 +1,11 @@
 import React from 'react';
 import { Row, Col} from "reactstrap";
-import {Box, Button, Grid, IconButton, Menu, MenuItem}from '@material-ui/core'; 
-import logo from '../CPA_newlogo.png';
+import {Box, Button, Grid, IconButton, Menu, MenuItem, Card}from '@material-ui/core'; 
+import logo from '../cpa_full_logo.png';
 import {Image, Dropdown, DropdownButton} from 'react-bootstrap';
 import "bootstrap/dist/css/bootstrap.css";
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
+import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 import BelladndTest from './BelladndTest'
 
 function TestUI(){
@@ -20,26 +21,30 @@ function TestUI(){
     };
     
     return (
-        <div>
+        // <div style = {{backgroundColor:"#ededed"}}>
     
+        <div>
         <Row>
        
         
         <Col>
-        <Image src={logo} style={{marginLeft:"20%", height:'90%', width:'20%',position:"relative"}}></Image>
+        <Image src={logo} style={{marginLeft:"31%", height:'75%', width:'100%',position:"relative", marginTop:"5%", maxWidth:"300px"}}></Image>
         </Col>
-
         <Col >
-        <IconButton style={{color: "black", marginLeft:"70%", height:'10%', width:'10%', backgroundPosition: "100%"}}> <SaveAltIcon /></IconButton> 
+        <IconButton style={{color: "black", marginLeft:"158%",  marginTop:"5%", height:'10%', width:'10%', backgroundPosition: "100%"}}> <CloudUploadIcon  /></IconButton> 
         </Col>
+        <Col >
+        <IconButton style={{color: "black", marginLeft:"61%", height:'10%', width:'10%', backgroundPosition: "100%", marginTop:"5%"}}> <SaveAltIcon /></IconButton> 
+        </Col>
+        
 
 
         </Row>
         <Row>
         
-        <Grid container justify="center" spacing={2} style={{marginBottom: 15}}>
+        <Grid container justify="center"  width="auto" spacing={2} style={{marginBottom: 15, marginTop: 10}}>
        
-        <Grid key={0} item>
+        <Grid key={0} item >
         {/* <DropdownButton variant="secondary" title= "Fetch">
         
          <Dropdown.Item >Positive</Dropdown.Item>
@@ -47,7 +52,7 @@ function TestUI(){
          <Dropdown.Item >Random</Dropdown.Item>
         
         </DropdownButton> */}
-            <Button variant="contained" aria-controls="simple-menu" aria-haspopup="true" onClick={handleClick}>
+            <Button variant="contained" aria-controls="simple-menu" aria-haspopup="true"  onClick={handleClick}  >
             Fetch
             </Button>
             <Menu
@@ -60,6 +65,7 @@ function TestUI(){
             <MenuItem onClick={handleClose}>Random</MenuItem>
             <MenuItem onClick={handleClose}>Positive</MenuItem>
             <MenuItem onClick={handleClose}>Negative</MenuItem>
+            <MenuItem onClick={handleClose}>Unclear</MenuItem>
             </Menu>
     </Grid>
 
@@ -74,8 +80,9 @@ function TestUI(){
     </Grid>
     </Row>
 
+    
     <BelladndTest></BelladndTest>
- 
+   
     </div>
 
     );

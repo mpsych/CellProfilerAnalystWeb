@@ -14,6 +14,7 @@ import "../dndstyles.css";
 import { unregisterKernel } from '@tensorflow/tfjs';
 
 import { Row, Col} from "reactstrap";
+import Card from '@material-ui/core/Card';
 
 
 
@@ -146,12 +147,12 @@ function BelladndTest() {
  
     return( 
    
-  
+
     
     <GridContextProvider onChange={onChange}>
         <div>
         
-        <p style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom: 0} }>Unclassified</p>
+        <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom: 0.5} }>Unclassified</label>
         
         <div className="topContainer">
        
@@ -179,7 +180,7 @@ function BelladndTest() {
           <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "11%", userSelect: "none", marginBottom:"0.5%"} }>Positive</label> 
     
         
-          <label style = {{textAlign:"left", backgroundColor: 'white', paddingRight: "8.25%", marginBottom: 0, userSelect: "none", margin: "auto",  marginBottom:"0.5%"} }>Negative</label>
+          <label style = {{textAlign:"left", backgroundColor: 'white', paddingRight: "8%", marginBottom: 0, userSelect: "none", margin: "auto",  marginBottom:"0.5%"} }>Negative</label>
        
           </Row>
          
