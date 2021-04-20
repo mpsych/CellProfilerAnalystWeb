@@ -148,8 +148,8 @@ describe('image Grid manager tests', function() {
             IGManager.setClassByIndexArray(gridType, [0,1])
             const positivePairs = IGManager.getPairsByClass(gridType);
 
-            assert.equal(positivePairs[0].ImageKey === 4 && positivePairs[0].ObjectKey === 5)
-            assert.equal(positivePairs[1].ImageKey === 2 && positivePairs[1].ObjectKey === 8)
+            assert.isTrue(positivePairs[0].ImageKey === 4 && positivePairs[0].ObjectKey === 5)
+            assert.isTrue(positivePairs[1].ImageKey === 2 && positivePairs[1].ObjectKey === 8)
 
         });
 
