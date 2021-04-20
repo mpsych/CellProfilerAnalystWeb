@@ -136,7 +136,7 @@ describe('image Grid manager tests', function() {
         });
 
 
-        it("API: setGridTypeByIndexArray", function() {
+        it("API: setClassByIndexArray", function() {
 
             const data_pairs = [ {ImageKey:  4, ObjectKey: 5}, {ImageKey: 2, ObjectKey: 8}]
             const dataurl1 = "https://i.postimg.cc/0yS7m2dV/AS-09125-050116000001-A01f00d2.png"
@@ -145,7 +145,7 @@ describe('image Grid manager tests', function() {
             const IGManager = new ImageGridManager(data_pairs, dataurls)
 
             const gridType = "positive"
-            IGManager.setGridTypeByIndexArray(gridType, [0,1])
+            IGManager.setClassByIndexArray(gridType, [0,1])
             const positivePairs = IGManager.getPairsByClass(gridType);
 
             assert.equal(positivePairs[0].ImageKey === 4 && positivePairs[0].ObjectKey === 5)

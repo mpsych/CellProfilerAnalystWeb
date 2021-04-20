@@ -73,6 +73,44 @@ class ImageGridManager {
         ("setImageClassByIndex Error incorrect class to set:" +" "+gridType+ ", must be: unclassified, positive, negative")
       }
     }
+
+    //get indices of all occurences of gridType
+    getAllIndexes(arr, val) {
+      var indexes = [], i = -1;
+      while ((i = arr.indexOf(val, i+1)) != -1){
+          indexes.push(i);
+      }
+      return indexes;
+    }
+
+    getPairsByClass (gridType) {
+
+      if(_.includes(["unclassified", "positive", "negative"], gridType)){
+        const final = []
+        var indices = this.getAllIndexes(this.classifications, gridType)
+        for(var i = 0; i < indices.length; i++){
+          final.push(this.data_pairs[indices[i]])
+        }
+        return final
+      }
+      else {
+        throw new Error 
+        ("wrong class entered")
+      }
+
+    }
+
+    setClassByIndexArray (gridType, arr) {
+      if(_.includes(["unclassified", "positive", "negative"], gridType)){
+        for(var i = 0; i < arr.length; i++){
+          this.classifications[arr[i]] = gridType
+        }
+      }
+      else {
+        throw new Error
+        ("wrong class entered")
+      }
+    }
   //   render(){
       
     
