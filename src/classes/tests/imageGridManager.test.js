@@ -104,7 +104,7 @@ describe('image Grid manager tests', function() {
               Error, "setImageClassByIndex Error incorrect class to set: zoidberg, must be: unclassified, positive, negative")
         }); 
 
-        xit("API: getPairsByClass works with no swapping", function() {
+        it("API: getPairsByClass works with no swapping", function() {
 
             const data_pairs = [ {ImageKey:  4, ObjectKey: 5}, {ImageKey: 2, ObjectKey: 8}]
             const dataurl1 = "https://i.postimg.cc/0yS7m2dV/AS-09125-050116000001-A01f00d2.png"

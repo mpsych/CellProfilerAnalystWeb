@@ -5,12 +5,22 @@ import logo from '../CPA_newlogo.png';
 import {Image, Dropdown, DropdownButton} from 'react-bootstrap';
 import "bootstrap/dist/css/bootstrap.css";
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
-import BelladndTest from './BelladndTest'
 
 import UploadHandler from '../classes/UploadHandler'
 import {ClassifierManager} from '../classes/ClassifierManager'
 import {ImageProvider} from '../classes/ImageProvider.js';
 import UserUploadFileHandler from '../classes/UserUploadFileHandler'
+import {Classifier} from '../classes/Classifier'
+
+import {
+    GridContextProvider,
+    GridDropZone,
+    GridItem,
+    swap,
+    move
+  } from "react-grid-dnd";
+  
+  import "../dndstyles.css";
 
 function TestUI(){
     
@@ -20,13 +30,15 @@ function TestUI(){
 
     // var classifierManager = null;
     const [classifierManager, setClassifierManager] = React.useState(null)
+    const [classifier, setClassifier] = React.useState(null)
+    const [trainingObject, setTrainingObject] = React.useState(null)
     const [userUploadFileHandler, setUserUploadFileHandler] = React.useState(null)
     const [dataURLs, setDataURLs] = React.useState(undefined)
+    const [tileState, setTileState] = React.useState( constructTileState([]) );
     const N = 20
 
     const handleClickFetchDropDown = (event) => {
         setAnchorEl(event.currentTarget);
- 
     };
 
     const handleCloseFetchDropDown = (fetchType) => {
@@ -36,31 +48,32 @@ function TestUI(){
         }
     };
 
-    const handleFetch = (fetchType) => {
+    const handleFetch = async (fetchType) => {
         console.log("fetch " + fetchType)
         const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
         const imageProvider = new ImageProvider();
         
         if (fetchType === "random") {
-            classedCellPairObjects.map(CellPair => {
+            const dataURLs = classedCellPairObjects.map(CellPair => {
                 const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
                 const channelFiles = channelFileNames.map(name => { //Alternatively, we could have this.dp.returnAllImgPromisesPerImg({'ImageNumber': 2}, fh)
                     return userUploadFileHandler.findFile(name)       // and abstract from 8-17 or more
                 })
                 const promiseImages = channelFiles.map(file => {
-                    const image =  userUploadFileHandler.fileReaderPromiseImage(file)
-                    return image;    
+                    const promiseImage =  userUploadFileHandler.fileReaderPromiseImage(file)
+                    return promiseImage;    
                 })
-                Promise.all(promiseImages)
+                return Promise.all(promiseImages)
                     .then(images => {
                         const coords = dataProvider.getCordsforCellDisplay(CellPair)
                         return imageProvider.getDataURLPromise(images, coords);   //The only method of imageprovider. If cords is left blank, it will produce a whole image. Should be
                     })                                                //static class or function
-                    .then(dataURLs => {
-                        console.log("finished fetch random")
-                        setDataURLs(dataURLs)
-                    })
             })
+            
+            const newTileState = constructTileState(await Promise.all(dataURLs))
+            setTileState(newTileState)
+            console.log(newTileState)
+            console.log(dataURLs)
         }
 
     }
@@ -69,6 +82,7 @@ function TestUI(){
 
         const userUploadFileHandler = new UserUploadFileHandler(eventObject)
         setUserUploadFileHandler(userUploadFileHandler)
+
         const uploadHandler = new UploadHandler(eventObject)
         const uploadReturnObject = await uploadHandler.getDataHandlerandStartingTrainingSet();
 
@@ -93,6 +107,7 @@ function TestUI(){
             trainingLabels: trainingLabels,
             featuresToUse: featuresToUse
         }
+        setTrainingObject(initialTrainingObject)
         console.log("starting initial training")
         const classifierManager = new ClassifierManager(dataProvider, initialTrainingObject)
         setClassifierManager(classifierManager)
@@ -101,6 +116,36 @@ function TestUI(){
 
         console.log("finished upload")
     }
+
+    function constructTileState(dataURLs) {
+        return {
+            unclassifed: dataURLs.map((dataURL, idx) => {return {id: idx, address: dataURL}}),  
+            positive: [],
+            negative: []
+        };
+    }
+
+    function onChange(sourceId, sourceIndex, targetIndex, targetId) {
+        if (targetId) {
+          const result = move(
+            tileState[sourceId],
+            tileState[targetId],
+            sourceIndex,
+            targetIndex
+          );
+          return setTileState({
+            ...tileState,
+            [sourceId]: result[0],
+            [targetId]: result[1]
+          });
+        }
+    
+        const result = swap(tileState[sourceId], sourceIndex, targetIndex);
+        return setTileState({
+          ...tileState,
+          [sourceId]: result
+        });
+      }
     
     return (
         <div style={{resize: 'horizontal'}}>
@@ -171,11 +216,92 @@ function TestUI(){
     </Grid>
     </Row>
 
-    <BelladndTest dataURLs={dataURLs}></BelladndTest>
+    <GridContextProvider onChange={onChange}>
+        <div>
+        
+        <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom: 0.5} }>Unclassified</label>
+        
+        <div className="topContainer">
+       
+        <GridDropZone
+             className="dropzone "
+            id="unclassifed"
+            boxesPerRow={8}
+            rowHeight={70}
+          >
+             
+            {tileState.unclassifed.map(item => (
+              <GridItem key={item.id}>
+                <div className="grid-item" >
+                    <div className="grid-item-content" style = {{backgroundImage:  `url(${item.address})`}} >
+                        
+                        </div> 
+                </div>
+              </GridItem>
+            ))}
+          </GridDropZone>
+          </div>
+        
+        <Row>
+     
+          <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "11%", userSelect: "none", marginBottom:"0.5%"} }>Positive</label> 
+    
+        
+          <label style = {{textAlign:"left", backgroundColor: 'white', paddingRight: "8%", marginBottom: 0, userSelect: "none", margin: "auto",  marginBottom:"0.5%"} }>Negative</label>
+       
+          </Row>
+         
+         <Row>
+
+          <GridDropZone
+            className="dropzone positive"
+            id="positive"
+            boxesPerRow={4}
+            rowHeight={70}
+          >
+            
+            {tileState.positive.map(item => (
+              <GridItem key={item.id}>
+                <div className="grid-item"> 
+                    <div className="grid-item-content" style = {{backgroundImage: `url(${item.address})`}}>
+                         
+                        </div>  
+                </div>
+              </GridItem>
+            ))}
+          </GridDropZone>
+   
+      
+          <GridDropZone
+            className="dropzone negative"
+            id="negative"
+            boxesPerRow={4}
+            rowHeight={70}
+          >
+            {tileState.negative.map(item => (
+              <GridItem key={item.id}>
+                <div className="grid-item">
+                <div className="grid-item-content" style = {{backgroundImage: `url(${item.address})`}}>
+                        
+                        </div>      
+                </div>
+              </GridItem>
+            ))}
+          </GridDropZone>
+
+     
+      
+        </Row>
+        </div>
+      </GridContextProvider>
  
     </div>
 
     );
 }
+
+
+
+
 
 export default TestUI; 
