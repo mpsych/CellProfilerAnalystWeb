@@ -221,7 +221,7 @@ describe('Classifier Manager tests', function() {
                 
             }, 
             
-            Error, `Error on invalid class: got ${classType} but expected negative or positive}`)
+            Error, `Error on invalid class: got ${classType} but expected negative or positive or random}`)
             
         });
 
