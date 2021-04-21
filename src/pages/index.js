@@ -11,6 +11,7 @@ import {ClassifierManager} from '../classes/ClassifierManager'
 import {ImageProvider} from '../classes/ImageProvider.js';
 import UserUploadFileHandler from '../classes/UserUploadFileHandler'
 import {Classifier} from '../classes/Classifier'
+import {ImageGridManager}  from '../classes/imGridManager'
 
 import {
     GridContextProvider,
@@ -22,6 +23,8 @@ import {
   
   import "../dndstyles.css";
 
+
+
 function TestUI(){
     
     
@@ -29,12 +32,19 @@ function TestUI(){
     const [dataProvider, setDataProvider] = React.useState(null)
 
     // var classifierManager = null;
-    const [classifierManager, setClassifierManager] = React.useState(null)
-    const [classifier, setClassifier] = React.useState(null)
+    // const [classifierManager, setClassifierManager] = React.useState(null)
     const [trainingObject, setTrainingObject] = React.useState(null)
     const [userUploadFileHandler, setUserUploadFileHandler] = React.useState(null)
-    const [dataURLs, setDataURLs] = React.useState(undefined)
     const [tileState, setTileState] = React.useState( constructTileState([]) );
+    const [imageGridManager, setImageGridManager] = React.useState(null)
+    const [lastFetchState, setLastFetchState] = React.useState(null)
+    const [featuresToUse, setFeaturesToUseState] = React.useState(null)
+
+    const [fetchButtonEnabled, setFetchButtonEnabled] = React.useState(false)
+    const [trainButtonEnabled, setTrainButtonEnabled] = React.useState(false)
+    const [evaluateButtonEnabled, setEvaluateButtonEnabled] = React.useState(false)
+    const [downloadButtonEnabled, setDownloadButtonEnabled] = React.useState(false)
+    const [uploadButtonEnabled, setUploadButtonEnabled] = React.useState(true)
     const N = 20
 
     const handleClickFetchDropDown = (event) => {
@@ -48,13 +58,32 @@ function TestUI(){
         }
     };
 
+    const disableIterationButtons = () => {
+      setFetchButtonEnabled(false)
+      setTrainButtonEnabled(false)
+      setDownloadButtonEnabled(false)
+    }
+    const enableIterationButtons = () => {
+      setFetchButtonEnabled(true)
+      setTrainButtonEnabled(true)
+      setDownloadButtonEnabled(true)
+    }
+
     const handleFetch = async (fetchType) => {
+
+      disableIterationButtons()
+        const emptyTileState = { unclassified: [], positive: [], negative: []}
+        setTileState(emptyTileState)
+        const classifierManager = new ClassifierManager(dataProvider, trainingObject)
+        await classifierManager.initTrainPromise()
+
+        setLastFetchState(fetchType)
         console.log("fetch " + fetchType)
         const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
         const imageProvider = new ImageProvider();
-        
+        var dataURLPromiseArray = null;
         if (fetchType === "random") {
-            const dataURLs = classedCellPairObjects.map(CellPair => {
+            const dataURLPromiseArray = classedCellPairObjects.map(CellPair => {
                 const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
                 const channelFiles = channelFileNames.map(name => { //Alternatively, we could have this.dp.returnAllImgPromisesPerImg({'ImageNumber': 2}, fh)
                     return userUploadFileHandler.findFile(name)       // and abstract from 8-17 or more
@@ -69,29 +98,128 @@ function TestUI(){
                         return imageProvider.getDataURLPromise(images, coords);   //The only method of imageprovider. If cords is left blank, it will produce a whole image. Should be
                     })                                                //static class or function
             })
-            
-            const newTileState = constructTileState(await Promise.all(dataURLs))
+            const dataURLs = await Promise.all(dataURLPromiseArray)
+            const newTileState = constructTileState(dataURLs)
             setTileState(newTileState)
             console.log(newTileState)
             console.log(dataURLs)
-        }
+            setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLs))
 
+            
+            enableIterationButtons()
+            return
+        } 
+
+        if (fetchType === "positive") {
+          dataURLPromiseArray = classedCellPairObjects.map(CellPair => {
+            const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
+            const channelFiles = channelFileNames.map(name => { //Alternatively, we could have this.dp.returnAllImgPromisesPerImg({'ImageNumber': 2}, fh)
+                return userUploadFileHandler.findFile(name)       // and abstract from 8-17 or more
+            })
+            const promiseImages = channelFiles.map(file => {
+                const promiseImage =  userUploadFileHandler.fileReaderPromiseImage(file)
+                return promiseImage;    
+            })
+            return Promise.all(promiseImages)
+                .then(images => {
+                    const coords = dataProvider.getCordsforCellDisplay(CellPair)
+                    return imageProvider.getDataURLPromise(images, coords);   //The only method of imageprovider. If cords is left blank, it will produce a whole image. Should be
+                })                                                //static class or function
+        })
+        
+        const dataURLs = await Promise.all(dataURLPromiseArray)
+        const newTileState = constructTileState(dataURLs)
+        setTileState(newTileState)
+        console.log(newTileState)
+        console.log(dataURLs)
+        setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLs))
+        enableIterationButtons()
+        return
+      }
+
+      if (fetchType === 'negative') {
+        dataURLPromiseArray = classedCellPairObjects.map(CellPair => {
+          const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
+          const channelFiles = channelFileNames.map(name => { //Alternatively, we could have this.dp.returnAllImgPromisesPerImg({'ImageNumber': 2}, fh)
+              return userUploadFileHandler.findFile(name)       // and abstract from 8-17 or more
+          })
+          const promiseImages = channelFiles.map(file => {
+              const promiseImage =  userUploadFileHandler.fileReaderPromiseImage(file)
+              return promiseImage;    
+          })
+          return Promise.all(promiseImages)
+              .then(images => {
+                  const coords = dataProvider.getCordsforCellDisplay(CellPair)
+                  return imageProvider.getDataURLPromise(images, coords);   //The only method of imageprovider. If cords is left blank, it will produce a whole image. Should be
+              })                                                //static class or function
+      })
+      
+      const dataURLs = await Promise.all(dataURLPromiseArray)
+      const newTileState = constructTileState(dataURLs)
+      setTileState(newTileState)
+      console.log(newTileState)
+      console.log(dataURLs)
+      setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLs))
+      enableIterationButtons()
+      return
     }
+    
+  }
+
+  const handleTrain = async () => {
+
+    disableIterationButtons()
+
+      const negativeIDs = tileState.negative.map(item => item.id)
+      const positiveIDs = tileState.positive.map(item => item.id)
+      console.log(negativeIDs, tileState)
+      imageGridManager.setClassByIndexArray('negative', negativeIDs)
+      imageGridManager.setClassByIndexArray('positive', positiveIDs)
+
+      const negativeCellPairs = imageGridManager.getPairsByClass('negative')
+      const positiveCellPairs = imageGridManager.getPairsByClass('positive')
+ 
+      const negativeObjectDataRows = negativeCellPairs.map(cellPair => dataProvider.getRow('object_data', {ImageNumber: cellPair.ImageNumber, ObjectNumber: cellPair.ObjectNumber}))
+      const positiveObjectDataRows = positiveCellPairs.map(cellPair => dataProvider.getRow('object_data', {ImageNumber: cellPair.ImageNumber, ObjectNumber: cellPair.ObjectNumber}))
+      const trainingDataAddition = [...negativeObjectDataRows, ...positiveObjectDataRows]
+
+      const negativeLabels = new Array(negativeObjectDataRows.length).fill(0)
+      const positiveLabels = new Array(positiveObjectDataRows.length).fill(1)
+      const trainingLabelsAddition = negativeLabels.concat(positiveLabels)
+
+      const UpdatedTrainingObject = {
+        classifierType: "LogisticRegression",
+        trainingData: [...trainingDataAddition, ...trainingObject.trainingData],
+        trainingLabels: [...trainingLabelsAddition, ...trainingObject.trainingLabels],
+        featuresToUse: featuresToUse
+      }
+      console.log(UpdatedTrainingObject)
+      setTrainingObject(UpdatedTrainingObject)
+      // const newClassifierManager = new ClassifierManager(dataProvider, UpdatedTrainingObject)
+      
+      
+      // setClassifierManager(newClassifierManager)
+
+      const clearedTileState = { unclassified: tileState.unclassified, positive: [], negative: []}
+      setTileState(clearedTileState)
+      console.log("finished train")
+      enableIterationButtons()
+    
+  }
 
     const handleUpload = async (eventObject) => {
-
+        setUploadButtonEnabled(false)
         const userUploadFileHandler = new UserUploadFileHandler(eventObject)
         setUserUploadFileHandler(userUploadFileHandler)
 
         const uploadHandler = new UploadHandler(eventObject)
         const uploadReturnObject = await uploadHandler.getDataHandlerandStartingTrainingSet();
 
-        console.log(uploadReturnObject)
         const dataProvider = uploadReturnObject.data_provider
         setDataProvider(dataProvider)
         const trainingTable = uploadReturnObject.training_data.training_table
         const trainingDataTable = trainingTable.getDataColumnsPaired()
-        console.log(trainingTable)
+
         const trainingLabels = trainingTable.getTrainingLabels()
         const initialTrainingData = trainingDataTable.map(row_object => {
             const ObjectNumber = row_object['objectnum']
@@ -99,27 +227,40 @@ function TestUI(){
             return dataProvider.getRow('object_data', {ObjectNumber, ImageNumber})
         })
         const totalFeatures = uploadReturnObject.training_data.features
-        const featuresToUse = totalFeatures.filter((elem)=>!elem.includes("Location") && (elem !== "ObjectNumber") && (elem !== "ImageNumber"))
+        const tempFeaturesToUse = totalFeatures.filter((elem)=>!elem.includes("Location") && (elem !== "ObjectNumber") && (elem !== "ImageNumber"))
+        setFeaturesToUseState(tempFeaturesToUse)
         console.log("finished data initialization")
         const initialTrainingObject = {
             classifierType: "LogisticRegression",
             trainingData: initialTrainingData,
             trainingLabels: trainingLabels,
-            featuresToUse: featuresToUse
+            featuresToUse: tempFeaturesToUse
         }
         setTrainingObject(initialTrainingObject)
-        console.log("starting initial training")
-        const classifierManager = new ClassifierManager(dataProvider, initialTrainingObject)
-        setClassifierManager(classifierManager)
+        // console.log("starting initial training")
+        // const newClassifierManager = new ClassifierManager(dataProvider, initialTrainingObject)
+        
+        // setClassifierManager(newClassifierManager)
 
-        await classifierManager.initTrainPromise()
-
+        setFetchButtonEnabled(true)
+        setTrainButtonEnabled(true)
+        setDownloadButtonEnabled(true)
+        
+        
         console.log("finished upload")
+    }
+
+    const handleDownload = async () => {
+      disableIterationButtons()
+      const classifierManager = new ClassifierManager(dataProvider, trainingObject)
+      await classifierManager.initTrainPromise()
+      classifierManager.userDownloadClassifierSpecPromise()
+      enableIterationButtons()
     }
 
     function constructTileState(dataURLs) {
         return {
-            unclassifed: dataURLs.map((dataURL, idx) => {return {id: idx, address: dataURL}}),  
+            unclassified: dataURLs.map((dataURL, idx) => {return {id: idx, address: dataURL}}),  
             positive: [],
             negative: []
         };
@@ -175,7 +316,7 @@ function TestUI(){
          <Dropdown.Item >Random</Dropdown.Item>
         
         </DropdownButton> */}
-            <Button variant="contained" aria-controls="simple-menu" aria-haspopup="true" onClick={handleClickFetchDropDown}>
+            <Button disabled={!fetchButtonEnabled} variant="contained" aria-controls="simple-menu" aria-haspopup="true" onClick={handleClickFetchDropDown}>
             Fetch
             </Button>
             <Menu
@@ -193,14 +334,17 @@ function TestUI(){
 
 
         <Grid key={1} item>
-        <Button variant="contained" onClick={()=>{}}>Train</Button>
+        <Button disabled={!trainButtonEnabled} variant="contained" onClick={handleTrain}>Train</Button>
         </Grid>
 
         <Grid key={2} item>
-        <Button variant="contained" onClick={()=>{}}>Evaluate</Button>
+        <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button>
         </Grid>
         <Grid key={3} item>
-        <Button variant="contained" component="label" onClick={()=>console.log("Upload!")}> 
+        <Button disabled={!downloadButtonEnabled} variant="contained" onClick={handleDownload}>Download</Button>
+        </Grid>
+        <Grid key={4} item>
+        <Button disabled={!uploadButtonEnabled} variant="contained" component="label" onClick={()=>console.log("Upload!")}> 
             Upload
             <input  type="file"
                     hidden webkitdirectory="true"
@@ -225,12 +369,12 @@ function TestUI(){
        
         <GridDropZone
              className="dropzone "
-            id="unclassifed"
+            id="unclassified"
             boxesPerRow={8}
             rowHeight={70}
           >
              
-            {tileState.unclassifed.map(item => (
+            {tileState.unclassified.map(item => (
               <GridItem key={item.id}>
                 <div className="grid-item" >
                     <div className="grid-item-content" style = {{backgroundImage:  `url(${item.address})`}} >
