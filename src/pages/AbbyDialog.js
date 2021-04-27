@@ -21,6 +21,7 @@ export default function DialogForCanvas() {
     setOpen(false);
     
   };
+  const confusion_matrix_canvas = useRef(null);
 
   return (
     <div >
@@ -38,7 +39,7 @@ export default function DialogForCanvas() {
         <CloseIcon onClick = {handleClose} style={{position: 'absolute', right: '10px', top: '10px',}}></CloseIcon>  
         
         {/* a canvas with a id : "confusion_matrix_canvas" */}
-        <canvas width={400} height={400} id="confusion_matrix_canvas"></canvas>
+        <canvas width={400} height={400} ref ={confusion_matrix_canvas}></canvas>
         
       </Dialog>
       
