@@ -295,10 +295,10 @@ function TestUIMVP(){
     return (
 
         <GridContextProvider onChange={onChange}>
-        <div style={{ overflowX:"hidden", resize: "none", overflowY:"scroll"}}>
+        <div style={{ overflowX:"hidden", resize: "none"}}>
     
         <Row>
-        <Image src={logo} style={{marginLeft:"10%", height:"30%", width:"25%",position:"relative", maxHeight:"150px", marginBottom:"3%"}}></Image>
+        <Image src={logo} style={{marginLeft:"10%", height:"30%", width:"25%",position:"relative", maxHeight:"125px", marginBottom:"1%"}}></Image>
        
         <Col >
         <IconButton disabled={!downloadButtonEnabled} onClick={handleDownload} style={{color: "black", position:"relative", left:"70%"}}> <SaveAltIcon /></IconButton> 
