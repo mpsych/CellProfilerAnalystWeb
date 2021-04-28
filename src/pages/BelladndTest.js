@@ -195,7 +195,7 @@ function BelladndTest() {
             
             {items.positive.map(item => (
               <GridItem key={item.id}>
-                <div className="grid-item"> 
+                <div style={{zIndex: 1000}} className="grid-item"> 
                     <div className="grid-item-content" style = {{backgroundImage: `url(${item.address})`}}>
                          
                         </div>  

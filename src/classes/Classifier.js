@@ -45,7 +45,7 @@ class Classifier {
         }
     }
 
-    trainPromise() {
+    trainPromise(number_epochs=60) {
         return new Promise(async (resolve, reject) => {
 
             const tf_batched_dataset = Classifier.createBasicDataset(
@@ -54,7 +54,6 @@ class Classifier {
                 this.featuresToUse,
                 16
             );
-            const number_epochs = 20;
             this.model = await Classifier.basicTrainPromise(
                 this.model,
                 tf_batched_dataset,
@@ -67,10 +66,64 @@ class Classifier {
         });
     }
 
-    predict(test_data) {
+    predict_tf(test_data, true_labels=null) {
+        if (true_labels) {
+            const [tf_dataset, tf_labels] = Classifier.createBasicTestset(test_data, this.featuresToUse, true_labels)
+            const tf_predictions = this.model.predict(tf_dataset).argMax(-1);
+            return [tf_predictions, tf_labels.argMax(-1)]
+        }
+        const tf_dataset = Classifier.createBasicTestset(test_data, this.featuresToUse)
+        const tf_predictions = this.model.predict(tf_dataset).argMax(-1);
+        return tf_predictions
+    }
+
+    predict(test_data, true_labels=null) {
+        if (true_labels) {
+            const [tf_dataset, tf_labels] = Classifier.createBasicTestset(test_data, this.featuresToUse, true_labels)
+            const tf_predictions = this.model.predict(tf_dataset).argMax(-1);
+            return [tf_predictions.arraySync(), tf_labels.argMax(-1).arraySync()]
+        }
         const tf_dataset = Classifier.createBasicTestset(test_data, this.featuresToUse)
         const tf_predictions = this.model.predict(tf_dataset).argMax(-1);
         return tf_predictions.arraySync()
+    }
+    // TrainingDataConfusionMatrixDataURLPromise(label_names, canvasElement) {
+    //     return this.confusionMatrixDataURLPromise(this.trainingData, this.trainingLabels, label_names, canvasElement)
+    // }
+
+    getTrainingDataConfusionMatrixPromise() {
+        const [tf_predict_labels, tf_true_labels] = this.predict_tf(this.trainingData, this.trainingLabels)
+        return tfvis.metrics.confusionMatrix(tf_true_labels, tf_predict_labels)
+    }
+
+
+    confusionMatrixDataURLPromise(predict_data, true_labels, tick_labels, canvasElement) {
+        const [tf_predict_labels, tf_true_labels] = this.predict_tf(predict_data, true_labels)
+
+
+        // const confusionMatrixCanvas = document.createElement("canvas")
+        tf_predict_labels.print()
+        tf_true_labels.print()
+
+        return tfvis.metrics.confusionMatrix(tf_true_labels, tf_predict_labels)
+                .then(confusionMatrix => 
+                    {
+                        console.log(confusionMatrix)
+                        confusionMatrix.print()
+                        tfvis.render.confusionMatrix(canvasElement, {
+                            values: confusionMatrix,
+                            tickLabels: tick_labels
+                        })
+                    }
+                )
+                .then(() =>
+                canvasElement.toDataURL()
+                )
+
+
+
+        
+
     }
 
     DownloadModelPromise() {
@@ -83,34 +136,36 @@ class Classifier {
 
     static norm2DArray (array) {
 
-        var means_array = new Array(array[0].length).fill(0)
-        for (var j = 0; j < array[0].length; j++) {
-            var sum = new Array(array[0].length).fill(0)
-            for (var i = 0; i < array.length; i++) {
-                sum[j] += array[i][j]
-            }
-            means_array[j] = sum[j]/array[0].length
-        }
+        // var means_array = new Array(array[0].length).fill(0)
+        // for (var j = 0; j < array[0].length; j++) {
+        //     var sum = new Array(array[0].length).fill(0)
+        //     for (var i = 0; i < array.length; i++) {
+        //         sum[j] += array[i][j]
+        //     }
+        //     means_array[j] = sum[j]/array[0].length
+        // }
 
 
-        var stddevs_array = new Array(array[0].length).fill(0)
+        // var stddevs_array = new Array(array[0].length).fill(0)
 
-        for (var j = 0; j < array[0].length; j++) {
-            var sum_squares = new Array(array[0].length).fill(0)
-            for (var i = 0; i <array.length; i++) {
-                sum_squares[j] += Math.pow((array[i][j] - means_array[j]),2)
-            }
-            stddevs_array[j] = Math.sqrt(sum_squares[j])
-        }
+        // for (var j = 0; j < array[0].length; j++) {
+        //     var sum_squares = new Array(array[0].length).fill(0)
+        //     for (var i = 0; i <array.length; i++) {
+        //         sum_squares[j] += Math.pow((array[i][j] - means_array[j]),2)
+        //     }
+        //     stddevs_array[j] = Math.sqrt(sum_squares[j])
+        // }
 
 
-        const normed_array = array.map(data_row => 
-            {
-                return data_row.map( (value, idx) => (value - means_array[idx])/stddevs_array[idx])
-            }
-        )
+        // const normed_array = array.map(data_row => 
+        //     {
+        //         return data_row.map( (value, idx) => (value - means_array[idx])/stddevs_array[idx])
+        //     }
+        // )
 
-        return normed_array;
+        // return normed_array;
+
+        return array
 
     }
 

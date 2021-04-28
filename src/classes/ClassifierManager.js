@@ -49,6 +49,7 @@ class ClassifierManager {
         }
 
         const sampledCellPairObjects = this.DataProvider.getNRandomObjs(N)
+        
 
         if (classType === "random") {
             return sampledCellPairObjects
