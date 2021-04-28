@@ -1,10 +1,11 @@
 import React from 'react';
 import { Row, Col, Container} from "reactstrap";
-import {Box, Button, Grid, IconButton, Menu, MenuItem}from '@material-ui/core'; 
-import logo from '../CPA_newlogo.png';
+import {Box, Button, Grid, IconButton, Menu, MenuItem, Card}from '@material-ui/core'; 
+import logo from '../cpa_full_logo.gif';
 import {Image, Dropdown, DropdownButton} from 'react-bootstrap';
 import "bootstrap/dist/css/bootstrap.css";
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
+import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 
 import UploadHandler from '../classes/UploadHandler'
 import {ClassifierManager} from '../classes/ClassifierManager'
@@ -12,8 +13,6 @@ import {ImageProvider} from '../classes/ImageProvider.js';
 import UserUploadFileHandler from '../classes/UserUploadFileHandler'
 import {Classifier} from '../classes/Classifier'
 import {ImageGridManager}  from '../classes/imGridManager'
-
-import {test} from '../classes/test'
 
 import {
     GridContextProvider,
@@ -27,9 +26,7 @@ import {
 
 
 
-function TestUI(){
-
-    console.log(test(3))
+function TestUIMVP(){
     
     
     const [anchorEl, setAnchorEl] = React.useState(null);
@@ -49,7 +46,6 @@ function TestUI(){
     const [evaluateButtonEnabled, setEvaluateButtonEnabled] = React.useState(false)
     const [downloadButtonEnabled, setDownloadButtonEnabled] = React.useState(false)
     const [uploadButtonEnabled, setUploadButtonEnabled] = React.useState(true)
-    const [classifier, setClassifier] = React.useState(null)
     const N = 20
 
     const handleClickFetchDropDown = (event) => {
@@ -77,43 +73,16 @@ function TestUI(){
     const handleFetch = async (fetchType) => {
 
       disableIterationButtons()
+        const emptyTileState = { unclassified: [], positive: [], negative: []}
+        setTileState(emptyTileState)
+        const classifierManager = new ClassifierManager(dataProvider, trainingObject)
+        await classifierManager.initTrainPromise()
 
-      
-      // var fakeClassifier2 = new Classifier(trainingObject);
-      
-      // await fakeClassifier2.trainPromise()
-      // console.log( Object.keys(trainingObject.trainingData[0]))
-
-      // empty grids
-      const emptyTileState = { unclassified: [], positive: [], negative: []}
-      setTileState(emptyTileState)
-
-
-      const sampledCellPairObjects = dataProvider.getNRandomObjs(100)
-      const inputData = sampledCellPairObjects.map(
-        cellPair => dataProvider.getRow('object_data', cellPair)
-      )
-
-      var desiredLabel = 0
-      if (fetchType == "positive") {
-          desiredLabel = 1
-      }
-
-      const predicted_labels = classifier.predict(inputData)
-      var classedCellPairObjects = sampledCellPairObjects
-      if (fetchType !== 'random'){
-        classedCellPairObjects = sampledCellPairObjects.filter(
-          (pair, index) => predicted_labels[index] === desiredLabel 
-        )
-      }
-      classedCellPairObjects = classedCellPairObjects.slice(0,20)
-
-      const imageProvider = new ImageProvider();
-      var dataURLPromiseArray = null;
-      
-
-      
-        
+        setLastFetchState(fetchType)
+        console.log("fetch " + fetchType)
+        const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
+        const imageProvider = new ImageProvider();
+        var dataURLPromiseArray = null;
         if (fetchType === "random") {
             const dataURLPromiseArray = classedCellPairObjects.map(CellPair => {
                 const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
@@ -202,13 +171,8 @@ function TestUI(){
 
     disableIterationButtons()
 
-    
-
       const negativeIDs = tileState.negative.map(item => item.id)
       const positiveIDs = tileState.positive.map(item => item.id)
-
-      const clearedTileState = { unclassified: tileState.unclassified, positive: [], negative: []}
-      setTileState(clearedTileState)
       console.log(negativeIDs, tileState)
       imageGridManager.setClassByIndexArray('negative', negativeIDs)
       imageGridManager.setClassByIndexArray('positive', positiveIDs)
@@ -232,15 +196,13 @@ function TestUI(){
       }
       console.log(UpdatedTrainingObject)
       setTrainingObject(UpdatedTrainingObject)
-      const newClassifier = new Classifier(UpdatedTrainingObject)
-      await newClassifier.trainPromise()
-      setClassifier(newClassifier)
       // const newClassifierManager = new ClassifierManager(dataProvider, UpdatedTrainingObject)
       
       
       // setClassifierManager(newClassifierManager)
 
-      
+      const clearedTileState = { unclassified: tileState.unclassified, positive: [], negative: []}
+      setTileState(clearedTileState)
       console.log("finished train")
       enableIterationButtons()
     
@@ -280,11 +242,6 @@ function TestUI(){
         // const newClassifierManager = new ClassifierManager(dataProvider, initialTrainingObject)
         
         // setClassifierManager(newClassifierManager)
-        console.log("start initial train")
-        const newClassifier = new Classifier(initialTrainingObject)
-        await newClassifier.trainPromise()
-        setClassifier(newClassifier)
-        console.log("end initial train")
 
         setFetchButtonEnabled(true)
         setTrainButtonEnabled(true)
@@ -296,15 +253,16 @@ function TestUI(){
 
     const handleDownload = async () => {
       disableIterationButtons()
-      
-      classifier.DownloadModelPromise()
-        .then(enableIterationButtons)
-      
+      const classifierManager = new ClassifierManager(dataProvider, trainingObject)
+      await classifierManager.initTrainPromise()
+      classifierManager.userDownloadClassifierSpecPromise()
+      enableIterationButtons()
     }
 
+    
     function constructTileState(dataURLs) {
         return {
-            unclassified: dataURLs.map((dataURL, idx) => {return {id: idx, address: dataURL}}),  
+            unclassified: dataURLs.map((dataURL, idx, info) => {return {id: idx, address: dataURL, info: "cell info, biology stuff"}}),  
             positive: [],
             negative: []
         };
@@ -332,34 +290,27 @@ function TestUI(){
         });
       }
     
+
+
     return (
-        <div style={{resize: 'horizontal'}}>
+
+        <GridContextProvider onChange={onChange}>
+        <div style={{ overflowX:"hidden", resize: "none"}}>
     
         <Row>
+        <Image src={logo} style={{marginLeft:"10%", height:"30%", width:"25%",position:"relative", maxHeight:"150px", marginBottom:"3%"}}></Image>
        
-        
-        <Col>
-        <Image src={logo} style={{marginRight:"40%", height:'90px'}}></Image>
-        </Col>
-
         <Col >
-        <IconButton style={{color: "black", marginLeft:"50%"}}> <SaveAltIcon /></IconButton> 
+        <IconButton disabled={!downloadButtonEnabled} onClick={handleDownload} style={{color: "black", position:"relative", left:"70%"}}> <SaveAltIcon /></IconButton> 
         </Col>
-
-
+   
+       
         </Row>
         <Row>
         
         <Grid container justify="center" spacing={2} style={{marginBottom: 15}}>
        
         <Grid key={0} item>
-        {/* <DropdownButton variant="secondary" title= "Fetch">
-        
-         <Dropdown.Item >Positive</Dropdown.Item>
-         <Dropdown.Item >Negative</Dropdown.Item>
-         <Dropdown.Item >Random</Dropdown.Item>
-        
-        </DropdownButton> */}
             <Button disabled={!fetchButtonEnabled} variant="contained" aria-controls="simple-menu" aria-haspopup="true" onClick={handleClickFetchDropDown}>
             Fetch
             </Button>
@@ -378,14 +329,12 @@ function TestUI(){
 
 
         <Grid key={1} item>
+            {/* style = {{height: "5vw", width:"10vw", minHeight:2, maxHeight: 35, maxwidth: 50, fontSize: "max(1.5vw, 20)"}}  */}
         <Button disabled={!trainButtonEnabled} variant="contained" onClick={handleTrain}>Train</Button>
         </Grid>
 
         <Grid key={2} item>
         <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button>
-        </Grid>
-        <Grid key={3} item>
-        <Button disabled={!downloadButtonEnabled} variant="contained" onClick={handleDownload}>Download</Button>
         </Grid>
         <Grid key={4} item>
         <Button disabled={!uploadButtonEnabled} variant="contained" component="label" onClick={()=>console.log("Upload!")}> 
@@ -404,38 +353,38 @@ function TestUI(){
     </Grid>
     </Row>
 
-    <GridContextProvider onChange={onChange}>
+  
         <div>
         
-        <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom: 0.5} }>Unclassified</label>
+        <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom:"0.5%", userSelect: "none"} }>Unclassified </label>
         
-        <div className="topContainer">
-       
         <GridDropZone
              className="dropzone "
             id="unclassified"
-            boxesPerRow={10}
-            rowHeight={90}
+            boxesPerRow={8}
+            rowHeight={80}
+            style={{height: "20vw", maxHeight: 200, minHeight:150, marginBottom:10, marginLeft: "10%", width:"80%"}}
           >
              
             {tileState.unclassified.map(item => (
-              <GridItem style={{height:90, width: 90}} key={item.id}>
+              <GridItem className= "hoverTest"  style={{height:"10vw", width: "10vw", minHeight:80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding:10}} key={item.id}>
                 <div className="grid-item" >
                     <div className="grid-item-content" style = {{backgroundImage:  `url(${item.address})`}} >
-                        
+                    <span className= "hoverText">{item.info}</span>
                         </div> 
+
                 </div>
               </GridItem>
             ))}
           </GridDropZone>
-          </div>
+  
         
         <Row>
      
-          <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "11%", userSelect: "none", marginBottom:"0.5%"} }>Positive</label> 
+          <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "11%", userSelect: "none", marginBottom:"0.5%", marginTop:0} }>Positive</label> 
     
         
-          <label style = {{textAlign:"left", backgroundColor: 'white', paddingRight: "8%", marginBottom: 0, userSelect: "none", margin: "auto",  marginBottom:"0.5%"} }>Negative</label>
+          <label style = {{textAlign:"left", backgroundColor: 'white', paddingRight: "8%", userSelect: "none", margin: "auto",  marginBottom:"0.5%", marginTop:0} }>Negative</label>
        
           </Row>
          
@@ -444,15 +393,16 @@ function TestUI(){
           <GridDropZone
             className="dropzone positive"
             id="positive"
-            boxesPerRow={5}
-            rowHeight={90}
+            boxesPerRow={4}
+            rowHeight={80}
+            style={{height: "20vw", maxHeight: 200, minHeight:150}}
           >
             
             {tileState.positive.map(item => (
-              <GridItem style={{height:90, width: 90}} key={item.id}>
+              <GridItem className= "hoverTest" style={{height:"10vw", width: "10vw", minHeight: 80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding:10}} key={item.id}>
                 <div className="grid-item"> 
                     <div className="grid-item-content" style = {{backgroundImage: `url(${item.address})`}}>
-                         
+                    <span className= "hoverText">{item.info}</span>
                         </div>  
                 </div>
               </GridItem>
@@ -463,14 +413,15 @@ function TestUI(){
           <GridDropZone
             className="dropzone negative"
             id="negative"
-            boxesPerRow={5}
-            rowHeight={90}
+            boxesPerRow={4}
+            rowHeight= {80}
+            style={{height: "20vw", maxHeight: 200, minHeight:150}}
           >
             {tileState.negative.map(item => (
-              <GridItem style={{height:90, width: 90}} key={item.id}>
+              <GridItem className= "hoverTest" style={{height:"10vw", width: "10vw", minHeight: 80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding: 10}} key={item.address}>
                 <div className="grid-item">
                 <div className="grid-item-content" style = {{backgroundImage: `url(${item.address})`}}>
-                        
+                <span className= "hoverText">{item.info}</span>
                         </div>      
                 </div>
               </GridItem>
@@ -481,9 +432,10 @@ function TestUI(){
       
         </Row>
         </div>
-      </GridContextProvider>
+      
  
     </div>
+    </GridContextProvider>
 
     );
 }
@@ -492,4 +444,5 @@ function TestUI(){
 
 
 
-export default TestUI; 
+
+export default TestUIMVP; 

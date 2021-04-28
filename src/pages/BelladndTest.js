@@ -152,19 +152,19 @@ function BelladndTest() {
     <GridContextProvider onChange={onChange}>
         <div>
         
-        <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom: 0.5} }>Unclassified</label>
+        <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom: 0.5, userSelect: "none"} }>Unclassified</label>
         
         <div className="topContainer">
        
         <GridDropZone
              className="dropzone "
             id="unclassifed"
-            boxesPerRow={8}
-            rowHeight={70}
+            boxesPerRow={10}
+            rowHeight={90}
           >
              
             {items.unclassifed.map(item => (
-              <GridItem key={item.id}>
+              <GridItem style={{height:90, width: 90}} key={item.id}>
                 <div className="grid-item" >
                     <div className="grid-item-content" style = {{backgroundImage:  `url(${item.address})`}} >
                         
@@ -189,13 +189,13 @@ function BelladndTest() {
           <GridDropZone
             className="dropzone positive"
             id="positive"
-            boxesPerRow={4}
-            rowHeight={70}
+            boxesPerRow={5}
+            rowHeight={90}
           >
             
             {items.positive.map(item => (
-              <GridItem key={item.id}>
-                <div style={{zIndex: 1000}} className="grid-item"> 
+              <GridItem style={{height:90, width: 90}} key={item.id}>
+                <div className="grid-item"> 
                     <div className="grid-item-content" style = {{backgroundImage: `url(${item.address})`}}>
                          
                         </div>  
@@ -208,11 +208,11 @@ function BelladndTest() {
           <GridDropZone
             className="dropzone negative"
             id="negative"
-            boxesPerRow={4}
-            rowHeight={70}
+            boxesPerRow={5}
+            rowHeight={90}
           >
             {items.negative.map(item => (
-              <GridItem key={item.id}>
+              <GridItem style={{height:90, width: 90}} key={item.id}>
                 <div className="grid-item">
                 <div className="grid-item-content" style = {{backgroundImage: `url(${item.address})`}}>
                         
