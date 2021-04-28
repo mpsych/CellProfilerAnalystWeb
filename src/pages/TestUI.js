@@ -22,8 +22,8 @@ function TestUI(){
     
     return (
         // <div style = {{backgroundColor:"#ededed"}}>
-    
-        <div>
+        
+        <div style = {{overflowX:"hidden", height: "100%" , width: "100%", position: "relative"}}>
         <Row>
        
         
@@ -84,6 +84,7 @@ function TestUI(){
     <BelladndTest></BelladndTest>
    
     </div>
+  
 
     );
 }
