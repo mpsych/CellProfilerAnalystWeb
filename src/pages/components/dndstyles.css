@@ -42,7 +42,6 @@ border: 1px solid #3c3c3c;
 }
 
 .hoverText{
-	transition-delay: 2s;
 	visibility: hidden;
 	text-align: center;
 	background-color:grey;
@@ -53,5 +52,6 @@ border: 1px solid #3c3c3c;
 	width: 100%;
 }
 .hoverTest:hover .hoverText{
+	transition-delay: 1.5s;
 	visibility: visible;
 }
