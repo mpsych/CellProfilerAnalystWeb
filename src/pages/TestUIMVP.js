@@ -295,7 +295,7 @@ function TestUIMVP(){
     return (
 
         <GridContextProvider onChange={onChange}>
-        <div style={{ overflowX:"hidden", resize: "none"}}>
+        <div style={{ overflowX:"hidden", resize: "none", overflowY:"scroll"}}>
     
         <Row>
         <Image src={logo} style={{marginLeft:"10%", height:"30%", width:"25%",position:"relative", maxHeight:"150px", marginBottom:"3%"}}></Image>
