@@ -1,5 +1,5 @@
 
-import { ThumbDownSharp } from "@material-ui/icons";
+import { ThreeSixty, ThumbDownSharp } from "@material-ui/icons";
 import ImageTable from "./ImageTable.js";
 import ObjectTable from "./ObjectTable.js";
 export default class DataProvider {
@@ -53,10 +53,16 @@ export default class DataProvider {
     }
     
     returnAllImgFileNames(img) {
-        var channels = "Image_FileNames_Filename_OrigActin Image_FileNames_Filename_OrigpH3 Image_FileNames_Filename_OrigDNA".split(" ");
-        return channels.map(path => {          
-            return this.getValue('image_data', {'ImageNumber': img, 'value': path })
-        });
+        var channels = [
+            {'file_lookup' : 'Image_FileNames_Filename_OrigActin', color : "red" }, 
+            {'file_lookup' : 'Image_FileNames_Filename_OrigpH3'  , color : "green"},
+            {'file_lookup' : "Image_FileNames_Filename_OrigDNA"  , color : "blue"}
+        ]
+         var image_paths = channels.map( channel => {
+            var file_name =  this.getValue('image_data', {'ImageNumber': img, 'value': channel.file_lookup}) 
+            return {'filename' : file_name , 'color' : channel.color}   
+         });
+        return image_paths;
     }
     //TODO what if cell is on edge of image
     getNRandomObjs(n) {

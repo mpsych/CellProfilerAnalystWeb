@@ -1,7 +1,6 @@
 import _ from "lodash";
 export class DataTables {
     constructor(data_lines, column_lines) {
-        this.data_lines = data_lines
         this.data_table = data_lines.map(data_row=>{ return _.zipObject(column_lines, data_row)})
         this.column_lines = column_lines;
     }
@@ -9,6 +8,9 @@ export class DataTables {
                 return  _.find(this.data_table, search_obj)
            
         }
+    size() {
+        return this.data_table.length;
+    }
     get(index, key) {
         return _.get(this.data_table[index], key)    
         
@@ -30,7 +32,4 @@ export class DataTables {
         return this.data_table;
         
     }
-    getDataArray() {
-        return this.data_lines;
-    }   
 } 
