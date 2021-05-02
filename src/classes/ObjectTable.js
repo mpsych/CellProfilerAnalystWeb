@@ -10,7 +10,7 @@ export default class ObjectTable {
         }
         var obj_index = this.object_column.ObjectNumber
         var img_index = this.object_column.ImageNumber
-        var cur_img = -1
+        var cur_img = 1
         var size = 0
         for (var i = 0, size = 0; i < this.object_lines.length; i++, size++) {
             var img = this.object_lines[i][img_index].toString() 
