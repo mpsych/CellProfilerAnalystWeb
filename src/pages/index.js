@@ -12,9 +12,7 @@ import {ImageProvider} from '../classes/ImageProvider.js';
 import UserUploadFileHandler from '../classes/UserUploadFileHandler'
 import {Classifier} from '../classes/Classifier'
 import {ImageGridManager}  from '../classes/imGridManager'
-
-import {test} from '../classes/test'
-
+import jones from '../jones.jpg'
 import {
     GridContextProvider,
     GridDropZone,
@@ -28,8 +26,6 @@ import {
 
 
 function TestUI(){
-
-    console.log(test(3))
     
     
     const [anchorEl, setAnchorEl] = React.useState(null);
@@ -39,7 +35,7 @@ function TestUI(){
     // const [classifierManager, setClassifierManager] = React.useState(null)
     const [trainingObject, setTrainingObject] = React.useState(null)
     const [userUploadFileHandler, setUserUploadFileHandler] = React.useState(null)
-    const [tileState, setTileState] = React.useState( constructTileState([]) );
+    const [tileState, setTileState] = React.useState( constructTileState([jones, jones, jones]) );
     const [imageGridManager, setImageGridManager] = React.useState(null)
     const [lastFetchState, setLastFetchState] = React.useState(null)
     const [featuresToUse, setFeaturesToUseState] = React.useState(null)
@@ -49,7 +45,6 @@ function TestUI(){
     const [evaluateButtonEnabled, setEvaluateButtonEnabled] = React.useState(false)
     const [downloadButtonEnabled, setDownloadButtonEnabled] = React.useState(false)
     const [uploadButtonEnabled, setUploadButtonEnabled] = React.useState(true)
-    const [classifier, setClassifier] = React.useState(null)
     const N = 20
 
     const handleClickFetchDropDown = (event) => {
@@ -77,43 +72,16 @@ function TestUI(){
     const handleFetch = async (fetchType) => {
       console.time('ImageProvider')
       disableIterationButtons()
+        const emptyTileState = { unclassified: [], positive: [], negative: []}
+        setTileState(emptyTileState)
+        const classifierManager = new ClassifierManager(dataProvider, trainingObject)
+        await classifierManager.initTrainPromise()
 
-      
-      // var fakeClassifier2 = new Classifier(trainingObject);
-      
-      // await fakeClassifier2.trainPromise()
-      // console.log( Object.keys(trainingObject.trainingData[0]))
-
-      // empty grids
-      const emptyTileState = { unclassified: [], positive: [], negative: []}
-      setTileState(emptyTileState)
-
-
-      const sampledCellPairObjects = dataProvider.getNRandomObjs(100)
-      const inputData = sampledCellPairObjects.map(
-        cellPair => dataProvider.getRow('object_data', cellPair)
-      )
-
-      var desiredLabel = 0
-      if (fetchType == "positive") {
-          desiredLabel = 1
-      }
-
-      const predicted_labels = classifier.predict(inputData)
-      var classedCellPairObjects = sampledCellPairObjects
-      if (fetchType !== 'random'){
-        classedCellPairObjects = sampledCellPairObjects.filter(
-          (pair, index) => predicted_labels[index] === desiredLabel 
-        )
-      }
-      classedCellPairObjects = classedCellPairObjects.slice(0,20)
-
-      const imageProvider = new ImageProvider();
-      var dataURLPromiseArray = null;
-      
-
-      
-        
+        setLastFetchState(fetchType)
+        console.log("fetch " + fetchType)
+        const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
+        const imageProvider = new ImageProvider();
+        var dataURLPromiseArray = null;
         if (fetchType === "random") {
             const dataURLPromiseArray = classedCellPairObjects.map(CellPair => {
                 const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
@@ -200,13 +168,8 @@ function TestUI(){
 
     disableIterationButtons()
 
-    
-
       const negativeIDs = tileState.negative.map(item => item.id)
       const positiveIDs = tileState.positive.map(item => item.id)
-
-      const clearedTileState = { unclassified: tileState.unclassified, positive: [], negative: []}
-      setTileState(clearedTileState)
       console.log(negativeIDs, tileState)
       imageGridManager.setClassByIndexArray('negative', negativeIDs)
       imageGridManager.setClassByIndexArray('positive', positiveIDs)
@@ -230,15 +193,13 @@ function TestUI(){
       }
       console.log(UpdatedTrainingObject)
       setTrainingObject(UpdatedTrainingObject)
-      const newClassifier = new Classifier(UpdatedTrainingObject)
-      await newClassifier.trainPromise()
-      setClassifier(newClassifier)
       // const newClassifierManager = new ClassifierManager(dataProvider, UpdatedTrainingObject)
       
       
       // setClassifierManager(newClassifierManager)
 
-      
+      const clearedTileState = { unclassified: tileState.unclassified, positive: [], negative: []}
+      setTileState(clearedTileState)
       console.log("finished train")
       enableIterationButtons()
     
@@ -278,11 +239,6 @@ function TestUI(){
         // const newClassifierManager = new ClassifierManager(dataProvider, initialTrainingObject)
         
         // setClassifierManager(newClassifierManager)
-        console.log("start initial train")
-        const newClassifier = new Classifier(initialTrainingObject)
-        await newClassifier.trainPromise()
-        setClassifier(newClassifier)
-        console.log("end initial train")
 
         setFetchButtonEnabled(true)
         setTrainButtonEnabled(true)
@@ -294,10 +250,10 @@ function TestUI(){
 
     const handleDownload = async () => {
       disableIterationButtons()
-      
-      classifier.DownloadModelPromise()
-        .then(enableIterationButtons)
-      
+      const classifierManager = new ClassifierManager(dataProvider, trainingObject)
+      await classifierManager.initTrainPromise()
+      classifierManager.userDownloadClassifierSpecPromise()
+      enableIterationButtons()
     }
 
     function constructTileState(dataURLs) {
@@ -346,6 +302,7 @@ function TestUI(){
 
 
         </Row>
+        <GridContextProvider onChange={onChange}>
         <Row>
         
         <Grid container justify="center" spacing={2} style={{marginBottom: 15}}>
@@ -402,7 +359,7 @@ function TestUI(){
     </Grid>
     </Row>
 
-    <GridContextProvider onChange={onChange}>
+    
         <div>
         
         <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom: 0.5} }>Unclassified</label>

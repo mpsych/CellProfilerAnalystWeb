@@ -7,12 +7,10 @@ module.exports = {
     THE_FLAG: false
   },
   plugins: [
-    "gatsby-plugin-styled-components",
-    "gatsby-plugin-image",
-    "gatsby-plugin-sharp",
-    "gatsby-transformer-sharp",
-    'gatsby-plugin-typescript',
-    'gatsby-plugin-typescript-checker',
+    // "gatsby-plugin-styled-components",
+    // "gatsby-plugin-image",
+    // "gatsby-plugin-sharp",
+    // "gatsby-transformer-sharp",
     {
       resolve: "gatsby-source-filesystem",
       options: {
