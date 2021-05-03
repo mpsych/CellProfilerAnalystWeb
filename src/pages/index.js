@@ -9,8 +9,6 @@ import SaveAltIcon from '@material-ui/icons/SaveAlt';
 import UploadHandler from '../classes/UploadHandler'
 import {ClassifierManager} from '../classes/ClassifierManager'
 import {ImageProvider2} from '../classes/ImageProvider2.js';
-import UserUploadFileHandler from '../classes/UserUploadFileHandler'
-import {Classifier} from '../classes/Classifier'
 import {ImageGridManager}  from '../classes/imGridManager'
 import {ImageHandler}  from '../classes/ImageHandler'
 
@@ -226,6 +224,7 @@ function TestUI(){
 
 
         </Row>
+        <GridContextProvider onChange={onChange}>
         <Row>
         
         <Grid container justify="center" spacing={2} style={{marginBottom: 15}}>
@@ -282,7 +281,7 @@ function TestUI(){
     </Grid>
     </Row>
 
-    <GridContextProvider onChange={onChange}>
+    
         <div>
         
         <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom: 0.5} }>Unclassified</label>
