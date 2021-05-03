@@ -1,22 +1,26 @@
 self.importScripts("https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js")
+self.initialized = false
 self.onmessage = async (event) => {
     console.log("got here")
     console.log(Papa)
 
-    const fileListObject = event.data.fileListObject
-    Papa.parse(fileListObject[5], {
-        complete: (results) =>self.postMessage({objectData:results.data})
-    })
-    // if ($event && $event.data && $event.data.msg === 'incApple') {
-    //     const newCounter = incApple($event.data.countApple);
-    //     self.postMessage(newCounter);
-    // }
+    if (event.data.action === "init") {
+        const fileListObject = event.data.fileListObject
+        Papa.parse(fileListObject[5], {
+            dynamicTyping: true,
+            fastMode: true,
+            complete: (results) =>{self.postMessage({
+                action: "init", objectData:results.data}); 
+                self.objectData = results.data; 
+                self.initialized = true
+            }
+        })
+    }
+    else if (event.data.action === "get_row" && self.initialized) {
+        self.postMessage({action: "get_row", row:self.objectData[35000]})
+    } else {
+        console.log("Error: invalid action nothing passed back or not initialized yet")
+    }
     
 };
 
-function incApple(countApple) {
-    const start = Date.now();
-    while (Date.now() < start + 5000) {
-    }
-    return countApple + 1;
-}
