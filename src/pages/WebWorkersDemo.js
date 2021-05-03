@@ -18,11 +18,17 @@ function TestUI(){
         const webworker = new Worker('../worker.js')
 
         webworker.addEventListener("message", event => {
+            if (event.data.action === 'get_row') {
+                console.log("got here3")
+                console.timeEnd("get_row")
+            }
             console.log(event.data)
             });
+
         webworker.addEventListener("error", event => {
             console.log('[UploadWebWorker] Error', event.message, event);
             });
+            
         setUploadWebWorker(webworker)
         console.log("created upload webworker", webworker)      
     }, [])
@@ -35,8 +41,15 @@ function TestUI(){
         // const uploadReturnObject = await uploadHandler.getDataHandlerandStartingTrainingSet();
         console.log("start object data parsing")
         // const serialized_uploadEventObject = JSON.parse(JSON.stringify(uploadEventObject));
-        uploadWebWorker.postMessage({fileListObject:uploadEventObject.target.files});
+        uploadWebWorker.postMessage({action: "init", fileListObject:uploadEventObject.target.files});
         
+        
+    }
+
+    const handleFetch = () => {
+        console.log("got here2")
+        console.time("get_row")
+        uploadWebWorker.postMessage({action: "get_row"});
         
     }
 
@@ -44,7 +57,7 @@ function TestUI(){
     
     return (
         <div style={{resize: 'horizontal'}}>
-
+        <Button onClick={handleFetch}>Fetch Line</Button>
         <Button endIcon={<CircularProgress/>} variant="contained" component="label" onClick={()=>console.log("Upload!")}> 
             Upload
             <input  type="file"
