@@ -1,5 +1,5 @@
 import {ImageProvider2} from './ImageProvider2';
-import UserUploadFileHandler from '../classes/UserUploadFileHandler'
+import UserUploadFileHandler from './UserUploadFileHandler'
 export default class ImageHandler {
     constructor(fileListObect, data_provider) {
         this.file_handler = new UserUploadFileHandler(fileListObect)
@@ -17,9 +17,9 @@ export default class ImageHandler {
                  image_info = Object.assign({}, this.images_seen[cur_ImageNum.toString()]);
              }
              else {
-                 var key = cur_ImageNum.toString();
+                 var key = cur_ImageNum.toString()
                  image_info = await this.getImagefromFile(cur_ImageNum)
-                 this.images_seen[key] = image_info;
+                 this.images_seen[key] = image_info
              }
              var cords = this.data_provider.getCordsforCellDisplay(objects[i])
              var ip = new ImageProvider2(image_info, cords)
@@ -34,9 +34,10 @@ export default class ImageHandler {
         var ip = new ImageProvider2(images)
         return ip.getDataUrl()
     }
-    // returns array of
+    // returns array of                
     getImagefromFile = async function(object) {
         var images_path = this.data_provider.returnAllImgFileNames(object)
+
         var images = await Promise.all(images_path.map(image_path => {
             var file = this.file_handler.findFile(image_path.filename)
             return this.file_handler.fileReaderPromiseImage(file).then( image =>{

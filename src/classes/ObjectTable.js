@@ -17,14 +17,11 @@ export default class ObjectTable {
             var obj = this.object_lines[i][obj_index].toString() 
             var index = img.concat(',',obj)
             this.object_mapped[index] = i
-            if (parseInt(img) > cur_img) {
-                this.imgs_size[cur_img.toString()] = size; 
-                size = 0;
-                cur_img++  
+            if (!this.imgs_size.hasOwnProperty(img)) {
+                this.imgs_size[img] = 0; 
             }
-
+            this.imgs_size[img]++
         }
-
      }
      returnObjsPerImg(img) {
         if (img.toString() in this.imgs_size) {
