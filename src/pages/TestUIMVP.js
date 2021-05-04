@@ -9,9 +9,8 @@ import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 
 import UploadHandler from '../classes/UploadHandler'
 import {ClassifierManager} from '../classes/ClassifierManager'
-import {ImageProvider} from '../classes/ImageProvider.js';
+import {ImageHandler}  from '../classes/ImageHandler'
 import UserUploadFileHandler from '../classes/UserUploadFileHandler'
-import {Classifier} from '../classes/Classifier'
 import {ImageGridManager}  from '../classes/imGridManager'
 import Evaluate from './AbbyDialog'
 
@@ -36,7 +35,7 @@ function TestUIMVP(){
     // var classifierManager = null;
     // const [classifierManager, setClassifierManager] = React.useState(null)
     const [trainingObject, setTrainingObject] = React.useState(null)
-    const [userUploadFileHandler, setUserUploadFileHandler] = React.useState(null)
+    const [fileListObject, setFileListObject] = React.useState(null)
     const [tileState, setTileState] = React.useState( constructTileState([]) );
     const [imageGridManager, setImageGridManager] = React.useState(null)
     const [lastFetchState, setLastFetchState] = React.useState(null)
@@ -76,99 +75,24 @@ function TestUIMVP(){
     const handleFetch = async (fetchType) => {
 
       disableIterationButtons()
-        const emptyTileState = { unclassified: [], positive: [], negative: []}
-        setTileState(emptyTileState)
-        const classifierManager = new ClassifierManager(dataProvider, trainingObject)
-        await classifierManager.initTrainPromise()
-
-        setLastFetchState(fetchType)
-        console.log("fetch " + fetchType)
-        const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
-        const imageProvider = new ImageProvider();
-        var dataURLPromiseArray = null;
-        if (fetchType === "random") {
-            const dataURLPromiseArray = classedCellPairObjects.map(CellPair => {
-                const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
-                const channelFiles = channelFileNames.map(name => { //Alternatively, we could have this.dp.returnAllImgPromisesPerImg({'ImageNumber': 2}, fh)
-                    return userUploadFileHandler.findFile(name)       // and abstract from 8-17 or more
-                })
-                const promiseImages = channelFiles.map(file => {
-                    const promiseImage =  userUploadFileHandler.fileReaderPromiseImage(file)
-                    return promiseImage;    
-                })
-                return Promise.all(promiseImages)
-                    .then(images => {
-                        const coords = dataProvider.getCordsforCellDisplay(CellPair)
-                        return imageProvider.getDataURLPromise(images, coords);   //The only method of imageprovider. If cords is left blank, it will produce a whole image. Should be
-                    })                                                //static class or function
-            })
-            const dataURLs = await Promise.all(dataURLPromiseArray)
-            const newTileState = constructTileState(dataURLs)
-            setTileState(newTileState)
-            console.log(newTileState)
-            console.log(dataURLs)
-            setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLs))
-
-            
-            enableIterationButtons()
-            return
-        } 
-
-        if (fetchType === "positive") {
-          dataURLPromiseArray = classedCellPairObjects.map(CellPair => {
-            const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
-            const channelFiles = channelFileNames.map(name => { //Alternatively, we could have this.dp.returnAllImgPromisesPerImg({'ImageNumber': 2}, fh)
-                return userUploadFileHandler.findFile(name)       // and abstract from 8-17 or more
-            })
-            const promiseImages = channelFiles.map(file => {
-                const promiseImage =  userUploadFileHandler.fileReaderPromiseImage(file)
-                return promiseImage;    
-            })
-            return Promise.all(promiseImages)
-                .then(images => {
-                    const coords = dataProvider.getCordsforCellDisplay(CellPair)
-                    return imageProvider.getDataURLPromise(images, coords);   //The only method of imageprovider. If cords is left blank, it will produce a whole image. Should be
-                })                                                //static class or function
-        })
-        
-        const dataURLs = await Promise.all(dataURLPromiseArray)
-        const newTileState = constructTileState(dataURLs)
-        setTileState(newTileState)
-        console.log(newTileState)
-        console.log(dataURLs)
-        setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLs))
-        enableIterationButtons()
-        return
-      }
-
-      if (fetchType === 'negative') {
-        dataURLPromiseArray = classedCellPairObjects.map(CellPair => {
-          const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
-          const channelFiles = channelFileNames.map(name => { //Alternatively, we could have this.dp.returnAllImgPromisesPerImg({'ImageNumber': 2}, fh)
-              return userUploadFileHandler.findFile(name)       // and abstract from 8-17 or more
-          })
-          const promiseImages = channelFiles.map(file => {
-              const promiseImage =  userUploadFileHandler.fileReaderPromiseImage(file)
-              return promiseImage;    
-          })
-          return Promise.all(promiseImages)
-              .then(images => {
-                  const coords = dataProvider.getCordsforCellDisplay(CellPair)
-                  return imageProvider.getDataURLPromise(images, coords);   //The only method of imageprovider. If cords is left blank, it will produce a whole image. Should be
-              })                                                //static class or function
-      })
-      
-      const dataURLs = await Promise.all(dataURLPromiseArray)
-      const newTileState = constructTileState(dataURLs)
+      const emptyTileState = { unclassified: [], positive: [], negative: []}
+      setTileState(emptyTileState)
+      const classifierManager = new ClassifierManager(dataProvider, trainingObject)
+      await classifierManager.initTrainPromise()
+      setLastFetchState(fetchType)
+      const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
+      const ih = new ImageHandler(fileListObject, dataProvider)
+      const dataURLS = await ih.getObjsToURLs(classedCellPairObjects)
+      const newTileState = constructTileState(dataURLS)
       setTileState(newTileState)
-      console.log(newTileState)
-      console.log(dataURLs)
-      setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLs))
+      setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLS))
+      enableIterationButtons()
+      setImageGridManager(classedCellPairObjects, dataURLS)
       enableIterationButtons()
       return
     }
     
-  }
+
 
   const handleTrain = async () => {
 
@@ -211,12 +135,10 @@ function TestUIMVP(){
     
   }
 
-    const handleUpload = async (eventObject) => {
+    const handleUpload = async (fileListObject) => {
         setUploadButtonEnabled(false)
-        const userUploadFileHandler = new UserUploadFileHandler(eventObject)
-        setUserUploadFileHandler(userUploadFileHandler)
-
-        const uploadHandler = new UploadHandler(eventObject)
+        setFileListObject(fileListObject)
+        const uploadHandler = new UploadHandler(fileListObject)
         const uploadReturnObject = await uploadHandler.getDataHandlerandStartingTrainingSet();
 
         const dataProvider = uploadReturnObject.data_provider

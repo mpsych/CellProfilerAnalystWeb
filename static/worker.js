@@ -9,10 +9,14 @@ self.onmessage = async (event) => {
         Papa.parse(fileListObject[5], {
             dynamicTyping: true,
             fastMode: true,
-            complete: (results) =>{self.postMessage({
-                action: "init", objectData:results.data}); 
+            skipEmptyLines: true,
+            complete: (results) =>{
                 self.objectData = results.data; 
                 self.initialized = true
+                constructLookUpTables()
+                self.postMessage({action: "test", object_mapped : self.object_mapped}); 
+                console.log(self.object_mapped)
+                console.log(self.imgs_size)
             }
         })
     }
@@ -21,6 +25,24 @@ self.onmessage = async (event) => {
     } else {
         console.log("Error: invalid action nothing passed back or not initialized yet")
     }
-    
-};
 
+}
+const constructLookUpTables = function() {
+    self.object_column = {}
+    self.object_mapped = {}
+    self.imgs_size = {}
+    var obj_index = 1
+    var img_index = 0
+    console.log(self.objectData[0][1])
+    for (var i = 0, size = 0; i < self.objectData.length; i++, size++) {
+      //  if (self.objectData[i] === null) 
+        var img = self.objectData[i][img_index].toString() 
+        var obj = self.objectData[i][obj_index].toString() 
+        var index = img.concat(',',obj)
+        self.object_mapped[index] = i
+        if (!self.imgs_size.hasOwnProperty(img)) {
+            self.imgs_size[img] = 0; 
+        }
+        self.imgs_size[img]++
+    }
+ }

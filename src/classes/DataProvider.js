@@ -92,10 +92,17 @@ export default class DataProvider {
         }
         return rand_objs
     }
-    getRow(key, search_obj) { //Where key is a member of data and search obj is of form {'img': , 'objs': , 'index': }
+    getRow(key, search_obj, ) { //Where key is a member of data and search obj is of form {'img': , 'objs': , 'index': }
+        console.time('get RowMethod')
         if (!(this.data.hasOwnProperty(key))) return -1;
         var row = this.data[key].find(search_obj)
+        console.timeEnd('get RowMethod')
+        this.data[key].indexTableGetRow(35000)
         return row;
+
+    }
+    getAllObjRowsIn2DArray(objs) {
+        return objs.map
 
     }
     getCordsforCellDisplay(search_obj) {
