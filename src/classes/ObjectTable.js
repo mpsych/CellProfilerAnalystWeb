@@ -80,7 +80,6 @@ export default class ObjectTable {
                 row[column] = line[i];
                 
             }
-            console.log(row)
             return row
         }
         return index;

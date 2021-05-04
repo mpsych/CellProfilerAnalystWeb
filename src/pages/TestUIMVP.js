@@ -1,10 +1,16 @@
 import React from 'react';
 import { Row, Col, Container} from "reactstrap";
 import {Box, Button, Grid, IconButton, Menu, MenuItem, Card}from '@material-ui/core'; 
-import logo from '../cpa_full_logo.gif';
+import logo from '../cpa_logo(blue).svg';
 import {Image, Dropdown, DropdownButton} from 'react-bootstrap';
 import "bootstrap/dist/css/bootstrap.css";
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
+import clsx from 'clsx';
+import { makeStyles } from '@material-ui/core/styles';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import { green } from '@material-ui/core/colors';
+import Fab from '@material-ui/core/Fab';
+import CheckIcon from '@material-ui/icons/Check';
 import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 
 import UploadHandler from '../classes/UploadHandler'
@@ -12,7 +18,20 @@ import {ClassifierManager} from '../classes/ClassifierManager'
 import {ImageHandler}  from '../classes/ImageHandler'
 import UserUploadFileHandler from '../classes/UserUploadFileHandler'
 import {ImageGridManager}  from '../classes/imGridManager'
-import Evaluate from './AbbyDialog'
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import FormControl from '@material-ui/core/FormControl';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import InputLabel from '@material-ui/core/InputLabel';
+import Select from '@material-ui/core/Select';
+import Tooltip from '@material-ui/core/Tooltip';
+//import UploadButton from './UploadButton'
+
+//import Evaluate from './AbbyDialog'
+
 
 import {
     GridContextProvider,
@@ -23,7 +42,42 @@ import {
   } from "react-grid-dnd";
   
   import "../dndstyles.css";
+import { truncatedNormal } from '@tensorflow/tfjs-core';
+import UploadButton from './UploadButton';
 
+
+  const useStyles = makeStyles((theme) => ({
+    root: {
+      display: 'flex',
+      alignItems: 'center',
+    },
+    wrapper: {
+      margin: theme.spacing(1),
+      position: 'relative',
+    },
+    buttonSuccess: {
+      backgroundColor: green[500],
+      '&:hover': {
+        backgroundColor: green[700],
+      },
+    },
+    fabProgress: {
+      color: green[500],
+      position: 'absolute',
+      top: -6,
+      left: -6,
+      zIndex: 1,
+    },
+    buttonProgress: {
+      color: green[500],
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      marginTop: -12,
+      marginLeft: -12,
+    },
+    
+  }));
 
 
 function TestUIMVP(){
@@ -46,6 +100,17 @@ function TestUIMVP(){
     const [evaluateButtonEnabled, setEvaluateButtonEnabled] = React.useState(false)
     const [downloadButtonEnabled, setDownloadButtonEnabled] = React.useState(false)
     const [uploadButtonEnabled, setUploadButtonEnabled] = React.useState(true)
+    const [scoreAllButtonEnabled, setscoreAllButtonEnabled] = React.useState(false)
+    const [uploading, setUploading] = React.useState(false)
+    const [success, setSuccess] = React.useState(false)
+    const [fetching, setFetching] = React.useState(false)
+    const [openFetchDropdown, setOpenFetchDropdown] = React.useState(false);
+    
+    const classes = useStyles();
+    const buttonClassname = clsx({
+      [classes.buttonSuccess]: success,
+    });
+
     const N = 20
 
     const handleClickFetchDropDown = (event) => {
@@ -53,10 +118,11 @@ function TestUIMVP(){
     };
 
     const handleCloseFetchDropDown = (fetchType) => {
-        setAnchorEl(null);
-        if (fetchType !== undefined) {
+        setAnchorEl(null)
+         if (fetchType !== undefined) {
             handleFetch(fetchType)
-        }
+         }
+         
     };
 
     const disableIterationButtons = () => {
@@ -64,16 +130,18 @@ function TestUIMVP(){
       setTrainButtonEnabled(false)
       setDownloadButtonEnabled(false)
       setEvaluateButtonEnabled(false)
+
     }
     const enableIterationButtons = () => {
       setFetchButtonEnabled(true)
       setTrainButtonEnabled(true)
       setDownloadButtonEnabled(true)
       setEvaluateButtonEnabled(true)
+
     }
 
     const handleFetch = async (fetchType) => {
-
+      setFetching(true)
       disableIterationButtons()
       const emptyTileState = { unclassified: [], positive: [], negative: []}
       setTileState(emptyTileState)
@@ -89,6 +157,7 @@ function TestUIMVP(){
       enableIterationButtons()
       setImageGridManager(classedCellPairObjects, dataURLS)
       enableIterationButtons()
+      setFetching(false)
       return
     }
     
@@ -175,8 +244,25 @@ function TestUIMVP(){
         
         
         console.log("finished upload")
-    }
 
+    setTrainingObject(initialTrainingObject)
+    // console.log("starting initial training")
+    // const newClassifierManager = new ClassifierManager(dataProvider, initialTrainingObject)
+    
+    // setClassifierManager(newClassifierManager)
+
+    setFetchButtonEnabled(true)
+    setTrainButtonEnabled(true)
+    setDownloadButtonEnabled(true)
+    setscoreAllButtonEnabled(true)
+    setEvaluateButtonEnabled(true)
+    setUploadButtonEnabled(false)
+      
+    console.log("finished upload")
+    setUploading(false)
+    setSuccess(true)
+
+  }
     const handleDownload = async () => {
       disableIterationButtons()
       const classifierManager = new ClassifierManager(dataProvider, trainingObject)
@@ -216,20 +302,67 @@ function TestUIMVP(){
         });
       }
     
-
+      const handleClickOpenFetchDropdown = () => {
+        setOpenFetchDropdown(true);
+      };
+   
+      const handleCloseFetchDropdown = () => {
+        setOpenFetchDropdown(false);
+      };
 
     return (
+       
 
         <GridContextProvider onChange={onChange}>
-        <div style={{ overflowX:"hidden", resize: "none"}}>
-    
+             
+        <div style={{ overflowX:"hidden", hieght: "100%", width: "100%" }}>
+      
         <Row>
         <Image src={logo} style={{marginLeft:"10%", height:"30%", width:"25%",position:"relative", maxHeight:"125px", marginBottom:"1%"}}></Image>
        
-        <Col >
-        <IconButton disabled={!downloadButtonEnabled} onClick={handleDownload} style={{color: "black", position:"relative", left:"70%"}}> <SaveAltIcon /></IconButton> 
+        <Col style = {{left:'40%'}}>
+        <div className={classes.root}>
+      <div className={classes.wrapper}>
+       <Tooltip title="Load Data" aria-label="load data">
+        <Fab
+          aria-label="save"
+          color="primary"
+          component="label"
+          className={buttonClassname}
+          style =  {{height: '5vw', width: '5vw'}}
+        >
+        
+          {success ? <CheckIcon style =  {{ hieght: "50%", width: "50%"}}/> : <CloudUploadIcon style =  {{ hieght: "50%", width: "50%"}}/>}
+          <input  type="file"
+                hidden webkitdirectory="true"
+                mozdirectory="true"
+                msdirectory="true"
+                odirectory="true"
+                directory="true"
+                multiple
+                onChange = {(eventObject)=>{handleUpload(eventObject)}}  
+                disabled={!uploadButtonEnabled} 
+               
+        />
+        </Fab>
+        </Tooltip>
+        {/* size={68}  */}
+        {uploading && <CircularProgress className={classes.fabProgress} style={{height: '6vw', width: '6vw', marginTop:"4%", marginRight:"4%"}}/>}
+      </div>  
+    </div>
         </Col>
-   
+        <Col style = {{left: '15%', marginTop: '.75%'}}>
+        <Tooltip title="Download" aria-label="download">
+        <Fab 
+         aria-label="save"
+         color="primary"
+         component="label"
+        disabled={!downloadButtonEnabled} 
+        onClick={handleDownload}
+        style =  {{height: '5vw', width: '5vw'}}
+        > <SaveAltIcon style =  {{ hieght: "50%", width: "50%"}} /></Fab> 
+        </Tooltip>
+        </Col>
        
         </Row>
         <Row>
@@ -250,6 +383,39 @@ function TestUIMVP(){
             <MenuItem onClick={()=>handleCloseFetchDropDown("random")}>Random</MenuItem>
             <MenuItem onClick={()=>handleCloseFetchDropDown("positive")}>Positive</MenuItem>
             <MenuItem onClick={()=>handleCloseFetchDropDown("negative")}>Negative</MenuItem>
+            <MenuItem onClick={handleClickOpenFetchDropdown}>By Image</MenuItem>
+           
+                <Dialog
+            open={openFetchDropdown}
+            onClose={handleCloseFetchDropdown}
+        
+            >
+            <DialogTitle>Fetch By Image</DialogTitle>
+            <DialogContent>
+            <DialogContentText>
+                Select the image number you would like to fetch from. 
+            </DialogContentText>
+            <form  noValidate >
+                <FormControl >
+                <InputLabel >Image</InputLabel>
+                <Select
+                    autoFocus>
+                    <MenuItem value="1">1</MenuItem>
+                    <MenuItem value="2">2</MenuItem>
+                    <MenuItem value="3">3</MenuItem>
+                    <MenuItem value="4" >4</MenuItem>
+                    <MenuItem value="5" >5</MenuItem>
+                </Select>
+                </FormControl>
+            </form>
+            </DialogContent>
+            <DialogActions>
+            <Button onClick={handleCloseFetchDropdown} color="primary">
+                Close
+            </Button>
+            </DialogActions>
+        </Dialog>
+            
             </Menu>
     </Grid>
 
@@ -260,40 +426,32 @@ function TestUIMVP(){
         </Grid>
 
         <Grid key={2} item>
-        {/* <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button> */}
-        <Evaluate></Evaluate>
+         <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button> 
+       
         </Grid>
-        <Grid key={4} item>
-        <Button disabled={!uploadButtonEnabled} variant="contained" component="label" onClick={()=>console.log("Upload!")}> 
-            Upload
-            <input  type="file"
-                    hidden webkitdirectory="true"
-                    mozdirectory="true"
-                    msdirectory="true"
-                    odirectory="true"
-                    directory="true"
-                    multiple
-                    onChange = {(eventObject)=>{handleUpload(eventObject)}}   
-            />
-        </Button>
+
+        <Grid key={3} item>
+        <Button  disabled={!scoreAllButtonEnabled} variant="contained" onClick={()=>{}}>Score All</Button>
         </Grid>
+        
     </Grid>
     </Row>
 
   
         <div>
         
-        <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom:"0.5%", userSelect: "none"} }>Unclassified </label>
         
+        <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom:"0.5%", userSelect: "none"} }>Unclassified </label>
+      
+        <div>
         <GridDropZone
              className="dropzone "
             id="unclassified"
             boxesPerRow={8}
             rowHeight={80}
             style={{height: "20vw", maxHeight: 200, minHeight:150, marginBottom:10, marginLeft: "10%", width:"80%"}}
-          >
-             
-            {tileState.unclassified.map(item => (
+          >   
+            {!fetching ? tileState.unclassified.map(item => (
               <GridItem className= "hoverTest"  style={{height:"10vw", width: "10vw", minHeight:80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding:10}} key={item.id}>
                 <div className="grid-item" >
                     <div className="grid-item-content" style = {{backgroundImage:  `url(${item.address})`}} >
@@ -302,12 +460,14 @@ function TestUIMVP(){
 
                 </div>
               </GridItem>
-            ))}
+            )) : <CircularProgress style= {{hieght:"7%", width:"7%", marginTop: "8%", marginLeft: "45%"}}/> } 
+        
           </GridDropZone>
-  
+          </div>
+         
         
         <Row>
-     
+       
           <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "11%", userSelect: "none", marginBottom:"0.5%", marginTop:0} }>Positive</label> 
     
         

@@ -8,7 +8,6 @@ import SaveAltIcon from '@material-ui/icons/SaveAlt';
 
 import UploadHandler from '../classes/UploadHandler'
 import {ClassifierManager} from '../classes/ClassifierManager'
-import {ImageProvider2} from '../classes/ImageProvider2.js';
 import {ImageGridManager}  from '../classes/imGridManager'
 import {ImageHandler}  from '../classes/ImageHandler'
 
@@ -69,7 +68,6 @@ function TestUI(){
     }
 
     const handleFetch = async (fetchType) => {
-      console.time('ImageProvider2')
       disableIterationButtons()
       const emptyTileState = { unclassified: [], positive: [], negative: []}
       setTileState(emptyTileState)
@@ -77,15 +75,12 @@ function TestUI(){
       await classifierManager.initTrainPromise()
       setLastFetchState(fetchType)
       const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
-      const imageProvider = new ImageProvider2();
       const ih = new ImageHandler(fileListObject, dataProvider)
       const dataURLS = await ih.getObjsToURLs(classedCellPairObjects)
       const newTileState = constructTileState(dataURLS)
       setTileState(newTileState)
       setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLS))
       enableIterationButtons()
-    
-      console.timeEnd('ImageProvider2')
       return
   }
 
