@@ -10,21 +10,17 @@ export default class ObjectTable {
         }
         var obj_index = this.object_column.ObjectNumber
         var img_index = this.object_column.ImageNumber
-        var cur_img = 1
         var size = 0
         for (var i = 0, size = 0; i < this.object_lines.length; i++, size++) {
             var img = this.object_lines[i][img_index].toString() 
             var obj = this.object_lines[i][obj_index].toString() 
             var index = img.concat(',',obj)
             this.object_mapped[index] = i
-            if (parseInt(img) > cur_img) {
-                this.imgs_size[cur_img.toString()] = size; 
-                size = 0;
-                cur_img++  
+            if (!this.imgs_size.hasOwnProperty(img)) {
+                this.imgs_size[img] = 0; 
             }
-
+            this.imgs_size[img]++
         }
-
      }
      returnObjsPerImg(img) {
         if (img.toString() in this.imgs_size) {
@@ -82,6 +78,7 @@ export default class ObjectTable {
             for(var i = 0; i < this.column_lines.length; i++) {
                 var column = this.column_lines[i]
                 row[column] = line[i];
+                
             }
             return row
         }

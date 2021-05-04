@@ -8,11 +8,9 @@ import SaveAltIcon from '@material-ui/icons/SaveAlt';
 
 import UploadHandler from '../classes/UploadHandler'
 import {ClassifierManager} from '../classes/ClassifierManager'
-import {ImageProvider} from '../classes/ImageProvider.js';
-import UserUploadFileHandler from '../classes/UserUploadFileHandler'
-import {Classifier} from '../classes/Classifier'
 import {ImageGridManager}  from '../classes/imGridManager'
-import jones from '../jones.jpg'
+import {ImageHandler}  from '../classes/ImageHandler'
+
 import {
     GridContextProvider,
     GridDropZone,
@@ -34,8 +32,8 @@ function TestUI(){
     // var classifierManager = null;
     // const [classifierManager, setClassifierManager] = React.useState(null)
     const [trainingObject, setTrainingObject] = React.useState(null)
-    const [userUploadFileHandler, setUserUploadFileHandler] = React.useState(null)
-    const [tileState, setTileState] = React.useState( constructTileState([jones, jones, jones]) );
+    const [fileListObject, setFileListObject] = React.useState(null)
+    const [tileState, setTileState] = React.useState( constructTileState([]) );
     const [imageGridManager, setImageGridManager] = React.useState(null)
     const [lastFetchState, setLastFetchState] = React.useState(null)
     const [featuresToUse, setFeaturesToUseState] = React.useState(null)
@@ -70,98 +68,20 @@ function TestUI(){
     }
 
     const handleFetch = async (fetchType) => {
-      console.time('ImageProvider')
       disableIterationButtons()
-        const emptyTileState = { unclassified: [], positive: [], negative: []}
-        setTileState(emptyTileState)
-        const classifierManager = new ClassifierManager(dataProvider, trainingObject)
-        await classifierManager.initTrainPromise()
-
-        setLastFetchState(fetchType)
-        console.log("fetch " + fetchType)
-        const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
-        const imageProvider = new ImageProvider();
-        var dataURLPromiseArray = null;
-        if (fetchType === "random") {
-            const dataURLPromiseArray = classedCellPairObjects.map(CellPair => {
-                const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
-                const channelFiles = channelFileNames.map(name => { //Alternatively, we could have this.dp.returnAllImgPromisesPerImg({'ImageNumber': 2}, fh)
-                    return userUploadFileHandler.findFile(name.filename)       // and abstract from 8-17 or more
-                })
-                const promiseImages = channelFiles.map(file => {
-                    const promiseImage =  userUploadFileHandler.fileReaderPromiseImage(file)
-                    return promiseImage;    
-                })
-                return Promise.all(promiseImages)
-                    .then(images => {
-                        const coords = dataProvider.getCordsforCellDisplay(CellPair)
-                        return imageProvider.getDataURLPromise(images, coords);   //The only method of imageprovider. If cords is left blank, it will produce a whole image. Should be
-                    })                                                //static class or function
-            })
-            const dataURLs = await Promise.all(dataURLPromiseArray)
-            const newTileState = constructTileState(dataURLs)
-            setTileState(newTileState)
-            console.log(newTileState)
-            console.log(dataURLs)
-            setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLs))
-
-            
-            enableIterationButtons()
-            console.timeEnd('ImageProvider')
-            return
-        } 
-
-        if (fetchType === "positive") {
-          dataURLPromiseArray = classedCellPairObjects.map(CellPair => {
-            const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
-            const channelFiles = channelFileNames.map(name => { //Alternatively, we could have this.dp.returnAllImgPromisesPerImg({'ImageNumber': 2}, fh)
-                return userUploadFileHandler.findFile(name)       // and abstract from 8-17 or more
-            })
-            const promiseImages = channelFiles.map(file => {
-                const promiseImage =  userUploadFileHandler.fileReaderPromiseImage(file)
-                return promiseImage;    
-            })
-            return Promise.all(promiseImages)
-                .then(images => {
-                    const coords = dataProvider.getCordsforCellDisplay(CellPair)
-                    return imageProvider.getDataURLPromise(images, coords);   //The only method of imageprovider. If cords is left blank, it will produce a whole image. Should be
-                })                                                //static class or function
-        })
-        
-        const dataURLs = await Promise.all(dataURLPromiseArray)
-        const newTileState = constructTileState(dataURLs)
-        setTileState(newTileState)
-        setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLs))
-        enableIterationButtons()
-        return
-      }
-
-      if (fetchType === 'negative') {
-        dataURLPromiseArray = classedCellPairObjects.map(CellPair => {
-          const channelFileNames = dataProvider.returnAllImgFileNames(CellPair.ImageNumber)
-          const channelFiles = channelFileNames.map(name => { //Alternatively, we could have this.dp.returnAllImgPromisesPerImg({'ImageNumber': 2}, fh)
-              return userUploadFileHandler.findFile(name)       // and abstract from 8-17 or more
-          })
-          const promiseImages = channelFiles.map(file => {
-              const promiseImage =  userUploadFileHandler.fileReaderPromiseImage(file)
-              return promiseImage;    
-          })
-          return Promise.all(promiseImages)
-              .then(images => {
-                  const coords = dataProvider.getCordsforCellDisplay(CellPair)
-                  return imageProvider.getDataURLPromise(images, coords);   //The only method of imageprovider. If cords is left blank, it will produce a whole image. Should be
-              })                                                //static class or function
-      })
-      
-      const dataURLs = await Promise.all(dataURLPromiseArray)
-      const newTileState = constructTileState(dataURLs)
+      const emptyTileState = { unclassified: [], positive: [], negative: []}
+      setTileState(emptyTileState)
+      const classifierManager = new ClassifierManager(dataProvider, trainingObject)
+      await classifierManager.initTrainPromise()
+      setLastFetchState(fetchType)
+      const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
+      const ih = new ImageHandler(fileListObject, dataProvider)
+      const dataURLS = await ih.getObjsToURLs(classedCellPairObjects)
+      const newTileState = constructTileState(dataURLS)
       setTileState(newTileState)
-      setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLs))
+      setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLS))
       enableIterationButtons()
-
       return
-    }
-    
   }
 
   const handleTrain = async () => {
@@ -202,18 +122,15 @@ function TestUI(){
       setTileState(clearedTileState)
       console.log("finished train")
       enableIterationButtons()
-    
   }
 
-    const handleUpload = async (eventObject) => {
+    const handleUpload = async (fileListObject) => {
         setUploadButtonEnabled(false)
-        const userUploadFileHandler = new UserUploadFileHandler(eventObject)
-        setUserUploadFileHandler(userUploadFileHandler)
-
-        const uploadHandler = new UploadHandler(eventObject)
+        setFileListObject(fileListObject)
+        const uploadHandler = new UploadHandler(fileListObject)
         const uploadReturnObject = await uploadHandler.getDataHandlerandStartingTrainingSet();
-
         const dataProvider = uploadReturnObject.data_provider
+        console.log(dataProvider.getObjsPerImg(4))
         setDataProvider(dataProvider)
         const trainingTable = uploadReturnObject.training_data.training_table
         const trainingDataTable = trainingTable.getDataColumnsPaired()
@@ -369,12 +286,12 @@ function TestUI(){
         <GridDropZone
              className="dropzone "
             id="unclassified"
-            boxesPerRow={10}
-            rowHeight={90}
+            boxesPerRow={8}
+            rowHeight={70}
           >
              
             {tileState.unclassified.map(item => (
-              <GridItem style={{height:90, width: 90}} key={item.id}>
+              <GridItem key={item.id}>
                 <div className="grid-item" >
                     <div className="grid-item-content" style = {{backgroundImage:  `url(${item.address})`}} >
                         
@@ -399,12 +316,12 @@ function TestUI(){
           <GridDropZone
             className="dropzone positive"
             id="positive"
-            boxesPerRow={5}
-            rowHeight={90}
+            boxesPerRow={4}
+            rowHeight={70}
           >
             
             {tileState.positive.map(item => (
-              <GridItem style={{height:90, width: 90}} key={item.id}>
+              <GridItem key={item.id}>
                 <div className="grid-item"> 
                     <div className="grid-item-content" style = {{backgroundImage: `url(${item.address})`}}>
                          
@@ -418,11 +335,11 @@ function TestUI(){
           <GridDropZone
             className="dropzone negative"
             id="negative"
-            boxesPerRow={5}
-            rowHeight={90}
+            boxesPerRow={4}
+            rowHeight={70}
           >
             {tileState.negative.map(item => (
-              <GridItem style={{height:90, width: 90}} key={item.id}>
+              <GridItem key={item.id}>
                 <div className="grid-item">
                 <div className="grid-item-content" style = {{backgroundImage: `url(${item.address})`}}>
                         
