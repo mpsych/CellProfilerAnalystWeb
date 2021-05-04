@@ -289,7 +289,7 @@ function TestUI(){
       }
     
     return (
-        <div style={{resize: 'horizontal'}}>
+        <div >
     
         <Row>
        
