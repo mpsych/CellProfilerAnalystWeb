@@ -12,7 +12,7 @@ import {ImageProvider} from '../classes/ImageProvider.js';
 import UserUploadFileHandler from '../classes/UserUploadFileHandler'
 import {Classifier} from '../classes/Classifier'
 import {ImageGridManager}  from '../classes/imGridManager'
-
+import jones from '../jones.jpg'
 import {
     GridContextProvider,
     GridDropZone,
@@ -35,7 +35,7 @@ function TestUI(){
     // const [classifierManager, setClassifierManager] = React.useState(null)
     const [trainingObject, setTrainingObject] = React.useState(null)
     const [userUploadFileHandler, setUserUploadFileHandler] = React.useState(null)
-    const [tileState, setTileState] = React.useState( constructTileState([]) );
+    const [tileState, setTileState] = React.useState( constructTileState([jones, jones, jones]) );
     const [imageGridManager, setImageGridManager] = React.useState(null)
     const [lastFetchState, setLastFetchState] = React.useState(null)
     const [featuresToUse, setFeaturesToUseState] = React.useState(null)
@@ -302,6 +302,7 @@ function TestUI(){
 
 
         </Row>
+        <GridContextProvider onChange={onChange}>
         <Row>
         
         <Grid container justify="center" spacing={2} style={{marginBottom: 15}}>
@@ -358,7 +359,7 @@ function TestUI(){
     </Grid>
     </Row>
 
-    <GridContextProvider onChange={onChange}>
+    
         <div>
         
         <label style = {{textAlign:"left", backgroundColor: 'white', paddingLeft: "10%", marginBottom: 0.5} }>Unclassified</label>

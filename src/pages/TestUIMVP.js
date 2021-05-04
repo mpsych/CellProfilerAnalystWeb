@@ -13,6 +13,7 @@ import {ImageProvider} from '../classes/ImageProvider.js';
 import UserUploadFileHandler from '../classes/UserUploadFileHandler'
 import {Classifier} from '../classes/Classifier'
 import {ImageGridManager}  from '../classes/imGridManager'
+import Evaluate from './AbbyDialog'
 
 import {
     GridContextProvider,
@@ -63,11 +64,13 @@ function TestUIMVP(){
       setFetchButtonEnabled(false)
       setTrainButtonEnabled(false)
       setDownloadButtonEnabled(false)
+      setEvaluateButtonEnabled(false)
     }
     const enableIterationButtons = () => {
       setFetchButtonEnabled(true)
       setTrainButtonEnabled(true)
       setDownloadButtonEnabled(true)
+      setEvaluateButtonEnabled(true)
     }
 
     const handleFetch = async (fetchType) => {
@@ -246,6 +249,7 @@ function TestUIMVP(){
         setFetchButtonEnabled(true)
         setTrainButtonEnabled(true)
         setDownloadButtonEnabled(true)
+        setEvaluateButtonEnabled(true)
         
         
         console.log("finished upload")
@@ -334,7 +338,8 @@ function TestUIMVP(){
         </Grid>
 
         <Grid key={2} item>
-        <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button>
+        {/* <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button> */}
+        <Evaluate></Evaluate>
         </Grid>
         <Grid key={4} item>
         <Button disabled={!uploadButtonEnabled} variant="contained" component="label" onClick={()=>console.log("Upload!")}> 

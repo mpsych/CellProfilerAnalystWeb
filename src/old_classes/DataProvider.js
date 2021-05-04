@@ -1,5 +1,5 @@
 
-import { ThreeSixty, ThumbDownSharp } from "@material-ui/icons";
+import { ThumbDownSharp } from "@material-ui/icons";
 import ImageTable from "./ImageTable.js";
 import ObjectTable from "./ObjectTable.js";
 export default class DataProvider {
@@ -53,56 +53,36 @@ export default class DataProvider {
     }
     
     returnAllImgFileNames(img) {
-        var channels = [
-            {'file_lookup' : 'Image_FileNames_Filename_OrigActin', 'color' : "red" }, 
-            {'file_lookup' : 'Image_FileNames_Filename_OrigpH3'  , 'color' : "green"},
-            {'file_lookup' : "Image_FileNames_Filename_OrigDNA"  , 'color' : "blue"}
-        ]
-         var image_paths = channels.map( channel => {
-            var file_name =  this.getValue('image_data', {'ImageNumber': img, 'value': channel.file_lookup}) 
-            return {'filename' : file_name , 'color' : channel.color}   
-         });
-        return image_paths;
+        var channels = "Image_FileNames_Filename_OrigActin Image_FileNames_Filename_OrigpH3 Image_FileNames_Filename_OrigDNA".split(" ");
+        return channels.map(path => {          
+            return this.getValue('image_data', {'ImageNumber': img, 'value': path })
+        });
     }
     //TODO what if cell is on edge of image
-    getObjsPerImg(img) {
-        var size = this.data.object_data.returnObjsPerImg(img);
-        if (size <= 0) {
-            return -1;
-        }
-        var first = this.data.object_data.firstObjinImg(img)
-        var objsInImg = [];
-        for (var obj = first, count = 0; count < size ; obj++) {
-            var row = this.data.object_data.find({'ImageNumber': img, 'ObjectNumber': obj})
-            if (row != -1) {
-                count++
-                objsInImg.push(row)
-            }
-        }
-        return objsInImg;
-    }
     getNRandomObjs(n) {
-        var num_of_objs = this.data.object_data.getSize()
+        var num_of_objs = this.data.object_data.data_table.length
         var rand_objs = []
         var i;
         for (i = 0; i < n; i++) {
             var index = Math.floor(Math.random() * num_of_objs);
-            var obj = this.data.object_data.indexTableGetRow(index)
-            rand_objs.push({'ImageNumber': obj.ImageNumber, 'ObjectNumber': obj.ObjectNumber })
+            var search_obj =  {'index' : index}
+            var obj = this.getRow('object_data', search_obj);
+            rand_objs.push({ 'ImageNumber': obj.ImageNumber, 'ObjectNumber': obj.ObjectNumber })
         }
         return rand_objs
     }
     getRow(key, search_obj) { //Where key is a member of data and search obj is of form {'img': , 'objs': , 'index': }
         if (!(this.data.hasOwnProperty(key))) return -1;
+        if (search_obj.hasOwnProperty('index')) return this.data[key].indexTable(search_obj.index);
         var row = this.data[key].find(search_obj)
         return row;
 
     }
     getCordsforCellDisplay(search_obj) {
         var cords = {};        
-        var cellinObj = this.data.object_data.findIndex(search_obj)
-        var cellx = parseInt(this.data.object_data.get(cellinObj, 'Nuclei_Location_CenterX'))
-        var celly = parseInt(this.data.object_data.get(cellinObj, 'Nuclei_Location_CenterY'))
+        var cellinObj = this.getRow('object_data', search_obj)
+        var cellx = parseInt(this.getValue('object_data', Object.assign(search_obj, {'value' : 'Nuclei_Location_CenterX' })))
+        var celly = parseInt(this.getValue('object_data', Object.assign(search_obj, { 'value' : 'Nuclei_Location_CenterY' })))
         cords.x = Math.max(0, cellx - 20) 
        // var hi_x = lo_x + 40
         cords.y = (Math.max(0, celly - 20))
@@ -110,9 +90,12 @@ export default class DataProvider {
     }
 
     getValue(key, search_obj) {
-        if (!this.data.hasOwnProperty(key)) return -1;         
-        var value = -1
-        var index =  this.data[key].findIndex(search_obj)
+        if (!this.data.hasOwnProperty(key)) return -1;
+        var value = -1;
+        var value = search_obj.value;
+        var copy = Object.assign({}, search_obj);
+        delete copy.value; //Allows to use other methods in class {obj: 1, img : 1, value :3} -> {obj: 1, img: 1}
+        var index =  this.data[key].findIndex(copy)
         if (index !== -1) {
             value = this.data[key].get(index, search_obj.value);
         }
@@ -124,7 +107,7 @@ export default class DataProvider {
         }
         return -1;
 
-    }                     
+    }
 
 }
 
