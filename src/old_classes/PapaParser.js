@@ -21,8 +21,8 @@ export default class PapaParser {
               Papa.parse(file, {...config, complete, error});
             });
         };  
-         Promise.prototype.notify = function(strMsg) {
-             return this.then(x=>{console.log(strMsg); return x});
+        Promise.prototype.notify = function(strMsg) {
+            return this.then(x=>{console.log(strMsg); return x});
           }
           Promise.prototype.debugPrint = function() {
             return this.then(x=>{console.log(x); return x});
@@ -40,6 +40,7 @@ export default class PapaParser {
 }
     papaTextfromCSV(file_object) {
         var file_for_papa = file_object.file;
+        console.log(file_object.name);
         var option = Object.assign(this.basicPapaConfig, this.file_config_options[file_object.name])
         return Papa.papaparseFilePromise(file_for_papa, option)
     }

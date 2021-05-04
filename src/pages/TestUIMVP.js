@@ -31,6 +31,9 @@ import Select from '@material-ui/core/Select';
 import Tooltip from '@material-ui/core/Tooltip';
 //import UploadButton from './UploadButton'
 
+//import Evaluate from './AbbyDialog'
+
+
 import {
     GridContextProvider,
     GridDropZone,
@@ -117,7 +120,7 @@ function TestUIMVP(){
 
     const handleCloseFetchDropDown = (fetchType) => {
         setAnchorEl(null)
-         if (fetchType !== null) {
+         if (fetchType !== undefined) {
             handleFetch(fetchType)
          }
          
@@ -128,14 +131,14 @@ function TestUIMVP(){
       setTrainButtonEnabled(false)
       setDownloadButtonEnabled(false)
       setEvaluateButtonEnabled(false)
-      setscoreAllButtonEnabled(false)
+
     }
     const enableIterationButtons = () => {
       setFetchButtonEnabled(true)
       setTrainButtonEnabled(true)
       setDownloadButtonEnabled(true)
       setEvaluateButtonEnabled(true)
-      setscoreAllButtonEnabled(true)
+
     }
 
     const handleFetch = async (fetchType) => {
@@ -307,6 +310,7 @@ function TestUIMVP(){
         trainingLabels: trainingLabels,
         featuresToUse: tempFeaturesToUse
     }
+
     setTrainingObject(initialTrainingObject)
     // console.log("starting initial training")
     // const newClassifierManager = new ClassifierManager(dataProvider, initialTrainingObject)
@@ -488,7 +492,8 @@ function TestUIMVP(){
         </Grid>
 
         <Grid key={2} item>
-        <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button>
+         <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button> 
+       
         </Grid>
 
         <Grid key={3} item>

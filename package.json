@@ -16,23 +16,30 @@
     "clean": "gatsby clean",
     "deploy": "gh-pages -d public",
     "predeploy": "gatsby build --prefix-paths",
-    "test_classes": "mocha --require esm src/classes/tests"
+    "test_classes": "mocha --require esm src/classes/tests",
+    "type_check": "tsc",
+    "type_start": "yarn tsc && yarn start",
+    "type_build": "yarn tsc && yarn build"
   },
   "dependencies": {
     "@material-ui/core": "^4.11.3",
     "@material-ui/icons": "^4.11.2",
     "@tensorflow/tfjs": "^3.4.0",
     "@tensorflow/tfjs-vis": "^1.5.0",
+    "@types/node": "^14.14.41",
+    "@types/react": "^17.0.3",
+    "@types/react-dom": "^17.0.3",
     "babel-plugin-styled-components": "^1.12.0",
     "bootstrap": "^4.6.0",
     "chai": "^4.3.4",
     "esm": "^3.2.25",
     "gatsby": "^3.2.1",
-    "gatsby-plugin-image": "^1.2.1",
-    "gatsby-plugin-sharp": "^3.2.1",
-    "gatsby-plugin-styled-components": "^4.2.0",
-    "gatsby-source-filesystem": "^3.2.0",
-    "gatsby-transformer-sharp": "^3.2.0",
+    "gatsby-plugin-image": "^1.3.1",
+    "gatsby-plugin-sharp": "^3.3.1",
+    "gatsby-plugin-styled-components": "^4.3.0",
+    "gatsby-source-filesystem": "^3.3.0",
+    "gatsby-transformer-plaintext": "^2.0.0",
+    "gatsby-transformer-sharp": "^3.3.0",
     "gh-pages": "^3.1.0",
     "mocha": "^8.3.2",
     "node-localstorage": "^2.1.6",
@@ -47,5 +54,9 @@
     "reactstrap": "^8.9.0",
     "seedrandom": "2.4.3",
     "styled-components": "^5.2.3"
+  },
+  "devDependencies": {
+    "@types/react-helmet": "^6.1.1",
+    "typescript": "^4.2.4"
   }
 }
