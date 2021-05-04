@@ -14,6 +14,7 @@ self.onmessage = async (event) => {
                 self.objectData = results.data; 
                 self.initialized = true
                 constructLookUpTables()
+                self.postMessage({action: "init"})
                 self.postMessage({action: "test", object_mapped : self.object_mapped}); 
                 console.log(self.object_mapped)
                 console.log(self.imgs_size)
