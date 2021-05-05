@@ -1,14 +1,6 @@
 import React from 'react';
 import { makeStyles, Paper,Table, TableBody,TableCell,TableContainer,TableHead,
   TablePagination,TableRow} from '@material-ui/core';
-// import Paper from '@material-ui/core/Paper';
-// import Table from '@material-ui/core/Table';
-// import TableBody from '@material-ui/core/TableBody';
-// import TableCell from '@material-ui/core/TableCell';
-// import TableContainer from '@material-ui/core/TableContainer';
-// import TableHead from '@material-ui/core/TableHead';
-// import TablePagination from '@material-ui/core/TablePagination';
-// import TableRow from '@material-ui/core/TableRow';
 
 const columns = [
   { id: 'imageNumber', label: 'Image Number', minWidth: 50},
@@ -54,14 +46,13 @@ const columns = [
   },
 ];
 
+//fake data
 function createData(imageNumber, imageLink, total, positive) {
   const ratio = '50%';
   const adjustratio = '90%';
   const negative = total - positive;
   return { imageNumber, imageLink, total, positive, negative,ratio,adjustratio };
 }
-
-
 
 
 const rows = [
@@ -82,17 +73,9 @@ const rows = [
   createData('15', '', 210147125, 8515767),
 ];
 
-// const useStyles = makeStyles({
-//   root: {
-//     width: '100%',
-//   },
-//   container: {
-//     maxHeight: 440,
-//   },
-// });
+
 
 export default function ScoreTableUI() {
-  //const classes = useStyles();
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
@@ -122,6 +105,8 @@ export default function ScoreTableUI() {
               ))}
             </TableRow>
           </TableHead>
+
+
           <TableBody>
             {rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
               return (
@@ -140,7 +125,6 @@ export default function ScoreTableUI() {
           </TableBody>
         </Table>
       </TableContainer>
-    
     </Paper>
   );
 }
