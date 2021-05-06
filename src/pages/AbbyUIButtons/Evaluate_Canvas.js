@@ -1,17 +1,4 @@
-// import React, {useRef} from 'react';
 
-// const Canvas = props => 
-// {
-//     const canvasRef = useRef(null)
-//     const canvas = canvasRef.current
-//     const context = canvas.getContect('2d')
-//     return <canvas ref = {canvasRef}></canvas>
-
-// }
-
-// export default Canvas
-
-//import "./styles.css";
 import React from "react";
 import * as tfvis from "@tensorflow/tfjs-vis";
 const drawConfusionMatrix = async (divElement, confusionMatrixValues) => {
@@ -49,18 +36,6 @@ export default function Canvas1() {
 
   return (
     <div style = {{padding:40}}>
-      {/* This won't be in the dialog window it is just a
-           button to test that we can change confusion matrix by state */}
-      {/* <button
-        onClick={() =>
-          setConfusionMatrix([
-            [20, 6],
-            [7, 32]
-          ])
-        }
-      >
-        change matrix
-      </button> */}
 
       <div ref={canvasParentRef}></div>
     </div>

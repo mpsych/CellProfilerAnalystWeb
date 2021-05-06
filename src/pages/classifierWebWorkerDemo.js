@@ -10,27 +10,46 @@ import { v4 as uuidv4 } from 'uuid';
 
 function TestUI(){
     
-    const [uploadWebWorker, setUploadWebWorker] = React.useState(null)
+    const [dataWebWorker, setDataWebWorker] = React.useState(null)
+    const [classifierWebWorker, setClassifierWebWorker] = React.useState(null)
     const [fetchEnabled, setFetchEnabled] = React.useState(false)
 
     React.useEffect(() => {
         
+        const workerChannel = new MessageChannel();
 
-        const webworker = new Worker('../worker.js')
-
-        webworker.addEventListener("message", event => {
-            if (event.data.action === 'init') {
-                setFetchEnabled(true)
+        const dataWebWorker = new Worker('../dataWorker.js')
+        dataWebWorker.addEventListener("message", event => {
+            switch(event.data.action) {
+                case "init":
+                    setFetchEnabled(true)
+                    break;
+                
             }
-            
-            });
+        })
+        dataWebWorker.addEventListener("error", event => {
+            console.log('[dataWebWorker] Error', event.message, event);
+        });
+        dataWebWorker.postMessage({action: "init"})
+        dataWebWorker.postMessage({action: "connectToClassifierWorker"}, [workerChannel.port1])
+        setDataWebWorker(dataWebWorker)
 
-        webworker.addEventListener("error", event => {
-            console.log('[UploadWebWorker] Error', event.message, event);
-            });
-            
-        setUploadWebWorker(webworker)
-        console.log("created upload webworker", webworker)      
+
+        const classifierWebWorker = new Worker('../classifierWorker.js')
+        classifierWebWorker.addEventListener("message", event => {
+            switch(event.data.action) {
+                
+            }
+        })
+        classifierWebWorker.addEventListener("error", event => {
+            console.log('[classifierWebWorker] Error', event.message, event);
+        });
+        classifierWebWorker.postMessage({action: "init"})
+        classifierWebWorker.postMessage({action: "connectToDataWorker"}, [workerChannel.port2])
+        setClassifierWebWorker(classifierWebWorker)
+
+
+
     }, [])
 
     const workerGetRowPromise = async (worker, index) => {
