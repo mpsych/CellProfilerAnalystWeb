@@ -1,4 +1,3 @@
-//import DataTables from "./DataTables";
 import { DataTables } from "./DataTables";
 export default class TrainingTable extends DataTables{
     constructor(data_lines, column_lines) {
