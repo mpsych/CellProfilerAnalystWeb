@@ -3,6 +3,8 @@ import React from 'react';
 import {Button, CircularProgress}from '@material-ui/core'; 
 import "bootstrap/dist/css/bootstrap.css";
 import UploadHandler from '../classes/UploadHandler'
+import Classifier from '../classes/Classifier'
+import * as tfvis from '@tensorflow/tfjs-vis'
 import { v4 as uuidv4 } from 'uuid';
   import "../dndstyles.css";
 
@@ -14,8 +16,11 @@ function TestUI(){
     const [classifierWebWorker, setClassifierWebWorker] = React.useState(null)
     const [fetchEnabled, setFetchEnabled] = React.useState(false)
 
+    const trainingLossCanvasParentRef = React.useRef();
+    const trainingAccuracyCanvasParentRef = React.useRef();
+
     React.useEffect(() => {
-        
+        console.log("initializing webworkers")
         const workerChannel = new MessageChannel();
 
         const dataWebWorker = new Worker('../dataWorker.js')
@@ -30,27 +35,36 @@ function TestUI(){
         dataWebWorker.addEventListener("error", event => {
             console.log('[dataWebWorker] Error', event.message, event);
         });
-        dataWebWorker.postMessage({action: "init"})
+       
         dataWebWorker.postMessage({action: "connectToClassifierWorker"}, [workerChannel.port1])
         setDataWebWorker(dataWebWorker)
 
-
         const classifierWebWorker = new Worker('../classifierWorker.js')
         classifierWebWorker.addEventListener("message", event => {
+            console.log("entry back to main thread from classifierworker")
             switch(event.data.action) {
-                
+                case "updateTrainingLossCanvas":
+                    console.log("update Loss canvas")
+                    tfvis.show.history(trainingLossCanvasParentRef.current, event.data.trainLogs, event.data.ticks)
+                    break;
+                case "updateTrainingAccuracyCanvas":
+                    console.log("update Accuracy canvas")
+                    tfvis.show.history(trainingAccuracyCanvasParentRef.current, event.data.trainLogs, event.data.ticks)
+                    break;
             }
         })
         classifierWebWorker.addEventListener("error", event => {
             console.log('[classifierWebWorker] Error', event.message, event);
         });
+
         classifierWebWorker.postMessage({action: "init"})
         classifierWebWorker.postMessage({action: "connectToDataWorker"}, [workerChannel.port2])
         setClassifierWebWorker(classifierWebWorker)
 
+        // classifierWebWorker.postMessage({action: "testSendToDataWorker"})
+        // dataWebWorker.postMessage({action: "testSendToClassifierWorker"})
 
-
-    }, [])
+    }, [trainingLossCanvasParentRef, trainingAccuracyCanvasParentRef])
 
     const workerGetRowPromise = async (worker, index) => {
         return new Promise(resolve => {
@@ -75,17 +89,36 @@ function TestUI(){
 
     const handleUpload = async (uploadEventObject) => {
 
-
+        
         console.log("start object data parsing")
-        uploadWebWorker.postMessage({action: "init", fileListObject:uploadEventObject.target.files});
+        dataWebWorker.postMessage({action: "init", fileListObject:uploadEventObject.target.files});
         
         
     }
 
-    const handleFetch = () => {
-        console.time("fetch row")
-        workerGetRowPromise(uploadWebWorker, 5).then(row=>{console.timeEnd("fetch row"); console.log(row)})
+    const handleWorkerFetch = () => {
+        console.log("fetch test")
+        dataWebWorker.postMessage({action:"printObjectDataRow", index: 500})
         
+        
+        // workerGetRowPromise(dataWebWorker, 5).then(row=>{console.timeEnd("fetch row"); console.log(row)})
+        
+    }
+    const handleFetch = () => {
+
+        dataWebWorker.postMessage({action: "sendObjectData"})
+        dataWebWorker.addEventListener("message", event => {
+            if (event.data.action === "objectData") {
+                console.log(event.data.objectData[0])
+            }
+        })
+        // workerGetRowPromise(dataWebWorker, 5).then(row=>{console.timeEnd("fetch row"); console.log(row)})
+        
+    }
+
+    const handlePredictAll = () => {
+        console.log("train and predict test")
+        classifierWebWorker.postMessage({action: "trainAndPredict"})
     }
 
 
@@ -93,6 +126,8 @@ function TestUI(){
     return (
         <div style={{resize: 'horizontal'}}>
         <Button disabled={!fetchEnabled} onClick={handleFetch}>Fetch Line</Button>
+        <Button disabled={!fetchEnabled} onClick={handleWorkerFetch}>worker fetch line</Button>
+        <Button disabled={!fetchEnabled} onClick={handlePredictAll}>Predict All Worker</Button>
         <Button endIcon={<CircularProgress/>} variant="contained" component="label" onClick={()=>console.log("Upload!")}> 
             Upload
             <input  type="file"
@@ -105,6 +140,8 @@ function TestUI(){
                     onChange = {(eventObject)=>{handleUpload(eventObject)}}   
             />
         </Button>
+        <div ref={trainingAccuracyCanvasParentRef}></div>
+        <div ref={trainingLossCanvasParentRef}></div>
 
     </div>
 
