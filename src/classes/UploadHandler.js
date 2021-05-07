@@ -1,7 +1,6 @@
 //import DataUtils from "./DataUtils";
 import PapaParser from "./PapaParser.js";
 import UserUploadFileHandler from "./UserUploadFileHandler.js";
-import { data } from "@tensorflow/tfjs";
 import _ from "lodash";                                                                                                                                                                                                         
 import DataProvider from "./DataProvider.js";
 import TrainingTable from "./TrainingTable.js";

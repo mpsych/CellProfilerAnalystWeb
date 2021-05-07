@@ -21,6 +21,7 @@ export default class ObjectTable {
             }
             this.imgs_size[img]++
         }
+        console.log(this.imgs_size)
      }
      returnObjsPerImg(img) {
         if (img.toString() in this.imgs_size) {
@@ -78,7 +79,6 @@ export default class ObjectTable {
             for(var i = 0; i < this.column_lines.length; i++) {
                 var column = this.column_lines[i]
                 row[column] = line[i];
-                
             }
             return row
         }

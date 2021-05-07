@@ -74,7 +74,12 @@ function TestUI(){
       const classifierManager = new ClassifierManager(dataProvider, trainingObject)
       await classifierManager.initTrainPromise()
       setLastFetchState(fetchType)
-      const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
+      
+      var classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
+      // dataProvider.getObjsPerImg(60)
+     // classedCellPairObjects.splice(20, 800)
+     // console.log(classedCellPairObjects)
+      classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
       const ih = new ImageHandler(fileListObject, dataProvider)
       const dataURLS = await ih.getObjsToURLs(classedCellPairObjects)
       const newTileState = constructTileState(dataURLS)
