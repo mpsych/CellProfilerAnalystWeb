@@ -30,8 +30,8 @@ import Select from '@material-ui/core/Select';
 import Tooltip from '@material-ui/core/Tooltip';
 //import UploadButton from './UploadButton'
 
-import UIEvaluate from './AbbyUIButtons/UIEvaluateButton'
-import UIScoreAll from './AbbyUIButtons/UIScoreAllButton'
+import Evaluate from './AbbyUIButtons/UIEvaluateButton'
+import ScoreAll from './AbbyUIButtons/UIScoreAllButton'
 
 
 import {
@@ -428,14 +428,15 @@ function TestUIMVP(){
 
         <Grid key={2} item>
          {/* <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button>  */}
-          {/* TODO: need to fix button disabled */}
-          <UIEvaluate></UIEvaluate>
+          {/* TODO: need to fix button disabled DONE*/}
+          {!evaluateButtonEnabled ? <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button> : <Evaluate></Evaluate>}
         </Grid>
 
         <Grid key={3} item>
         {/* <Button  disabled={!scoreAllButtonEnabled} variant="contained" onClick={()=>{}}>Score All</Button> */}
-          {/* TODO: need to fix button disabled */}
-          <UIScoreAll></UIScoreAll>
+          {/* TODO: need to fix button disabled DONE*/}
+          
+          {!evaluateButtonEnabled ? <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Score All</Button> : <ScoreAll></ScoreAll>}
         </Grid>
         
     </Grid>

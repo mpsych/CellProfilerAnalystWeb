@@ -5,7 +5,7 @@ import Slide from '@material-ui/core/Slide';
 import CloseIcon from '@material-ui/icons/Close';
 import ScoreAllTable from './Score_Table'
 
-//TODO: need place to hold three graphs
+//TODO: need place to hold two graphs
 
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -35,6 +35,7 @@ export default function DialogForCanvas() {
         onClose={handleClose}
         fullScreen
         >
+          {/* TODO:Layout of the Dialog */}
         <CloseIcon onClick = {handleClose} style={{position: 'absolute', right: '10px', top: '10px',}}></CloseIcon>  
         <ScoreAllTable></ScoreAllTable>
         {/* TODO:need places for three graphs here, may be can import as componets */}
