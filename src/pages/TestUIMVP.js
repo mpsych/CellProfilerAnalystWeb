@@ -28,6 +28,10 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import InputLabel from '@material-ui/core/InputLabel';
 import Select from '@material-ui/core/Select';
 import Tooltip from '@material-ui/core/Tooltip';
+
+
+
+
 //import UploadButton from './UploadButton'
 
 //import Evaluate from './AbbyDialog'
@@ -100,11 +104,21 @@ function TestUIMVP(){
     const [evaluateButtonEnabled, setEvaluateButtonEnabled] = React.useState(false)
     const [downloadButtonEnabled, setDownloadButtonEnabled] = React.useState(false)
     const [uploadButtonEnabled, setUploadButtonEnabled] = React.useState(true)
-    const [scoreAllButtonEnabled, setscoreAllButtonEnabled] = React.useState(false)
+    const [scoreAllButtonEnabled, setScoreAllButtonEnabled] = React.useState(false)
     const [uploading, setUploading] = React.useState(false)
     const [success, setSuccess] = React.useState(false)
     const [fetching, setFetching] = React.useState(false)
     const [openFetchDropdown, setOpenFetchDropdown] = React.useState(false);
+    const [openViewCell, setOpenViewCell] = React.useState(false);
+
+    const handleClickOpenViewCell = () => {
+      setOpenViewCell(true);
+    };
+  
+    const handleCloseViewCell = () => {
+      setOpenViewCell(false);
+    };
+
     
     const classes = useStyles();
     const buttonClassname = clsx({
@@ -117,26 +131,31 @@ function TestUIMVP(){
         setAnchorEl(event.currentTarget);
     };
 
-    const handleCloseFetchDropDown = (fetchType) => {
+    const handleCloseFetchDropDown = () => {
         setAnchorEl(null)
-         if (fetchType !== undefined) {
-            handleFetch(fetchType)
-         }
-         
     };
+    const handleClickFetchDropDownOption = (fetchType) => {
+      setAnchorEl(null)
+       if (fetchType !== undefined) {
+          handleFetch(fetchType)
+       }
+       
+  };
+
 
     const disableIterationButtons = () => {
       setFetchButtonEnabled(false)
       setTrainButtonEnabled(false)
       setDownloadButtonEnabled(false)
       setEvaluateButtonEnabled(false)
-
+      setScoreAllButtonEnabled(false)
     }
     const enableIterationButtons = () => {
       setFetchButtonEnabled(true)
       setTrainButtonEnabled(true)
       setDownloadButtonEnabled(true)
       setEvaluateButtonEnabled(true)
+      setScoreAllButtonEnabled(true)
 
     }
 
@@ -205,6 +224,7 @@ function TestUIMVP(){
   }
 
     const handleUpload = async (fileListObject) => {
+        setUploading(true)
         setUploadButtonEnabled(false)
         setFileListObject(fileListObject)
         const uploadHandler = new UploadHandler(fileListObject)
@@ -254,7 +274,7 @@ function TestUIMVP(){
     setFetchButtonEnabled(true)
     setTrainButtonEnabled(true)
     setDownloadButtonEnabled(true)
-    setscoreAllButtonEnabled(true)
+    setScoreAllButtonEnabled(true)
     setEvaluateButtonEnabled(true)
     setUploadButtonEnabled(false)
       
@@ -302,13 +322,14 @@ function TestUIMVP(){
         });
       }
     
-      const handleClickOpenFetchDropdown = () => {
+      const handleClickOpenFetchDropdownByImg = () => {
         setOpenFetchDropdown(true);
       };
    
-      const handleCloseFetchDropdown = () => {
+      const handleCloseFetchDropdownByImg = () => {
         setOpenFetchDropdown(false);
       };
+      
 
     return (
        
@@ -380,14 +401,14 @@ function TestUIMVP(){
             open={Boolean(anchorEl)}
             onClose={handleCloseFetchDropDown}
             >
-            <MenuItem onClick={()=>handleCloseFetchDropDown("random")}>Random</MenuItem>
-            <MenuItem onClick={()=>handleCloseFetchDropDown("positive")}>Positive</MenuItem>
-            <MenuItem onClick={()=>handleCloseFetchDropDown("negative")}>Negative</MenuItem>
-            <MenuItem onClick={handleClickOpenFetchDropdown}>By Image</MenuItem>
+            <MenuItem onClick={()=>handleClickFetchDropDownOption("random")}>Random</MenuItem>
+            <MenuItem onClick={()=>handleClickFetchDropDownOption("positive")}>Positive</MenuItem>
+            <MenuItem onClick={()=>handleClickFetchDropDownOption("negative")}>Negative</MenuItem>
+            <MenuItem onClick={handleClickOpenFetchDropdownByImg}>By Image</MenuItem>
            
                 <Dialog
             open={openFetchDropdown}
-            onClose={handleCloseFetchDropdown}
+            onClose={handleCloseFetchDropdownByImg}
         
             >
             <DialogTitle>Fetch By Image</DialogTitle>
@@ -410,7 +431,7 @@ function TestUIMVP(){
             </form>
             </DialogContent>
             <DialogActions>
-            <Button onClick={handleCloseFetchDropdown} color="primary">
+            <Button onClick={handleCloseFetchDropdownByImg} color="primary">
                 Close
             </Button>
             </DialogActions>
@@ -453,18 +474,37 @@ function TestUIMVP(){
           >   
             {!fetching ? tileState.unclassified.map(item => (
               <GridItem className= "hoverTest"  style={{height:"10vw", width: "10vw", minHeight:80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding:10}} key={item.id}>
-                <div className="grid-item" >
-                    <div className="grid-item-content" style = {{backgroundImage:  `url(${item.address})`}} >
-                    <span className= "hoverText">{item.info}</span>
-                        </div> 
-
+                     <Dialog
+                                open={openViewCell}
+                                onClose={handleCloseViewCell}
+                                aria-labelledby="alert-dialog-title"
+                                aria-describedby="alert-dialog-description"
+                                >
+                                  <Image
+                                      src = {item.address}  
+                                    />
+                                  
+                                  <DialogActions>
+                                  <Button onClick={handleCloseViewCell} color="primary">
+                                    Close
+                                  </Button>
+                                </DialogActions>
+                              </Dialog>
+                <Button className="grid-item" onClick = {handleClickOpenViewCell} >
+                    <div className="grid-item-content"   style = {{backgroundImage:  `url(${item.address})`}} >
+                    <span className= "hoverText">{item.info}</span>  
+                               
                 </div>
+               
+                </Button>
               </GridItem>
-            )) : <CircularProgress style= {{hieght:"7%", width:"7%", marginTop: "8%", marginLeft: "45%"}}/> } 
+              
+            )) : <CircularProgress style= {{height: '5vw', width: '5vw', marginTop: "5%", marginLeft: "45%"}}/>} 
         
           </GridDropZone>
-          </div>
          
+          </div>
+               
         
         <Row>
        
