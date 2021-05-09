@@ -54,6 +54,9 @@ class ImageTable{
     getColumnLines(){
         return this.column_lines;
     }
+    getDataLines(){
+        return this.image_lines
+    }
     getSize() {
     return this.image_lines.length;
     }

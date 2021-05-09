@@ -24,14 +24,7 @@ function TestUI(){
         const workerChannel = new MessageChannel();
 
         const dataWebWorker = new Worker('../dataWorker.js')
-        dataWebWorker.addEventListener("message", event => {
-            switch(event.data.action) {
-                case "init":
-                    setFetchEnabled(true)
-                    break;
-                
-            }
-        })
+        
         dataWebWorker.addEventListener("error", event => {
             console.log('[dataWebWorker] Error', event.message, event);
         });
@@ -57,7 +50,7 @@ function TestUI(){
             console.log('[classifierWebWorker] Error', event.message, event);
         });
 
-        classifierWebWorker.postMessage({action: "init"})
+        // classifierWebWorker.postMessage({action: "init"})
         classifierWebWorker.postMessage({action: "connectToDataWorker"}, [workerChannel.port2])
         setClassifierWebWorker(classifierWebWorker)
 
@@ -85,14 +78,51 @@ function TestUI(){
         })  
     }
 
+    const dataWorkerActionPromise = (action, data) => {
+        const UUID = uuidv4()
+        return new Promise(resolve => {
+            dataWebWorker.addEventListener("message", event => {
+                if (event.data.uuid === UUID) {
+                    resolve(event)
+                }
+                
+            }, {once: true})
+            dataWebWorker.postMessage({action, ...data, uuid:UUID});
+        })
+        
+    }
+
+    const classifierWorkerActionPromise = (action, data) => {
+        const UUID = uuidv4()
+        return new Promise(resolve => {
+            classifierWebWorker.addEventListener("message", event => {
+                if (event.data.uuid === UUID) {
+                    resolve(event)
+                }
+                
+            }, {once: true})
+            classifierWebWorker.postMessage({action, ...data, uuid:UUID});
+        })
+        
+    }
     
 
     const handleUpload = async (uploadEventObject) => {
 
         
         console.log("start object data parsing")
-        dataWebWorker.postMessage({action: "init", fileListObject:uploadEventObject.target.files});
-        
+        const fileListObject = uploadEventObject.target.files
+        dataWorkerActionPromise("init", {fileListObject})
+            .then(() => {
+                return dataWorkerActionPromise("getTrainingObject", {})
+            })
+            .then((event) => {
+                const {trainingObject} = event.data
+                return classifierWorkerActionPromise("train", {trainingObject})
+            })
+            .then(() => {
+                setFetchEnabled(true)
+            })
         
     }
 
@@ -121,11 +151,31 @@ function TestUI(){
         classifierWebWorker.postMessage({action: "trainAndPredict"})
     }
 
+    const handleFetchType = async function(fetchType) {
+
+        const sampledcellPairs = await dataWorkerActionPromise("getSampledCellPairs", {number: 100})
+
+        switch(fetchType) {
+            case "Random":
+                break;
+            case "Positive":
+                break;
+            case "Negative":
+                break;
+        }
+    }
+
 
     
     return (
         <div style={{resize: 'horizontal'}}>
-        <Button disabled={!fetchEnabled} onClick={handleFetch}>Fetch Line</Button>
+        <Button disabled={!fetchEnabled} onClick={()=>handleFetchType("Random")}>Fetch Random</Button>
+        <Button disabled={!fetchEnabled} onClick={()=>handleFetchType("Positive")}>Fetch Positive</Button>
+        <Button disabled={!fetchEnabled} onClick={()=>handleFetchType("Negative")}>Fetch Negative</Button>
+        <Button disabled={!fetchEnabled} onClick={handleFetch}>Train</Button>
+        <Button disabled={!fetchEnabled} onClick={handleFetch}>Evaluate</Button>
+        <Button disabled={!fetchEnabled} onClick={handleFetch}>Download</Button>
+        <Button disabled={!fetchEnabled} onClick={handleFetch}>Upload</Button>
         <Button disabled={!fetchEnabled} onClick={handleWorkerFetch}>worker fetch line</Button>
         <Button disabled={!fetchEnabled} onClick={handlePredictAll}>Predict All Worker</Button>
         <Button endIcon={<CircularProgress/>} variant="contained" component="label" onClick={()=>console.log("Upload!")}> 

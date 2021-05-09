@@ -4,7 +4,7 @@ self.importScripts("classifierWorkerUtils.js")
 // self.importScripts("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis")
 console.log(typeof tf !== "undefined"? "TensorFlow Loaded In WebWorker" : "TensorFlow Failed To Load In WebWorker")
 // console.log(typeof tfvis !== "undefined"? "TensorFlow-Visor Loaded In WebWorker" : "TensorFlow-Visor Failed To Load In WebWorker")
-
+self.importScripts("https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js")
 self.onmessage = async (event) => {
 
     switch(event.data.action) {
@@ -23,7 +23,24 @@ self.onmessage = async (event) => {
 
         case "trainAndPredict":
             console.log("initial entry train and predict classifierworker send to dataworker for object data")
-            self.dataWorkerPort.postMessage({action: "sendObjectData", subAction: "trainAndPredict"})
+
+            self.dataWorkerActionPromise("getObjectData", async (event) => {
+                console.log("start training after getting back from dataworker")
+                const featureIndices = [30,31]
+                const batchSize = 32
+                const objectDataSubset = event.data.objectData.slice(0, 100)
+                const labels = new Array(objectDataSubset.length).fill(1)
+                const model = self.createLogisticRegressionModel(featureIndices.length)
+                const numberEpochs = 20
+                const tf_dataset = self.createDatasetFromDataArrays(objectDataSubset, labels, featureIndices, batchSize)
+                // mutates model to be trained
+                await self.basicTrainPromise(model, tf_dataset, numberEpochs)
+
+                console.log("finished training, start predicting")
+                const testDataTensor =  self.createTestset(event.data.objectData, featureIndices)
+                console.log(self.predict(model, testDataTensor))
+                self.classifier = model
+            })
             break;
             
         default:
@@ -32,8 +49,30 @@ self.onmessage = async (event) => {
 
 }
 
+self.dataWorkerActionPromise = function(action, callback) {
+    const { v4: uuidv4 } = uuid
+    const UUID = uuidv4()
+    console.log("DataWorkerActionPromise: " + UUID, "started call: " + action)
+    
+
+    return new Promise(resolve => {
+        self.dataWorkerPort.addEventListener("message", (event)=>{
+            if (event.data.uuid === UUID) {
+                resolve(callback(event))
+            }
+            else {
+                console.log("DataWorkerActionPromise: " + UUID, "Skipped non-uuid call")
+            }
+
+        }, {once: true})
+        self.dataWorkerPort.postMessage({action: action, uuid:UUID })
+
+    })
+
+}
+
 self.handleDataWorkerMessage = function(event) {
-    console.log("classifier worker received data worker data")
+    console.log("classifier worker received data worker data normal way")
     console.log(event.data)
     switch(event.data.action) {
         case "printObjectDataRow":
@@ -65,9 +104,12 @@ self.handleDataWorkerMessage = function(event) {
 }
 
 /*
-    @param {Array<Array<number>>} dataArrays The 2D Array of data with feature columns and row entries to draw data from to predict on
-    @param {Array<int>} featureIndices The Array of indices from dataArrays to predict on
-    @return {Tensor<Tensor<number>>} normed_X_tf The 2D Tensor of numbers to predict on
+    @param {Array<Array<number>>} dataArrays 
+        The 2D Array of data with feature columns and row entries to draw data from to predict on
+    @param {Array<int>} featureIndices 
+        The Array of indices from dataArrays to predict on
+    @return {Tensor<Tensor<number>>} normed_X_tf 
+        The 2D Tensor of numbers to predict on
 */
 self.createTestset = function(dataArrays, featureIndices){
     const X = dataArrays.map(dataRowArray =>

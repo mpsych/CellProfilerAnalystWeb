@@ -10,6 +10,7 @@ class UserUploadFileHandler {
         })
     }
     findFile = (file_name) => {
+        console.log("looking for", file_name)
         const fileIndex = Array.from(this.fileListObject).findIndex((elem) => {
             return (elem.name === file_name);
         });

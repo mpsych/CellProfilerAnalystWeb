@@ -52,16 +52,24 @@ class DataProvider {
             }
     }
     
-    returnAllImgFileNames(img) {
+    /*
+        @param {number} imageNumber
+            The number corresponding to the 3 channel file names we want
+        @return {Array<{fileName: string, color: string}>} image_paths
+            The array of objects containing the filenames and their color
+    */
+    returnAllImgFileNames(imageNumber) {
+        console.log("returnAllImgFileNames enter")
         var channels = [
             {'file_lookup' : 'Image_FileNames_Filename_OrigActin', 'color' : "red" }, 
             {'file_lookup' : 'Image_FileNames_Filename_OrigpH3'  , 'color' : "green"},
             {'file_lookup' : "Image_FileNames_Filename_OrigDNA"  , 'color' : "blue"}
         ]
          var image_paths = channels.map( channel => {
-            var file_name =  this.getValue('image_data', {'ImageNumber': img, 'value': channel.file_lookup}) 
+            var file_name =  this.getValue('image_data', {'ImageNumber': imageNumber, 'value': channel.file_lookup}) 
             return {'filename' : file_name , 'color' : channel.color}   
          });
+         console.log("returnAllImgFileNames exit")
         return image_paths;
     }
     //TODO what if cell is on edge of image
@@ -92,30 +100,44 @@ class DataProvider {
         }
         return rand_objs
     }
-    getRow(key, search_obj, ) { //Where key is a member of data and search obj is of form {'img': , 'objs': , 'index': }
+    /*
+        @param ("object_data" | "image_data") key 
+            The key of the kind of Table to access
+        @param ({ImageNumber: int} | {ImageNumber: int, ObjectNumber: int} | {...featureName: number}) search_obj 
+            The object of the properties to search for in the Table accessed
+        @return {Array<(number | string)> | null} row
+            The first row of the accessed Table corresponding to the search object
+    */
+    getRow(key, search_obj, ) {
         if (!(this.data.hasOwnProperty(key))) return -1;
         var row = this.data[key].find(search_obj)
         return row;
-
     }
     getAllObjRowsIn2DArray(objs) {
         return objs.map
 
     }
-    getCordsforCellDisplay(search_obj) {
-        var cords = {};        
+
+    /*
+        @param {{ImageNumber: int, ObjectNumber: int}} search_obj
+        @return {x: int, y: int}
+    */
+    getCoordsforCellDisplay(search_obj) {
+        var coords = {};        
         var cellinObj = this.data.object_data.findIndex(search_obj)
         var cellx = parseInt(this.data.object_data.get(cellinObj, 'Nuclei_Location_CenterX'))
         var celly = parseInt(this.data.object_data.get(cellinObj, 'Nuclei_Location_CenterY'))
-        cords.x = Math.max(0, cellx - 20) 
+        // coords.x = Math.max(0, cellx - 20) 
+        coords.x = cellx
        // var hi_x = lo_x + 40
-        cords.y = (Math.max(0, celly - 20))
-        return cords;
+        // coords.y = (Math.max(0, celly - 20))
+        coords.y = celly
+        return coords;
     }
 
     getValue(key, search_obj) {
         if (!this.data.hasOwnProperty(key)) return -1;         
-        var value = -1
+        var value = null
         var index =  this.data[key].findIndex(search_obj)
         if (index !== -1) {
             value = this.data[key].get(index, search_obj.value);
@@ -126,7 +148,20 @@ class DataProvider {
         if (this.data.hasOwnProperty(key)) {
             return this.data[key].getColumnLines();
         }
-        return -1;
+        return null;
+
+    }
+    /*
+        @param ("object_data" | "image_data") key
+            The key of the kind of Table to access
+        @return (Array<Array<(number | string)>> | null) dataLines
+            The 2D array of the accessed data with feature columns and entry rows
+    */
+    getDataLines(key) {
+        if (this.data.hasOwnProperty(key)) {
+            return this.data[key].getDataLines();
+        }
+        return null;
 
     }                     
 

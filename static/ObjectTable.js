@@ -87,6 +87,9 @@ class ObjectTable {
     getColumnLines(){
         return this.column_lines;
     }
+    getDataLines(){
+        return this.object_lines
+    }
     getSize() {
     return this.object_lines.length;
     }

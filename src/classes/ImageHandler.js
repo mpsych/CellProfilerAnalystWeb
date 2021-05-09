@@ -36,6 +36,7 @@ export default class ImageHandler {
     }
     // returns array of                
     getImagefromFile = async function(object) {
+        console.log(object)
         var images_path = this.data_provider.returnAllImgFileNames(object)
 
         var images = await Promise.all(images_path.map(image_path => {
