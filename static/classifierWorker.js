@@ -14,6 +14,7 @@ self.onmessage = async (event) => {
 			const { trainingObject } = event.data;
 			// const featureIndices = [30,31]
 			const featureIndices = trainingObject.featureIndicesToUse;
+			self.classifierType = trainingObject.classifierType;
 			self.featureIndices = featureIndices;
 			const batchSize = 32;
 			self.trainingData = trainingObject.trainingData;
@@ -122,7 +123,6 @@ self.onmessage = async (event) => {
 			const UUID = event.data.uuid;
 			self.workerActionPromise(dataWorkerPort, 'get', {
 				getType: 'objectData',
-				getArgs: { cellPairs },
 			}).then((event) => {
 				const objectData = event.data.getResult;
 				const testDataTensor = self.createTestset(objectData, self.featureIndices);
@@ -137,8 +137,48 @@ self.onmessage = async (event) => {
 					imageToCountsMap[imageNumber][objectPredictions[i]]++;
 				}
 				console.log(imageToCountsMap);
-				self.postMessage({ imageToCountsMap, uuid: UUID });
+				const imageNumbers = Object.keys(imageToCountsMap);
+				const counts = imageNumbers.map((imageNumber) => imageToCountsMap[imageNumber]);
+
+				const alphas = self.fitBetaDistribution(counts);
+				console.log(alphas);
+
+				var ratios = {};
+				for (var i = 0; i < imageNumbers.length; i++) {
+					const imageNumber = imageNumbers[i];
+					const negativeCount = imageToCountsMap[imageNumber][0];
+					const positiveCount = imageToCountsMap[imageNumber][1];
+					const totalCount = positiveCount + negativeCount;
+					ratios[imageNumber] = positiveCount / totalCount;
+				}
+
+				var adjustedRatios = {};
+				for (var i = 0; i < imageNumbers.length; i++) {
+					const imageNumber = imageNumbers[i];
+					const negativeCount = imageToCountsMap[imageNumber][0];
+					const positiveCount = imageToCountsMap[imageNumber][1];
+					const totalCount = positiveCount + negativeCount;
+					adjustedRatios[imageNumber] = (positiveCount + alphas[0]) / (totalCount + alphas[0] + alphas[1]);
+				}
+				console.log(adjustedRatios);
+
+				const scoreTableObject = {
+					imageToCountsMap,
+					alphas,
+					ratios,
+					adjustedRatios,
+				};
+
+				self.postMessage({ scoreTableObject, uuid: UUID });
 			});
+			break;
+		case 'getClassifier':
+			console.log('save to localstorage');
+			self.classifier.save(`indexeddb://${self.classifierType}`).then(() => {
+				self.postMessage({ uuid: event.data.uuid });
+			});
+			// self.postMessage({ classifier: self.classifier, uuid: event.data.uuid });
+
 			break;
 		case 'trainAndPredict':
 			console.log('initial entry train and predict classifierworker send to dataworker for object data');
@@ -169,10 +209,12 @@ self.onmessage = async (event) => {
 
 		default:
 			console.log('unhandled event: ', event.data);
+			self.postMessage({ uuid: event.data.uuid });
 	}
 };
+
 self.workerActionPromise = function (worker, action, data) {
-	console.log(worker, action, data);
+	// console.log(worker, action, data);
 
 	const { v4: uuidv4 } = uuid;
 	const UUID = uuidv4();
@@ -213,7 +255,7 @@ self.dataWorkerActionPromise = function (action, callback) {
 
 self.handleDataWorkerMessage = function (event) {
 	console.log('classifier worker received data worker data normal way');
-	console.log(event.data);
+	// console.log(event.data);
 	switch (event.data.action) {
 		case 'printObjectDataRow':
 			console.log(event.data.objectData[0]);

@@ -39,7 +39,7 @@ import jones from '../jones.jpg';
 import { GridContextProvider, GridDropZone, GridItem, swap, move } from 'react-grid-dnd';
 
 import '../dndstyles.css';
-import { truncatedNormal } from '@tensorflow/tfjs-core';
+import * as tf from '@tensorflow/tfjs';
 import UploadButton from './UploadButton';
 
 const useStyles = makeStyles((theme) => ({
@@ -106,6 +106,9 @@ function TestUIMVP() {
 	const [activeCellPairs, setActiveCellPairs] = React.useState([]);
 	const [trainingCellPairs, setTrainingCellPairs] = React.useState([]);
 
+	const [scoreTableIsUpToDate, setScoreTableIsUpToDate] = React.useState(false);
+	const [scoreTableObject, setScoreTableObject] = React.useState(null);
+
 	React.useEffect(() => {
 		const dataToCanvasWorkerChannel = new MessageChannel();
 		const dataToClassifierWorkerChannel = new MessageChannel();
@@ -164,6 +167,7 @@ function TestUIMVP() {
 	};
 
 	const handleFetch = async (fetchType) => {
+		console.log('Fetch!');
 		const emptyTileState = { unclassified: [], positive: [], negative: [] };
 		setTileState(emptyTileState);
 		switch (fetchType) {
@@ -290,6 +294,7 @@ function TestUIMVP() {
 	};
 
 	const handleTrain = async () => {
+		console.log('Train!');
 		const positiveCellPairs = tileState.positive.map((element) => activeCellPairs[element.id]);
 		const negativeCellPairs = tileState.negative.map((element) => activeCellPairs[element.id]);
 
@@ -298,27 +303,54 @@ function TestUIMVP() {
 			.fill(1)
 			.concat(new Array(negativeCellPairs.length).fill(0));
 		console.log(totalCellPairs, newLabels);
+
+		setScoreTableIsUpToDate(false);
 		setTileState(constructTileState([]));
 		setActiveCellPairs([]);
+
 		workerActionPromise(dataWebWorker, 'get', {
 			getType: 'objectRowsFromCellpairs',
 			getArgs: { cellPairs: totalCellPairs },
-		})
-			.then((event) => {
-				const dataRows = event.data.getResult;
-				console.log(trainingObject);
-				console.log(dataRows);
-				const newTrainingObject = {
-					classifierType: 'LogisticRegression',
-					trainingData: [...trainingObject.trainingData, ...dataRows],
-					trainingLabels: [...trainingObject.trainingLabels, ...newLabels],
-					featureIndicesToUse: trainingObject.featureIndicesToUse,
-				};
-				console.log(newTrainingObject);
-				setOpenTrainDropdown(true);
-				setTrainingObject(newTrainingObject);
-				return workerActionPromise(classifierWebWorker, 'train', { trainingObject: newTrainingObject });
-			})
+		}).then((event) => {
+			const dataRows = event.data.getResult;
+
+			const newTrainingObject = {
+				classifierType: 'LogisticRegression',
+				trainingData: [...trainingObject.trainingData, ...dataRows],
+				trainingLabels: [...trainingObject.trainingLabels, ...newLabels],
+				featureIndicesToUse: trainingObject.featureIndicesToUse,
+			};
+			return trainSequencePromise(newTrainingObject);
+			// console.log(trainingObject);
+			// console.log(dataRows);
+			// const newTrainingObject = {
+			// 	classifierType: 'LogisticRegression',
+			// 	trainingData: [...trainingObject.trainingData, ...dataRows],
+			// 	trainingLabels: [...trainingObject.trainingLabels, ...newLabels],
+			// 	featureIndicesToUse: trainingObject.featureIndicesToUse,
+			// };
+			// console.log(newTrainingObject);
+			// setOpenTrainDropdown(true);
+			// setTrainingObject(newTrainingObject);
+			// return workerActionPromise(classifierWebWorker, 'train', { trainingObject: newTrainingObject });
+		});
+		// .then(() => {
+		// 	return workerActionPromise(classifierWebWorker, 'confusionMatrix');
+		// })
+		// .then((event) => {
+		// 	const newConfusionMatrix = event.data.confusionMatrix;
+		// 	console.log(newConfusionMatrix);
+		// 	setConfusionMatrix(newConfusionMatrix);
+		// })
+		// .then(() => {
+		// 	setOpenTrainDropdown(false);
+		// });
+	};
+
+	const trainSequencePromise = function (currentTrainingObject) {
+		setOpenTrainDropdown(true);
+
+		return workerActionPromise(classifierWebWorker, 'train', { trainingObject: currentTrainingObject })
 			.then(() => {
 				return workerActionPromise(classifierWebWorker, 'confusionMatrix');
 			})
@@ -328,6 +360,7 @@ function TestUIMVP() {
 				setConfusionMatrix(newConfusionMatrix);
 			})
 			.then(() => {
+				setTrainingObject(currentTrainingObject);
 				setOpenTrainDropdown(false);
 			});
 	};
@@ -350,39 +383,46 @@ function TestUIMVP() {
 	};
 
 	const handleUpload = async (eventObject) => {
+		console.log('Upload!');
 		workerActionPromise(dataWebWorker, 'init', { fileListObject: eventObject.target.files })
 			.then(() => {
 				return workerActionPromise(dataWebWorker, 'get', { getType: 'trainingObject' });
 			})
 			.then((event) => {
 				console.log(event);
-				setOpenTrainDropdown(true);
 				const initialTrainingObject = event.data.getResult;
-				setTrainingObject(initialTrainingObject);
-				return workerActionPromise(classifierWebWorker, 'train', { trainingObject: initialTrainingObject });
+				return trainSequencePromise(initialTrainingObject);
 			})
 			.then(() => {
-				return workerActionPromise(classifierWebWorker, 'confusionMatrix');
-			})
-			.then((event) => {
-				const newConfusionMatrix = event.data.confusionMatrix;
-				console.log(newConfusionMatrix);
-				setConfusionMatrix(newConfusionMatrix);
-			})
-			.then(() => {
-				setOpenTrainDropdown(false);
 				enableIterationButtons();
 			});
 	};
 
 	const handleScoreAll = async () => {
 		console.log('Score All!');
-		return workerActionPromise(classifierWebWorker, 'scoreObjectData').then((event) => {
-			console.log(event.data);
-		});
+		if (!scoreTableIsUpToDate) {
+			console.log('Score All!');
+			return workerActionPromise(classifierWebWorker, 'scoreObjectData').then((event) => {
+				const newScoreTableObject = event.data.scoreTableObject;
+				console.log(newScoreTableObject);
+				setScoreTableObject(newScoreTableObject);
+				setScoreTableIsUpToDate(true);
+			});
+		}
 	};
 
-	const handleDownload = async () => {};
+	const handleDownload = async () => {
+		console.log('Download!');
+		return workerActionPromise(classifierWebWorker, 'getClassifier').then((event) => {
+			console.log(event);
+			tf.loadLayersModel(`indexeddb://${trainingObject.classifierType}`).then((model) => {
+				model.save(`downloads://${trainingObject.classifierType}`);
+			});
+
+			// const classifier = event.data.classifier;
+			// classifier.save(`downloads://${trainingObject.classifierType}`);
+		});
+	};
 
 	function constructTileState(dataURLs) {
 		return {
@@ -586,7 +626,7 @@ function TestUIMVP() {
 									Score All
 								</Button>
 							) : (
-								<ScoreAll handleScoreAll></ScoreAll>
+								<ScoreAll handleScoreAll={handleScoreAll}></ScoreAll>
 							)}
 						</Grid>
 					</Grid>

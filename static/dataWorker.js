@@ -29,9 +29,9 @@ self.onmessage = async (event) => {
 			const featureIsUsed = (feature) =>
 				!feature.includes('Location') && feature !== 'ObjectNumber' && feature !== 'ImageNumber';
 			const tempIndices = totalFeatures.map((feature, idx) => (featureIsUsed(feature) ? idx : -1));
-			console.log(tempIndices, featureIsUsed('a'), featureIsUsed('Location'));
+			// console.log(tempIndices, featureIsUsed('a'), featureIsUsed('Location'));
 			const featureIndicesToUse = tempIndices.filter((index) => !(index === -1));
-			console.log(featureIndicesToUse);
+			// console.log(featureIndicesToUse);
 			self.initialTrainingObject = {
 				classifierType: 'LogisticRegression',
 				trainingData: initialTrainingData,
