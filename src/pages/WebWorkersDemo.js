@@ -3,7 +3,7 @@ import React from 'react';
 import {Button, CircularProgress}from '@material-ui/core'; 
 import "bootstrap/dist/css/bootstrap.css";
 import UploadHandler from '../classes/UploadHandler'
-
+import { v4 as uuidv4 } from 'uuid';
   import "../dndstyles.css";
 
 
@@ -11,6 +11,7 @@ import UploadHandler from '../classes/UploadHandler'
 function TestUI(){
     
     const [uploadWebWorker, setUploadWebWorker] = React.useState(null)
+    const [fetchEnabled, setFetchEnabled] = React.useState(false)
 
     React.useEffect(() => {
         
@@ -18,11 +19,10 @@ function TestUI(){
         const webworker = new Worker('../worker.js')
 
         webworker.addEventListener("message", event => {
-            if (event.data.action === 'get_row') {
-                console.log("got here3")
-                console.timeEnd("get_row")
+            if (event.data.action === 'init') {
+                setFetchEnabled(true)
             }
-            console.log(event.data)
+            
             });
 
         webworker.addEventListener("error", event => {
@@ -33,23 +33,39 @@ function TestUI(){
         console.log("created upload webworker", webworker)      
     }, [])
 
+    const workerGetRowPromise = async (worker, index) => {
+        return new Promise(resolve => {
+            const UUID = uuidv4()
+
+            // listener which resolves the promise only with the get row command and the correct uuid
+            const onGetRowListener = (event) => {
+                if (event.data.action === "get_row" && event.data.uuid === UUID) {
+                    resolve(event.data.row)
+                }
+                
+            }
+            //call this listener when comes back, {once} means listener should remove itself when done
+            worker.addEventListener("message", onGetRowListener, {once: true}) 
+            // start the async get row call in the background, 
+            // the uuid is there to make sure its the right one even when things are happening in parallel
+            worker.postMessage({action: "get_row", index, uuid:UUID});
+        })  
+    }
+
     
 
     const handleUpload = async (uploadEventObject) => {
 
-        // const uploadHandler = new UploadHandler(uploadEventObject)
-        // const uploadReturnObject = await uploadHandler.getDataHandlerandStartingTrainingSet();
+
         console.log("start object data parsing")
-        // const serialized_uploadEventObject = JSON.parse(JSON.stringify(uploadEventObject));
         uploadWebWorker.postMessage({action: "init", fileListObject:uploadEventObject.target.files});
         
         
     }
 
     const handleFetch = () => {
-        console.log("got here2")
-        console.time("get_row")
-        uploadWebWorker.postMessage({action: "get_row"});
+        console.time("fetch row")
+        workerGetRowPromise(uploadWebWorker, 5).then(row=>{console.timeEnd("fetch row"); console.log(row)})
         
     }
 
@@ -57,7 +73,7 @@ function TestUI(){
     
     return (
         <div style={{resize: 'horizontal'}}>
-        <Button onClick={handleFetch}>Fetch Line</Button>
+        <Button disabled={!fetchEnabled} onClick={handleFetch}>Fetch Line</Button>
         <Button endIcon={<CircularProgress/>} variant="contained" component="label" onClick={()=>console.log("Upload!")}> 
             Upload
             <input  type="file"

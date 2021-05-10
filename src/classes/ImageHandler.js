@@ -13,14 +13,14 @@ export default class ImageHandler {
             var image_info = [];
             //if image is already seen, needs to be fixed to take care of the canvas
             //objects
-            if (this.images_seen.hasOwnProperty(cur_ImageNum.toString())) {
-                 image_info = Object.assign({}, this.images_seen[cur_ImageNum.toString()]);
-             }
-             else {
+            // if (this.images_seen.hasOwnProperty(cur_ImageNum.toString())) {
+            //      image_info = Object.assign({}, this.images_seen[cur_ImageNum.toString()]);
+            //  }
+           //  else {
                  var key = cur_ImageNum.toString()
                  image_info = await this.getImagefromFile(cur_ImageNum)
                  this.images_seen[key] = image_info
-             }
+           //  }
              var cords = this.data_provider.getCordsforCellDisplay(objects[i])
              var ip = new ImageProvider2(image_info, cords)
              var url = await ip.getDataURL()

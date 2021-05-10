@@ -28,13 +28,17 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import InputLabel from '@material-ui/core/InputLabel';
 import Select from '@material-ui/core/Select';
 import Tooltip from '@material-ui/core/Tooltip';
+import Slide from '@material-ui/core/Slide';
+import CloseIcon from '@material-ui/icons/Close';
+import ConfusionMatrix from './AbbyUIButtons/Evaluate_Canvas'
 
 
 
 
 //import UploadButton from './UploadButton'
 
-//import Evaluate from './AbbyDialog'
+import Evaluate from './AbbyUIButtons/UIEvaluateButton'
+import ScoreAll from './AbbyUIButtons/UIScoreAllButton'
 
 
 import {
@@ -49,6 +53,9 @@ import {
 import { truncatedNormal } from '@tensorflow/tfjs-core';
 import UploadButton from './UploadButton';
 
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
   const useStyles = makeStyles((theme) => ({
     root: {
@@ -110,6 +117,8 @@ function TestUIMVP(){
     const [fetching, setFetching] = React.useState(false)
     const [openFetchDropdown, setOpenFetchDropdown] = React.useState(false);
     const [openViewCell, setOpenViewCell] = React.useState(false);
+    const [openEvaulate, setOpenEvaulate] = React.useState(false);
+
 
     const handleClickOpenViewCell = () => {
       setOpenViewCell(true);
@@ -117,6 +126,15 @@ function TestUIMVP(){
   
     const handleCloseViewCell = () => {
       setOpenViewCell(false);
+    };
+
+    const handleClickOpenEvaulate = () => {
+      setOpenEvaulate(true);
+      
+    };
+    const handleCloseEvaulate = () => {
+      setOpenEvaulate(false);
+      
     };
 
     
@@ -168,6 +186,7 @@ function TestUIMVP(){
       await classifierManager.initTrainPromise()
       setLastFetchState(fetchType)
       const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
+     // const cellToolTips = classedCellPairObjects.map(cellPair => dataProvider.getToolTip(cellPair.ImageNumber))
       const ih = new ImageHandler(fileListObject, dataProvider)
       const dataURLS = await ih.getObjsToURLs(classedCellPairObjects)
       const newTileState = constructTileState(dataURLS)
@@ -292,9 +311,9 @@ function TestUIMVP(){
     }
 
     
-    function constructTileState(dataURLs) {
+    function constructTileState(dataURLs, cellToolTips) {
         return {
-            unclassified: dataURLs.map((dataURL, idx, info) => {return {id: idx, address: dataURL, info: "cell info, biology stuff"}}),  
+            unclassified: dataURLs.map((dataURL, idx) => {return {id: idx, address: dataURL, info: "cellToolTips[idx]"}}),  
             positive: [],
             negative: []
         };
@@ -328,6 +347,25 @@ function TestUIMVP(){
    
       const handleCloseFetchDropdownByImg = () => {
         setOpenFetchDropdown(false);
+      };
+
+      const imageDialogComponent = (item) => {
+              return (<Dialog
+                open={openViewCell}
+                onClose={handleCloseViewCell}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                >
+                  <Image
+                      src = {item.address}  
+                    />
+                  
+                  <DialogActions>
+                  <Button onClick={handleCloseViewCell} color="primary">
+                    Close
+                  </Button>
+                </DialogActions>
+              </Dialog>)
       };
       
 
@@ -447,12 +485,27 @@ function TestUIMVP(){
         </Grid>
 
         <Grid key={2} item>
-         <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button> 
-       
+         {/* <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button>  */}
+          {/* TODO: need to fix button disabled DONE*/}
+          {!evaluateButtonEnabled ? <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button> : <Evaluate></Evaluate>}
         </Grid>
 
         <Grid key={3} item>
-        <Button  disabled={!scoreAllButtonEnabled} variant="contained" onClick={()=>{}}>Score All</Button>
+        {/* <Button  disabled={!scoreAllButtonEnabled} variant="contained" onClick={()=>{}}>Score All</Button> */}
+          {/* TODO: need to fix button disabled DONE*/}
+          
+          {!evaluateButtonEnabled ? <Button disabled={!evaluateButtonEnabled} onClick={handleClickOpenEvaulate}variant="contained" onClick={()=>{}}>Score All</Button> : <ScoreAll></ScoreAll>}
+          <Dialog
+            open={openEvaulate}
+            TransitionComponent={Transition}
+            keepMounted
+            onClose={handleCloseEvaulate}>
+
+            <CloseIcon onClick = {handleCloseEvaulate} style={{position: 'absolute', right: '10px', top: '10px',}}></CloseIcon>  
+
+            <ConfusionMatrix></ConfusionMatrix>
+            
+          </Dialog>
         </Grid>
         
     </Grid>
@@ -474,22 +527,7 @@ function TestUIMVP(){
           >   
             {!fetching ? tileState.unclassified.map(item => (
               <GridItem className= "hoverTest"  style={{height:"10vw", width: "10vw", minHeight:80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding:10}} key={item.id}>
-                     <Dialog
-                                open={openViewCell}
-                                onClose={handleCloseViewCell}
-                                aria-labelledby="alert-dialog-title"
-                                aria-describedby="alert-dialog-description"
-                                >
-                                  <Image
-                                      src = {item.address}  
-                                    />
-                                  
-                                  <DialogActions>
-                                  <Button onClick={handleCloseViewCell} color="primary">
-                                    Close
-                                  </Button>
-                                </DialogActions>
-                              </Dialog>
+                    {/* {imageDialogComponent} */}
                 <Button className="grid-item" onClick = {handleClickOpenViewCell} >
                     <div className="grid-item-content"   style = {{backgroundImage:  `url(${item.address})`}} >
                     <span className= "hoverText">{item.info}</span>  

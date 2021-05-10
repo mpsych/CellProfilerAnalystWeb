@@ -1,3 +1,5 @@
+
+
 export default class ImageProvider2 {
     constructor(img_info, cords = {}, box_dim = {}, image_type = 'object') { // {images_info : [{image : image channel: color} x 3] cord_x: x, cord_y: y }
         this.img_info = img_info
@@ -42,7 +44,7 @@ export default class ImageProvider2 {
             this.box_dim.h, this.box_dim.l, 0, 0, main_canvas.width, main_canvas.height)
      
        }
-     ctx.globalCompositeOperation = 'source-over';                 
+     ctx.globalCompositeOperation = 'source-over';              
      return main_canvas.toDataURL();
  }
  
@@ -64,12 +66,27 @@ export default class ImageProvider2 {
     this.canvases[color].height = height;
     var ctx = this.canvases[color].getContext("2d");
     ctx.globalCompositeOperation='source-over'; 
-    ctx.drawImage(image,0,0);
+    ctx.drawImage(image,  0, 0 )
     ctx.globalCompositeOperation='multiply';
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, width ,height);  
     ctx.globalCompositeOperation='source-over'; 
-    }
+    // var imagedata = ctx.getImageData(this.cords.x, this.cords.y, 40, 40)
+    // var data = imagedata.data
+    // var max = -1
+    // var obj = {}
+    // for (var i = 0; i < data.length; i += 4) {
+    //     if (data[i] > max) max = data[i]
+    //     if (!(color === 'red' && data[i] > 20)) 
+    //         obj[key] = data[i]
+
+    // }
+    // for (var key in obj) {
+    //     var index = parseInt(key)
+    //     data[key] = ((data[key]) / max) * 255 
+    // }
+    // ctx.putImageData(new ImageData(data, 40, 40), this.cords.x, this.cords.y)
+ }
     //from https://stackoverflow.com/questions/10521978/html5-canvas-image-contrast
     // contrastImage(imgData, contrast){  //input range [-100..100]
     //     var d = imgData.data;
@@ -81,7 +98,7 @@ export default class ImageProvider2 {
     //         d[i+2] = d[i+2]*contrast + intercept;
     //     }
     //     return imgData;
-    // }
+    // }yarn 
 };
 
 export {ImageProvider2}

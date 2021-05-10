@@ -4,18 +4,13 @@ import ImageTable from "./ImageTable.js";
 import ObjectTable from "./ObjectTable.js";
 export default class DataProvider {
     constructor(uniform_data) {
-        
-
-
         this.testConstructorInputPreconditions(uniform_data);
 
         this.data = {
             'object_data' : new ObjectTable(uniform_data.object_data, uniform_data.object_columns),
             'image_data' :  new ImageTable(uniform_data.image_data, uniform_data.image_columns)
-        }
-        
+        }  
     }
-
     testConstructorInputPreconditions(uniform_data) {
         if (uniform_data == undefined) {
             throw new Error("Constructor Error on uniform_data is not defined")
@@ -81,6 +76,12 @@ export default class DataProvider {
         }
         return objsInImg;
     }
+    getToolTip(search_obj) {
+        var index = this.data.image_data.findIndex(search_obj)
+        var plate = this.data.image_data.get(index, 'plate')
+        var well = this.data.image_data.get(index, 'well')
+        return "Plate: " + plate + " Well: " + well + " ImageNumber: " + search_obj.ImageNumber
+    }
     getNRandomObjs(n) {
         var num_of_objs = this.data.object_data.getSize()
         var rand_objs = []
@@ -99,7 +100,7 @@ export default class DataProvider {
 
     }
     getAllObjRowsIn2DArray(objs) {
-        return objs.map
+        
 
     }
     getCordsforCellDisplay(search_obj) {
