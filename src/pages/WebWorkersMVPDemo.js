@@ -168,6 +168,10 @@ function TestUIMVP() {
 
 	const handleFetch = async (fetchType) => {
 		console.log('Fetch!');
+		if ((fetchType === undefined) | (fetchType == null)) {
+			return;
+		}
+		setFetching(true);
 		const emptyTileState = { unclassified: [], positive: [], negative: [] };
 		setTileState(emptyTileState);
 		switch (fetchType) {
@@ -185,6 +189,7 @@ function TestUIMVP() {
 						const newTileState = constructTileState(event.data.blobUrls);
 						console.log(newTileState);
 						setTileState(newTileState);
+						setFetching(false);
 					});
 				break;
 			case 'Positive':
@@ -212,6 +217,7 @@ function TestUIMVP() {
 						const newTileState = constructTileState(event.data.blobUrls);
 						console.log(newTileState);
 						setTileState(newTileState);
+						setFetching(false);
 					});
 				break;
 			case 'Confusing': {
@@ -237,10 +243,12 @@ function TestUIMVP() {
 						const newTileState = constructTileState(event.data.blobUrls);
 						console.log(newTileState);
 						setTileState(newTileState);
+						setFetching(false);
 					});
 				break;
 			}
 			case 'TrainingPositive':
+			case 'TrainingNegative':
 				const positiveCellPairs = trainingObject.trainingData.map((dataRow) => ({
 					ImageNumber: dataRow[0],
 					ObjectNumber: dataRow[1],
@@ -248,32 +256,7 @@ function TestUIMVP() {
 				console.log(positiveCellPairs, trainingObject.trainingLabels, trainingObject.trainingData);
 				workerActionPromise(classifierWebWorker, 'predictFilterCellPairs', {
 					cellPairs: positiveCellPairs,
-					classType: 'Positive',
-				})
-					.then((event) => {
-						const { filteredCellPairs } = event.data;
-						console.log(event);
-						setActiveCellPairs(filteredCellPairs);
-						return workerActionPromise(canvasWebWorker, 'get', {
-							getType: 'blobUrlsFromCellPairs',
-							getArgs: { cellPairs: filteredCellPairs },
-						});
-					})
-					.then((event) => {
-						const newTileState = constructTileState(event.data.blobUrls);
-						console.log(newTileState);
-						setTileState(newTileState);
-					});
-				break;
-			case 'TrainingNegative':
-				const negativeCellPairs = trainingObject.trainingData.map((dataRow) => ({
-					ImageNumber: dataRow[0],
-					ObjectNumber: dataRow[1],
-				}));
-
-				workerActionPromise(classifierWebWorker, 'predictFilterCellPairs', {
-					cellPairs: negativeCellPairs,
-					classType: 'Negative',
+					classType: fetchType === 'TrainingPositive' ? 'Positive' : 'Negative',
 				})
 					.then((event) => {
 						const { filteredCellPairs } = event.data;
@@ -384,6 +367,7 @@ function TestUIMVP() {
 
 	const handleUpload = async (eventObject) => {
 		console.log('Upload!');
+		setUploading(true);
 		workerActionPromise(dataWebWorker, 'init', { fileListObject: eventObject.target.files })
 			.then(() => {
 				return workerActionPromise(dataWebWorker, 'get', { getType: 'trainingObject' });
@@ -394,7 +378,10 @@ function TestUIMVP() {
 				return trainSequencePromise(initialTrainingObject);
 			})
 			.then(() => {
+				setUploading(false);
+				setSuccess(true);
 				enableIterationButtons();
+				setUploadButtonEnabled(false);
 			});
 	};
 
