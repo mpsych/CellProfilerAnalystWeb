@@ -59,7 +59,7 @@ class DataProvider {
             The array of objects containing the filenames and their color
     */
     returnAllImgFileNames(imageNumber) {
-        console.log("returnAllImgFileNames enter")
+        // console.log("returnAllImgFileNames enter")
         var channels = [
             {'file_lookup' : 'Image_FileNames_Filename_OrigActin', 'color' : "red" }, 
             {'file_lookup' : 'Image_FileNames_Filename_OrigpH3'  , 'color' : "green"},
@@ -69,7 +69,7 @@ class DataProvider {
             var file_name =  this.getValue('image_data', {'ImageNumber': imageNumber, 'value': channel.file_lookup}) 
             return {'filename' : file_name , 'color' : channel.color}   
          });
-         console.log("returnAllImgFileNames exit")
+        //  console.log("returnAllImgFileNames exit")
         return image_paths;
     }
     //TODO what if cell is on edge of image
@@ -111,6 +111,11 @@ class DataProvider {
     getRow(key, search_obj, ) {
         if (!(this.data.hasOwnProperty(key))) return -1;
         var row = this.data[key].find(search_obj)
+        return row;
+    }
+    getRowArray(key, search_obj) {
+        if (!(this.data.hasOwnProperty(key))) return -1;
+        var row = this.data[key].findArray(search_obj)
         return row;
     }
     getAllObjRowsIn2DArray(objs) {

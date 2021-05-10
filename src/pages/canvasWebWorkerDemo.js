@@ -1,6 +1,7 @@
 
 import React from 'react';
 import {Button, CircularProgress}from '@material-ui/core'; 
+import TextField from '@material-ui/core/TextField';
 import "bootstrap/dist/css/bootstrap.css";
 import UploadHandler from '../classes/UploadHandler'
 import Classifier from '../classes/Classifier'
@@ -17,6 +18,7 @@ function TestUI(){
     const [dataWebWorker, setDataWebWorker] = React.useState(null)
     const [blobURL, setBlobURL] = React.useState(undefined)
     const [fileListObject, setFileListObject] = React.useState(null)
+    const [cellPair, setCellpair] = React.useState({ImageNumber:1, ObjectNumber:1})
 
     React.useEffect(() => {
 
@@ -94,7 +96,7 @@ function TestUI(){
 
         canvasWorkerActionPromise('get', {
             getType: 'blobUrlsFromCellPairs', 
-            getArgs: {cellPairs: [{ImageNumber: 1, ObjectNumber: 1}]}
+            getArgs: {cellPairs: [cellPair]}
         })
             .then(event => {
                 console.log(event)
@@ -113,7 +115,21 @@ function TestUI(){
         
     }
 
+    const handleCanvasCallArg = async function(ImageNumber,ObjectNumber) {
+        canvasWorkerActionPromise("test", {fileListObject}).then((event)=>{
+            console.log(URL.createObjectURL(event.data.blob)); 
+            setBlobURL(URL.createObjectURL(event.data.blob))
+        })
 
+        canvasWorkerActionPromise('get', {
+            getType: 'blobUrlsFromCellPairs', 
+            getArgs: {cellPairs: [{ImageNumber, ObjectNumber}]}
+        })
+            .then(event => {
+                console.log(event)
+                setBlobURL(event.data.blobUrls[0])
+            })
+    }
     
 
     
@@ -133,6 +149,10 @@ function TestUI(){
                     onChange = {(eventObject)=>{handleUpload(eventObject)}}   
             />
         </Button>
+        <p>ObjectNumber</p>
+        <input type={"number"} onInput={(event)=>setCellpair({ObjectNumber:event.target.valueAsNumber, ImageNumber:cellPair.ImageNumber})}></input>
+        <p>ImageNumber</p>
+        <input type={"number"} onInput={(event)=>setCellpair({ObjectNumber:cellPair.ObjectNumber, ImageNumber:event.target.valueAsNumber})}></input>
 
     </div>
 

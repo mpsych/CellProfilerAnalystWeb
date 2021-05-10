@@ -10,6 +10,58 @@ self.onmessage = async (event) => {
     switch(event.data.action) {
         case "init":
             break;
+
+        case "train":
+            const {trainingObject} =event.data
+            // const featureIndices = [30,31]
+            const featureIndices = trainingObject.featureIndicesToUse
+            self.featureIndices = featureIndices
+            const batchSize = 32
+            const objectDataSubset = trainingObject.trainingData
+            const labels = trainingObject.trainingLabels
+            const learningRate = 0.001
+            const model = self.createLogisticRegressionModel(featureIndices.length, learningRate)
+            const numberEpochs = 100
+            const tf_dataset = self.createDatasetFromDataArrays(objectDataSubset, labels, featureIndices, batchSize)
+            
+            // mutates model to be trained
+            await self.basicTrainPromise(model, tf_dataset, numberEpochs)
+
+            console.log("finished training, start predicting")
+            const testDataTensor =  self.createTestset(objectDataSubset, featureIndices)
+            
+            const predictions = self.predict(model, testDataTensor)
+            self.confusionMatrix = self.createConfusionMatrix(predictions, labels)
+
+
+            self.classifier = model
+            self.postMessage({uuid:event.data.uuid})
+            break;
+
+        case "confusionMatrix":
+            self.postMessage({confusionMatrix:self.confusionMatrix, uuid:event.data.uuid})
+            break;
+        case "predictFilterCellPairs":
+            const {cellPairs} = event.data;
+            const {classType} = event.data
+            const UUID = event.data.uuid
+            console.log(cellPairs, classType)
+            self.workerActionPromise(dataWorkerPort, 'get', {
+                getType: 'objectRowsFromCellpairs', 
+                getArgs: {cellPairs}
+            })
+                .then((event) => {
+                    
+                    const objectRows = event.data.getResult
+                    console.log(objectRows)
+                    const testDataTensor =  self.createTestset(objectRows, self.featureIndices)
+                    const predictions = self.predict(self.classifier, testDataTensor)
+                    const labelToLookFor = (classType === "Positive")? 1 : 0
+                    const filteredCellPairs = cellPairs.filter((element, idx)=>predictions[idx]===labelToLookFor)
+                    console.log(filteredCellPairs)
+                    self.postMessage({filteredCellPairs, uuid:UUID})
+                })
+            break;
         case "connectToDataWorker":
             self.dataWorkerPort = event.ports[0]
             self.dataWorkerPort.onmessage = handleDataWorkerMessage
@@ -48,6 +100,25 @@ self.onmessage = async (event) => {
     }
 
 }
+self.workerActionPromise = function(worker, action, data) {
+    console.log(worker, action, data)
+    
+    const { v4: uuidv4 } = uuid
+    const UUID = uuidv4()
+  
+    return new Promise (resolve => {
+      let selfDestructingEventHandler = (event) => {
+        if (event.data.uuid === UUID) {
+            worker.removeEventListener('message', selfDestructingEventHandler);
+            resolve(event)
+        }
+      }
+      worker.addEventListener('message', selfDestructingEventHandler)
+      
+      worker.postMessage({action, ...data, uuid:UUID})
+    })
+    
+  }
 
 self.dataWorkerActionPromise = function(action, callback) {
     const { v4: uuidv4 } = uuid
@@ -124,7 +195,7 @@ self.createTestset = function(dataArrays, featureIndices){
     @param {int} featureCount The number of input features to the model
     @return {tf.sequential} model The TensorFlow LogisticRegression model
 */
-self.createLogisticRegressionModel = function(featureCount)  {
+self.createLogisticRegressionModel = function(featureCount, learningRate=0.01)  {
     const model = tf.sequential();
 
     model.add(
@@ -135,7 +206,7 @@ self.createLogisticRegressionModel = function(featureCount)  {
         kernelRegularizer: tf.regularizers.l1({l1: 0.1})
     }));
 
-    const optimizer = tf.train.adam(0.001);
+    const optimizer = tf.train.adam(learningRate);
     model.compile({
     optimizer: optimizer,
     loss: "binaryCrossentropy",
@@ -145,30 +216,8 @@ self.createLogisticRegressionModel = function(featureCount)  {
     return model;
 }
 
-/*
-    @param  {Array<0|1>} labels A list of 0s and 1s corresponding to a 
-                                classification of negative and positive respectively
-    @return {Tensor<Tensor<number>>} oneHotForm The Tensor One-Hot form of the labels
-*/
-self.labelsToOneHot = function(labels) {
-    const oneHotForm = labels.map(label => {
-        const outcome = label === undefined ? 0 : label;
-        return Array.from(tf.oneHot(outcome, 2).dataSync());
-    })
-    return oneHotForm
-}
 
-/*
-    @param  {Tensor<number>} X The training inputs for the dataset
-    @param  {Tensor<Tensor<number>>} Y The training desired outputs for the dataset
-    @return {tf.data.Dataset} tf_dataset The dataset object TensorFlow uses for training
-*/
-self.createTensorflowDataset = function(X, Y) {
-    const tf_dataset = tf.data
-    .zip({ xs: tf.data.array(X), ys: tf.data.array(Y) })
-    .shuffle(X.length, Date.now()%100000);
-    return tf_dataset
-}
+
 
 
 /*

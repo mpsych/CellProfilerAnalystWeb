@@ -61,22 +61,24 @@ class ImageProvider2 {
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         ctx.globalCompositeOperation='source-over'; 
-        console.log(image)
+        // console.log(image)
         // only grab for ex 40x40 image at center coordinates on image and draw totally in new canvas
-        console.log(coords.x-width/2, coords.y-height/2, width, height)
-        ctx.drawImage(image,  coords.x-width/2, coords.y-height/2, width, height, 0, 0, width, height )
+        const topLeftCoordx = coords.x-width/2
+        const topLeftCoordy = coords.y-width/2
+        ctx.drawImage(image,  topLeftCoordx, topLeftCoordy, width, height, 0, 0, width, height )
 
         // draw the color on, but do not draw over the edge of the image
-        const minx = coords.x-width/2
-        const maxx = coords.x-width/2+width
-        const miny = coords.y-height/2
-        const maxy = coords.y-height/2+height
-        const displacementx = minx<0? -minx : 0
-        const displacementy = miny<0? -miny : 0
-        
+        const startx = Math.max(-topLeftCoordx, 0)
+        const starty = Math.max(-topLeftCoordy, 0)
+        const offEndx = Math.max(0, topLeftCoordx+width - image.width )
+        const offEndy = Math.max(0,topLeftCoordy+width - image.height)
+        const durationx = width-startx - offEndx
+        const durationy = height-starty - offEndy
+
+        // console.log(startx, starty, offEndx, offEndy, durationx, durationy)
         ctx.globalCompositeOperation='multiply';
         ctx.fillStyle = color;
-        ctx.fillRect(displacementx, displacementy, maxx-minx ,maxy-miny)
+        ctx.fillRect(startx, starty, durationx ,durationy)
         // restore to default
         ctx.globalCompositeOperation='source-over'; 
         return canvas

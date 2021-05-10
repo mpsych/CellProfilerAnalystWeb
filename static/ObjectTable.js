@@ -57,6 +57,11 @@ class ObjectTable {
         return -1
 
     }    
+    findArray(search_obj = {}) {
+        var row = {}
+        var index = this.findIndex(search_obj)
+        return this.object_lines[index]
+    }
     findIndex(search_obj) {
         var img;
         var obj;

@@ -9,7 +9,8 @@ self.uuidv4Maker = uuid.v4
     switch (event.data.action) {
       case "connectToDataWorker":
         self.dataWorkerPort = event.ports[0]
-        self.dataWorkerPort.onmessage = (event) => console.log(event)
+        // self.dataWorkerPort.onmessage = (event) => console.log(event)
+        self.dataWorkerPort.onmessage = (event) => {}
         break;
       case "test":
         const exampleCanvas = new OffscreenCanvas(40, 40)
@@ -29,10 +30,10 @@ self.uuidv4Maker = uuid.v4
       case "get":
         switch(event.data.getType) {
           case "blobUrlsFromCellPairs":
-            console.log(event)
+            // console.log(event)
             const {cellPairs} = event.data.getArgs
             const blobUrls = await self.getObjsToURLs(cellPairs)
-            console.log(blobUrls)
+            // console.log(blobUrls)
             self.postMessage({blobUrls, uuid: event.data.uuid})
             
             break;
@@ -42,8 +43,8 @@ self.uuidv4Maker = uuid.v4
 }
 
 self.workerPortActionPromise = function(port, action, data) {
-  console.log("workerPortActionPromise enter")
-  console.log(port, action, data)
+  // console.log("workerPortActionPromise enter")
+  // console.log(port, action, data)
   const UUID = self.uuidv4Maker()
 
   return new Promise (resolve => {
@@ -68,7 +69,7 @@ self.workerPortActionPromise = function(port, action, data) {
         The array of urls corresponding to the cellPairs
 */
 self.getObjsToURLs = async function(cellPairs) { 
-  console.log("getObjsToURLs")
+  // console.log("getObjsToURLs")
   var urls = [];
   for (var i = 0; i < cellPairs.length; i++) {
       var cur_ImageNum = cellPairs[i].ImageNumber;
@@ -76,7 +77,7 @@ self.getObjsToURLs = async function(cellPairs) {
 
       var key = cur_ImageNum.toString()
       image_info = await this.getImagesByNumber(cur_ImageNum)
-      console.log(image_info)
+      // console.log(image_info)
       // this.images_seen[key] = image_info
 
         // var coords = this.data_provider.getCoordsforCellDisplay(cellPairs[i])
@@ -84,7 +85,7 @@ self.getObjsToURLs = async function(cellPairs) {
           getType: "coordsFromCellPair", getArgs: {cellPair: cellPairs[i]}
         })
         var coords = event.data.postResult
-        console.log(coords)
+        // console.log(coords)
         var ip = new ImageProvider2(image_info, coords)
         var url = await ip.getDataURLPromise()
         urls.push(url)     
@@ -102,16 +103,16 @@ self.getImgUrl = async function(object) { //takes {ImageNumber:...}
     @return {Array<{image: Image, color: string}>}
 */
 self.getImagesByNumber = async function(imageNumber) {
-  console.log("getImagesByNumber enter")
+  // console.log("getImagesByNumber enter")
   // var images_paths_object = this.data_provider.returnAllImgFileNames(imageNumber)
   const event = await self.workerPortActionPromise(self.dataWorkerPort, 'get', {
     getType: "pathsObjectFromImageNumber", getArgs: {imageNumber}
   })
   var images_paths_object = event.data.postResult
 
-  console.log(images_paths_object)
+  // console.log(images_paths_object)
   var images = await Promise.all(images_paths_object.map(async image_path => {
-        console.log(image_path)
+        // console.log(image_path)
         const event = await self.workerPortActionPromise(self.dataWorkerPort, 'get', {
         getType: "fileFromFileName", getArgs: {fileName:image_path.filename}
         })
@@ -125,13 +126,13 @@ self.getImagesByNumber = async function(imageNumber) {
       // var file = this.file_handler.findFile(image_path.filename)
       
       }))
-  console.log('got images: ', images)
+  // console.log('got images: ', images)
   for (var i = 0; i < images.length; i++) {
       delete images_paths_object[i].filename
       images_paths_object[i].image = images[i]
   }
-  console.log(images_paths_object)
-  console.log("getImagesByNumber exit")
+  // console.log(images_paths_object)
+  // console.log("getImagesByNumber exit")
   return images_paths_object
 }
       

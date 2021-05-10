@@ -1,6 +1,7 @@
 self.importScripts("https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js")
 class DataTables {
     constructor(data_lines, column_lines) {
+        this.data_lines = data_lines
         this.data_table = data_lines.map(data_row=>{ return _.zipObject(column_lines, data_row)})
         this.column_lines = column_lines;
     }
@@ -8,6 +9,7 @@ class DataTables {
                 return  _.find(this.data_table, search_obj)
            
         }
+    
     size() {
         return this.data_table.length;
     }
@@ -31,5 +33,8 @@ class DataTables {
     getDataColumnsPaired() {
         return this.data_table;
         
+    }
+    getDataColumns() {
+        return this.data_lines
     }
 } 

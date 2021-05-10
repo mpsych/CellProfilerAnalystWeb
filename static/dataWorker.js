@@ -11,6 +11,7 @@ self.onmessage = async (event) => {
     switch(event.data.action) {
         
         case "init":
+            console.time("init")
             const {fileListObject} = event.data
             if (fileListObject === undefined || fileListObject === null) {
                 throw new Error("[dataWebWorker] fileListObject not defined")
@@ -26,18 +27,24 @@ self.onmessage = async (event) => {
             const initialTrainingData = trainingDataTable.map(row_object => {
                 const ObjectNumber = row_object['objectnum']
                 const ImageNumber = row_object['imagenum']
-                return dataProvider.getRow('object_data', {ObjectNumber, ImageNumber})
+                return dataProvider.getRowArray('object_data', {ObjectNumber, ImageNumber})
             })
             const totalFeatures = uploadReturnObject.training_data.features
-            const featuresToUse = totalFeatures.filter((elem)=>!elem.includes("Location") && (elem !== "ObjectNumber") && (elem !== "ImageNumber"))
+
+            const featureIsUsed = (feature) => !feature.includes("Location") && (feature !== "ObjectNumber") && (feature !== "ImageNumber")
+            const tempIndices = totalFeatures.map((feature, idx)=>featureIsUsed(feature)? idx : -1)
+            console.log(tempIndices, featureIsUsed("a"),featureIsUsed("Location"))
+            const featureIndicesToUse = tempIndices.filter(index => !(index === -1))
+            console.log(featureIndicesToUse)
             self.initialTrainingObject = {
                 classifierType: "LogisticRegression",
                 trainingData: initialTrainingData,
                 trainingLabels,
-                featuresToUse
+                featureIndicesToUse
             }
             
             self.postMessage(event.data)
+            console.timeEnd("init")
             break;
         case "connectToClassifierWorker":
             self.classifierWorkerPort = event.ports[0]
@@ -63,6 +70,14 @@ self.onmessage = async (event) => {
         case "getObjectRow":
             const searchObject = {ObjectNumber:event.data.ObjectNumber, ImageNumber:event.data.ImageNumber}
             self.postMessage({action: "sendObjectData", objectData:self.dataProvider.getRow('object_data', searchObject), uuid:event.data.uuid})
+            break;
+        case "getTrainingObject":
+            self.postMessage({trainingObject:self.initialTrainingObject})
+            break;
+        case "get":
+            const result = self.fulfillAction(event)
+            self.postMessage({getResult: result, uuid: event.data.uuid})
+            break;
         default:
             console.log("unhandled event: " + event.data)
     }
@@ -70,8 +85,8 @@ self.onmessage = async (event) => {
 }
 
 self.fulfillAction = function(event) {
-    console.log("fulfillAction enter")
-    console.log(event.data)
+    // console.log("fulfillAction enter")
+    // console.log(event.data)
     switch(event.data.action) {
         case "getObjectData":
             return self.dataProvider.getDataLines('object_data')
@@ -92,6 +107,16 @@ self.fulfillAction = function(event) {
                 case "fileFromFileName":
                     const {fileName} = event.data.getArgs
                     return self.fileHandler.findFile(fileName)
+                case "trainingObject":
+                    return self.initialTrainingObject
+                case "cellPairs":
+                    const {amount} = event.data.getArgs
+                    const randomCellPairs = self.dataProvider.getNRandomObjs(amount)
+                    return randomCellPairs
+                case "objectRowsFromCellpairs": 
+                    const {cellPairs} = event.data.getArgs
+                    return cellPairs.map(cellPair => self.dataProvider.getRowArray('object_data', cellPair))
+                    
             }
         case 'test':
             return 'data test'
@@ -102,23 +127,29 @@ self.fulfillAction = function(event) {
 
 const handleClassifierWorkerMessage = function(event) {
     console.log("data worker received classifier worker data")
-    console.log(event.data)
+    // console.log(event.data)
 
     switch(event.data.action) {
         case "getObjectData":
             console.log("dataworker to classifierworker: fulfill getObjectData")
             self.classifierWorkerPort.postMessage({action: event.data.action, uuid: event.data.uuid, objectData:self.dataProvider.getDataLines('object_data')})
             break;
+        case "get":
+            const result = self.fulfillAction(event)
+            self.classifierWorkerPort.postMessage({getResult: result, uuid: event.data.uuid})
+            break;
         // case "getObjectRow":
 
     }
+
+
 }
 
 const handleCanvasWorkerMessage = function(event) {
 
     const postResult = self.fulfillAction(event)
-    console.log("fulfillAction exit")
+    // console.log("fulfillAction exit")
     const {uuid} = event.data
-    console.log(postResult, uuid)
+    // console.log(postResult, uuid)
     self.canvasWorkerPort.postMessage({postResult, uuid})
 }

@@ -19,7 +19,13 @@ flex: 1;
 height: 250px;
 background-color: black;
 /* overflow-y: scroll; */
+-ms-overflow-style: none;  /* hide scrollbars IE and Edge */
+scrollbar-width: none;  /* hide scrollbars Firefox */
 
+
+}
+.dropzone::-webkit-scrollbar { /* hide scrollbars chrome */
+  display: none;
 }
 
 .dropzone.positive {

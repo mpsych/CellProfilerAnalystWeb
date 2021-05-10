@@ -6,7 +6,7 @@ class PapaParser {
         // Maybe faster?
         //Is making multiple of these smart
         this.basicPapaConfig = {
-            worker: true,
+            // worker: true,
             skipEmptyLines: true,
             dynamicTyping: true
         }
