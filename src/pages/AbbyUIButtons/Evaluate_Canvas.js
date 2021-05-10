@@ -27,7 +27,7 @@ export default function Canvas1(props) {
     
     console.log(props.confusionMatrix)
     drawConfusionMatrix(canvasParentRef.current, props.confusionMatrix);
-  }, [canvasParentRef]);
+  }, [canvasParentRef, props.confusionMatrix]);
 
   return (
     <div style = {{padding:40}}>

@@ -21,6 +21,21 @@ self.createDatasetFromDataArrays = function(dataArrays, labels, featureIndices, 
     return tf_dataset.batch(batchSize);
 } 
 
+/*
+    @param {Array<Array<number>>} dataArrays 
+        The 2D Array of data with feature columns and row entries to draw data from to predict on
+    @param {Array<int>} featureIndices 
+        The Array of indices from dataArrays to predict on
+    @return {Tensor<Tensor<number>>} normed_X_tf 
+        The 2D Tensor of numbers to predict on
+*/
+self.createTestset = function(dataArrays, featureIndices){
+    const X = dataArrays.map(dataRowArray =>
+        featureIndices.map((index)=>dataRowArray[index])
+    )
+    const normed_X = self.norm2DArray(X)
+    return tf.tensor(normed_X)
+}
 
 /*
     @param  {Tensor<number>} X The training inputs for the dataset
