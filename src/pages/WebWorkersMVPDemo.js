@@ -82,9 +82,6 @@ function TestUIMVP() {
 	// const [classifierManager, setClassifierManager] = React.useState(null)
 	const [fileListObject, setFileListObject] = React.useState(null);
 	const [tileState, setTileState] = React.useState(constructTileState([]));
-	const [imageGridManager, setImageGridManager] = React.useState(null);
-	const [lastFetchState, setLastFetchState] = React.useState(null);
-	const [featuresToUse, setFeaturesToUseState] = React.useState(null);
 
 	const [fetchButtonEnabled, setFetchButtonEnabled] = React.useState(false);
 	const [trainButtonEnabled, setTrainButtonEnabled] = React.useState(false);
@@ -377,6 +374,14 @@ function TestUIMVP() {
 				enableIterationButtons();
 			});
 	};
+
+	const handleScoreAll = async () => {
+		console.log('Score All!');
+		return workerActionPromise(classifierWebWorker, 'scoreObjectData').then((event) => {
+			console.log(event.data);
+		});
+	};
+
 	const handleDownload = async () => {};
 
 	function constructTileState(dataURLs) {
@@ -577,11 +582,11 @@ function TestUIMVP() {
 							{/* TODO: need to fix button disabled DONE*/}
 
 							{!evaluateButtonEnabled ? (
-								<Button disabled={!evaluateButtonEnabled} variant="contained" onClick={() => {}}>
+								<Button disabled={!evaluateButtonEnabled} variant="contained" onClick={handleScoreAll}>
 									Score All
 								</Button>
 							) : (
-								<ScoreAll></ScoreAll>
+								<ScoreAll handleScoreAll></ScoreAll>
 							)}
 						</Grid>
 					</Grid>

@@ -118,7 +118,28 @@ self.onmessage = async (event) => {
 		case 'printObjectDataRow':
 			self.dataWorkerPort.postMessage({ action: 'sendObjectData', subAction: 'printObjectDataRow' });
 			break;
-
+		case 'scoreObjectData':
+			const UUID = event.data.uuid;
+			self.workerActionPromise(dataWorkerPort, 'get', {
+				getType: 'objectData',
+				getArgs: { cellPairs },
+			}).then((event) => {
+				const objectData = event.data.getResult;
+				const testDataTensor = self.createTestset(objectData, self.featureIndices);
+				const objectPredictions = self.predict(self.classifier, testDataTensor);
+				console.log(objectPredictions);
+				const imageToCountsMap = {};
+				for (var i = 0; i < objectPredictions.length; i++) {
+					const imageNumber = objectData[i][0];
+					if (imageToCountsMap[imageNumber] === undefined) {
+						imageToCountsMap[imageNumber] = [0, 0];
+					}
+					imageToCountsMap[imageNumber][objectPredictions[i]]++;
+				}
+				console.log(imageToCountsMap);
+				self.postMessage({ imageToCountsMap, uuid: UUID });
+			});
+			break;
 		case 'trainAndPredict':
 			console.log('initial entry train and predict classifierworker send to dataworker for object data');
 
