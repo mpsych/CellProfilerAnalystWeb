@@ -157,6 +157,16 @@ function TestUIMVP() {
 		}
 	};
 
+	// 	const handleCloseFetchDropDown = () => {
+	//         setAnchorEl(null)
+	//     };
+	//     const handleClickFetchDropDownOption = (fetchType) => {
+	//       setAnchorEl(null)
+	//        if (fetchType !== undefined) {
+	//           handleFetch(fetchType)
+	//        }
+	//   };
+
 	const disableIterationButtons = () => {
 		setFetchButtonEnabled(false);
 		setTrainButtonEnabled(false);
@@ -648,12 +658,12 @@ function TestUIMVP() {
 									<GridItem
 										className="hoverTest"
 										style={{
-											height: '9vw',
-											width: '10vw',
+											height: '15vw',
+											width: '15vw',
 											minHeight: 80,
 											minWidth: 80,
-											maxHeight: 105,
-											maxWidth: 105,
+											maxHeight: 120,
+											maxWidth: 120,
 											padding: 10,
 										}}
 										key={item.id}
@@ -662,9 +672,9 @@ function TestUIMVP() {
 											<div
 												className="grid-item-content"
 												style={{
-													height: 60,
-													width: 80,
 													backgroundImage: `url(${item.address})`,
+													height: '5vw',
+													width: '5vw',
 												}}
 											>
 												<span className="hoverText">{item.info}</span>
@@ -674,7 +684,7 @@ function TestUIMVP() {
 								))
 							) : (
 								<CircularProgress
-									style={{ height: '7%', width: '7%', marginTop: '8%', marginLeft: '45%' }}
+									style={{ height: '6vw', width: '6vw', marginTop: '6%', marginLeft: '45%' }}
 								/>
 							)}
 						</GridDropZone>
@@ -714,15 +724,15 @@ function TestUIMVP() {
 							className="dropzone positive"
 							id="positive"
 							boxesPerRow={4}
-							rowHeight={80}
+							rowHeight={0}
 							style={{ height: '20vw', maxHeight: 200, minHeight: 150 }}
 						>
 							{tileState.positive.map((item) => (
 								<GridItem
 									className="hoverTest"
 									style={{
-										height: '10vw',
-										width: '10vw',
+										height: '15vw',
+										width: '15vw',
 										minHeight: 80,
 										minWidth: 80,
 										maxHeight: 105,
@@ -734,7 +744,11 @@ function TestUIMVP() {
 									<div className="grid-item">
 										<div
 											className="grid-item-content"
-											style={{ backgroundImage: `url(${item.address})` }}
+											style={{
+												backgroundImage: `url(${item.address})`,
+												height: '5vw',
+												width: '5vw',
+											}}
 										>
 											<span className="hoverText">{item.info}</span>
 										</div>
@@ -767,7 +781,11 @@ function TestUIMVP() {
 									<div className="grid-item">
 										<div
 											className="grid-item-content"
-											style={{ backgroundImage: `url(${item.address})` }}
+											style={{
+												backgroundImage: `url(${item.address})`,
+												height: '5vw',
+												width: '5vw',
+											}}
 										>
 											<span className="hoverText">{item.info}</span>
 										</div>

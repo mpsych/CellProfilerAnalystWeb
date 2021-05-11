@@ -28,6 +28,13 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import InputLabel from '@material-ui/core/InputLabel';
 import Select from '@material-ui/core/Select';
 import Tooltip from '@material-ui/core/Tooltip';
+import Slide from '@material-ui/core/Slide';
+import CloseIcon from '@material-ui/icons/Close';
+import ConfusionMatrix from './AbbyUIButtons/Evaluate_Canvas'
+
+
+
+
 //import UploadButton from './UploadButton'
 
 import Evaluate from './AbbyUIButtons/UIEvaluateButton'
@@ -46,6 +53,9 @@ import {
 import { truncatedNormal } from '@tensorflow/tfjs-core';
 import UploadButton from './UploadButton';
 
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
   const useStyles = makeStyles((theme) => ({
     root: {
@@ -101,11 +111,32 @@ function TestUIMVP(){
     const [evaluateButtonEnabled, setEvaluateButtonEnabled] = React.useState(false)
     const [downloadButtonEnabled, setDownloadButtonEnabled] = React.useState(false)
     const [uploadButtonEnabled, setUploadButtonEnabled] = React.useState(true)
-    const [scoreAllButtonEnabled, setscoreAllButtonEnabled] = React.useState(false)
+    const [scoreAllButtonEnabled, setScoreAllButtonEnabled] = React.useState(false)
     const [uploading, setUploading] = React.useState(false)
     const [success, setSuccess] = React.useState(false)
     const [fetching, setFetching] = React.useState(false)
     const [openFetchDropdown, setOpenFetchDropdown] = React.useState(false);
+    const [openViewCell, setOpenViewCell] = React.useState(false);
+    const [openEvaulate, setOpenEvaulate] = React.useState(false);
+
+
+    const handleClickOpenViewCell = () => {
+      setOpenViewCell(true);
+    };
+  
+    const handleCloseViewCell = () => {
+      setOpenViewCell(false);
+    };
+
+    const handleClickOpenEvaulate = () => {
+      setOpenEvaulate(true);
+      
+    };
+    const handleCloseEvaulate = () => {
+      setOpenEvaulate(false);
+      
+    };
+
     
     const classes = useStyles();
     const buttonClassname = clsx({
@@ -118,26 +149,30 @@ function TestUIMVP(){
         setAnchorEl(event.currentTarget);
     };
 
-    const handleCloseFetchDropDown = (fetchType) => {
+    const handleCloseFetchDropDown = () => {
         setAnchorEl(null)
-         if (fetchType !== undefined) {
-            handleFetch(fetchType)
-         }
-         
     };
+    const handleClickFetchDropDownOption = (fetchType) => {
+      setAnchorEl(null)
+       if (fetchType !== undefined) {
+          handleFetch(fetchType)
+       }
+  };
+
 
     const disableIterationButtons = () => {
       setFetchButtonEnabled(false)
       setTrainButtonEnabled(false)
       setDownloadButtonEnabled(false)
       setEvaluateButtonEnabled(false)
-
+      setScoreAllButtonEnabled(false)
     }
     const enableIterationButtons = () => {
       setFetchButtonEnabled(true)
       setTrainButtonEnabled(true)
       setDownloadButtonEnabled(true)
       setEvaluateButtonEnabled(true)
+      setScoreAllButtonEnabled(true)
 
     }
 
@@ -150,6 +185,7 @@ function TestUIMVP(){
       await classifierManager.initTrainPromise()
       setLastFetchState(fetchType)
       const classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
+     // const cellToolTips = classedCellPairObjects.map(cellPair => dataProvider.getToolTip(cellPair.ImageNumber))
       const ih = new ImageHandler(fileListObject, dataProvider)
       const dataURLS = await ih.getObjsToURLs(classedCellPairObjects)
       const newTileState = constructTileState(dataURLS)
@@ -206,6 +242,7 @@ function TestUIMVP(){
   }
 
     const handleUpload = async (fileListObject) => {
+        setUploading(true)
         setUploadButtonEnabled(false)
         setFileListObject(fileListObject)
         const uploadHandler = new UploadHandler(fileListObject)
@@ -255,7 +292,7 @@ function TestUIMVP(){
     setFetchButtonEnabled(true)
     setTrainButtonEnabled(true)
     setDownloadButtonEnabled(true)
-    setscoreAllButtonEnabled(true)
+    setScoreAllButtonEnabled(true)
     setEvaluateButtonEnabled(true)
     setUploadButtonEnabled(false)
       
@@ -273,9 +310,9 @@ function TestUIMVP(){
     }
 
     
-    function constructTileState(dataURLs) {
+    function constructTileState(dataURLs, cellToolTips) {
         return {
-            unclassified: dataURLs.map((dataURL, idx, info) => {return {id: idx, address: dataURL, info: "cell info, biology stuff"}}),  
+            unclassified: dataURLs.map((dataURL, idx) => {return {id: idx, address: dataURL, info: "cellToolTips[idx]"}}),  
             positive: [],
             negative: []
         };
@@ -303,13 +340,33 @@ function TestUIMVP(){
         });
       }
     
-      const handleClickOpenFetchDropdown = () => {
+      const handleClickOpenFetchDropdownByImg = () => {
         setOpenFetchDropdown(true);
       };
    
-      const handleCloseFetchDropdown = () => {
+      const handleCloseFetchDropdownByImg = () => {
         setOpenFetchDropdown(false);
       };
+
+      const imageDialogComponent = (item) => {
+              return (<Dialog
+                open={openViewCell}
+                onClose={handleCloseViewCell}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                >
+                  <Image
+                      src = {item.address}  
+                    />
+                  
+                  <DialogActions>
+                  <Button onClick={handleCloseViewCell} color="primary">
+                    Close
+                  </Button>
+                </DialogActions>
+              </Dialog>)
+      };
+      
 
     return (
        
@@ -381,14 +438,14 @@ function TestUIMVP(){
             open={Boolean(anchorEl)}
             onClose={handleCloseFetchDropDown}
             >
-            <MenuItem onClick={()=>handleCloseFetchDropDown("random")}>Random</MenuItem>
-            <MenuItem onClick={()=>handleCloseFetchDropDown("positive")}>Positive</MenuItem>
-            <MenuItem onClick={()=>handleCloseFetchDropDown("negative")}>Negative</MenuItem>
-            <MenuItem onClick={handleClickOpenFetchDropdown}>By Image</MenuItem>
+            <MenuItem onClick={()=>handleClickFetchDropDownOption("random")}>Random</MenuItem>
+            <MenuItem onClick={()=>handleClickFetchDropDownOption("positive")}>Positive</MenuItem>
+            <MenuItem onClick={()=>handleClickFetchDropDownOption("negative")}>Negative</MenuItem>
+            <MenuItem onClick={handleClickOpenFetchDropdownByImg}>By Image</MenuItem>
            
                 <Dialog
             open={openFetchDropdown}
-            onClose={handleCloseFetchDropdown}
+            onClose={handleCloseFetchDropdownByImg}
         
             >
             <DialogTitle>Fetch By Image</DialogTitle>
@@ -411,7 +468,7 @@ function TestUIMVP(){
             </form>
             </DialogContent>
             <DialogActions>
-            <Button onClick={handleCloseFetchDropdown} color="primary">
+            <Button onClick={handleCloseFetchDropdownByImg} color="primary">
                 Close
             </Button>
             </DialogActions>
@@ -436,7 +493,18 @@ function TestUIMVP(){
         {/* <Button  disabled={!scoreAllButtonEnabled} variant="contained" onClick={()=>{}}>Score All</Button> */}
           {/* TODO: need to fix button disabled DONE*/}
           
-          {!evaluateButtonEnabled ? <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Score All</Button> : <ScoreAll></ScoreAll>}
+          {!evaluateButtonEnabled ? <Button disabled={!evaluateButtonEnabled} onClick={handleClickOpenEvaulate}variant="contained" onClick={()=>{}}>Score All</Button> : <ScoreAll></ScoreAll>}
+          <Dialog
+            open={openEvaulate}
+            TransitionComponent={Transition}
+            keepMounted
+            onClose={handleCloseEvaulate}>
+
+            <CloseIcon onClick = {handleCloseEvaulate} style={{position: 'absolute', right: '10px', top: '10px',}}></CloseIcon>  
+
+            <ConfusionMatrix></ConfusionMatrix>
+            
+          </Dialog>
         </Grid>
         
     </Grid>
@@ -457,19 +525,23 @@ function TestUIMVP(){
             style={{height: "20vw", maxHeight: 200, minHeight:150, marginBottom:10, marginLeft: "10%", width:"80%"}}
           >   
             {!fetching ? tileState.unclassified.map(item => (
-              <GridItem className= "hoverTest"  style={{height:"10vw", width: "10vw", minHeight:80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding:10}} key={item.id}>
-                <div className="grid-item" >
-                    <div className="grid-item-content" style = {{backgroundImage:  `url(${item.address})`}} >
-                    <span className= "hoverText">{item.info}</span>
-                        </div> 
-
+              <GridItem className= "hoverTest"  style={{height: "20vw", width: "10vw", minHeight:80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding:10}} key={item.id}>
+                    {/* {imageDialogComponent} */}
+                <Button className="grid-item" onClick = {handleClickOpenViewCell} >
+                    <div className="grid-item-content"   style = {{backgroundImage:  `url(${item.address})`}} >
+                    <span className= "hoverText">{item.info}</span>  
+                               
                 </div>
+               
+                </Button>
               </GridItem>
-            )) : <CircularProgress style= {{hieght:"7%", width:"7%", marginTop: "8%", marginLeft: "45%"}}/> } 
+              
+            )) : <CircularProgress style= {{height: '5vw', width: '5vw', marginTop: "5%", marginLeft: "45%"}}/>} 
         
           </GridDropZone>
-          </div>
          
+          </div>
+               
         
         <Row>
        
@@ -491,7 +563,7 @@ function TestUIMVP(){
           >
             
             {tileState.positive.map(item => (
-              <GridItem className= "hoverTest" style={{height:"10vw", width: "10vw", minHeight: 80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding:10}} key={item.id}>
+              <GridItem className= "hoverTest" style={{height:"50vw", width: "10vw", minHeight: 80, minWidth: 80, maxHeight: 205, maxWidth: 105, padding:10}} key={item.id}>
                 <div className="grid-item"> 
                     <div className="grid-item-content" style = {{backgroundImage: `url(${item.address})`}}>
                     <span className= "hoverText">{item.info}</span>
