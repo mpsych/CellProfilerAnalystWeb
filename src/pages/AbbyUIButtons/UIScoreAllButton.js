@@ -14,7 +14,6 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 //this components is for pop-up dialog display the 'confusion_matrix_canvas' for Evaluation button
 export default function DialogForCanvas(props) {
 	const [open, setOpen] = useState(false);
-	console.log(props);
 	const handleClickOpen = (props) => {
 		props.handleScoreAll();
 		setOpen(true);

@@ -5,6 +5,7 @@ self.importScripts('classifierWorkerUtils.js');
 console.log(typeof tf !== 'undefined' ? 'TensorFlow Loaded In WebWorker' : 'TensorFlow Failed To Load In WebWorker');
 // console.log(typeof tfvis !== "undefined"? "TensorFlow-Visor Loaded In WebWorker" : "TensorFlow-Visor Failed To Load In WebWorker")
 self.importScripts('https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js');
+self.canvasUUID = null;
 self.onmessage = async (event) => {
 	switch (event.data.action) {
 		case 'init':
@@ -22,7 +23,7 @@ self.onmessage = async (event) => {
 			const learningRate = 0.001;
 			self.classifier = self.createLogisticRegressionModel(featureIndices.length, learningRate);
 			const numberEpochs = 100;
-			console.log(trainingData);
+			// console.log(trainingData);
 			const tf_dataset = self.createDatasetFromDataArrays(
 				trainingData,
 				trainingLabels,
@@ -32,11 +33,11 @@ self.onmessage = async (event) => {
 			// mutates model to be trained
 			await self.basicTrainPromise(self.classifier, tf_dataset, numberEpochs);
 
-			console.log('finished training, start predicting');
+			// console.log('finished training, start predicting');
 			const testDataTensor = self.createTestset(trainingData, featureIndices);
 
 			const predictions = self.predict(self.classifier, testDataTensor);
-			console.log(predictions);
+			// console.log(predictions);
 			self.confusionMatrix = self.createConfusionMatrix(predictions, trainingLabels);
 
 			self.postMessage({ uuid: event.data.uuid });
@@ -50,28 +51,28 @@ self.onmessage = async (event) => {
 			const { cellPairs } = event.data;
 			const { classType } = event.data;
 			const UUID = event.data.uuid;
-			console.log(cellPairs, classType);
+			// console.log(cellPairs, classType);
 			self.workerActionPromise(dataWorkerPort, 'get', {
 				getType: 'objectRowsFromCellpairs',
 				getArgs: { cellPairs },
 			}).then((event) => {
 				const objectRows = event.data.getResult;
 				// const objectRows = self.trainingData
-				console.log(objectRows, self.trainingLabels);
+				// console.log(objectRows, self.trainingLabels);
 				const testDataTensor = self.createTestset(objectRows, self.featureIndices);
 
 				const predictions = self.predict(self.classifier, testDataTensor);
 
 				const labelsToLookFor = classType === 'Positive' ? 1 : 0;
-				console.log(
-					predictions,
-					predictions.map((e) => e === labelsToLookFor)
-				);
+				// console.log(
+				// 	predictions,
+				// 	predictions.map((e) => e === labelsToLookFor)
+				// );
 				const includeCellPairs = predictions.map((e) => e === labelsToLookFor);
-				console.log(labelsToLookFor);
-				console.log(cellPairs);
+				// console.log(labelsToLookFor);
+				// console.log(cellPairs);
 				const filteredCellPairs = cellPairs.filter((element, idx) => includeCellPairs[idx]);
-				console.log(filteredCellPairs);
+				// console.log(filteredCellPairs);
 				self.postMessage({ filteredCellPairs, uuid: UUID });
 			});
 			break;
@@ -80,19 +81,19 @@ self.onmessage = async (event) => {
 			const { cellPairs } = event.data;
 			// const {classType} = event.data
 			const UUID = event.data.uuid;
-			console.log(cellPairs);
+			// console.log(cellPairs);
 			self.workerActionPromise(dataWorkerPort, 'get', {
 				getType: 'objectRowsFromCellpairs',
 				getArgs: { cellPairs },
 			}).then((event) => {
 				const objectRows = event.data.getResult;
 				// const objectRows = self.trainingData
-				console.log(objectRows, self.trainingLabels);
+				// console.log(objectRows, self.trainingLabels);
 				const testDataTensor = self.createTestset(objectRows, self.featureIndices);
 
 				// const predictions = self.predict(self.classifier, testDataTensor)
 				const confuseFactors = self.predictConfusing(self.classifier, testDataTensor);
-				console.log(confuseFactors);
+				// console.log(confuseFactors);
 				const cellPairIndices = cellPairs.map((e, idx) => idx);
 				// const labelsToLookFor = (classType === "Positive")? 1 : 0
 				// console.log(predictions, predictions.map(e=>e===labelsToLookFor))
@@ -102,7 +103,7 @@ self.onmessage = async (event) => {
 				const sortedCellPairs = [...cellPairIndices]
 					.sort((i1, i2) => confuseFactors[i1] - confuseFactors[i2])
 					.map((index) => cellPairs[index]);
-				console.log(sortedCellPairs);
+				// console.log(sortedCellPairs);
 				// const filteredCellPairs = cellPairs.filter((element, idx)=>includeCellPairs[idx])
 				// console.log(filteredCellPairs)
 				self.postMessage({ sortedCellPairs, uuid: UUID });
@@ -116,6 +117,16 @@ self.onmessage = async (event) => {
 		case 'testSendToDataWorker':
 			self.dataWorkerPort.postMessage({ test: 'test' });
 			break;
+		case 'startTrainingGraphsConnection':
+			self.canvasUUID = event.data.uuid;
+			// console.log(self.canvasUUID);
+			self.postMessage({ uuid: event.data.uuid });
+			break;
+		case 'endTrainingGraphsConnection':
+			self.canvasUUID = null;
+			console.log('ended');
+			self.postMessage({ uuid: event.data.uuid });
+			break;
 		case 'printObjectDataRow':
 			self.dataWorkerPort.postMessage({ action: 'sendObjectData', subAction: 'printObjectDataRow' });
 			break;
@@ -127,7 +138,7 @@ self.onmessage = async (event) => {
 				const objectData = event.data.getResult;
 				const testDataTensor = self.createTestset(objectData, self.featureIndices);
 				const objectPredictions = self.predict(self.classifier, testDataTensor);
-				console.log(objectPredictions);
+				// console.log(objectPredictions);
 				const imageToCountsMap = {};
 				for (var i = 0; i < objectPredictions.length; i++) {
 					const imageNumber = objectData[i][0];
@@ -136,12 +147,12 @@ self.onmessage = async (event) => {
 					}
 					imageToCountsMap[imageNumber][objectPredictions[i]]++;
 				}
-				console.log(imageToCountsMap);
+				// console.log(imageToCountsMap);
 				const imageNumbers = Object.keys(imageToCountsMap);
 				const counts = imageNumbers.map((imageNumber) => imageToCountsMap[imageNumber]);
 
 				const alphas = self.fitBetaDistribution(counts);
-				console.log(alphas);
+				// console.log(alphas);
 
 				var ratios = {};
 				for (var i = 0; i < imageNumbers.length; i++) {
@@ -160,7 +171,7 @@ self.onmessage = async (event) => {
 					const totalCount = positiveCount + negativeCount;
 					adjustedRatios[imageNumber] = (positiveCount + alphas[0]) / (totalCount + alphas[0] + alphas[1]);
 				}
-				console.log(adjustedRatios);
+				// console.log(adjustedRatios);
 
 				const scoreTableObject = {
 					imageToCountsMap,
@@ -173,7 +184,7 @@ self.onmessage = async (event) => {
 			});
 			break;
 		case 'getClassifier':
-			console.log('save to localstorage');
+			// console.log('save to indexeddb');
 			self.classifier.save(`indexeddb://${self.classifierType}`).then(() => {
 				self.postMessage({ uuid: event.data.uuid });
 			});
@@ -337,11 +348,24 @@ self.basicTrainPromise = function (model, training_dataset, number_epochs) {
 			epochs: number_epochs,
 			callbacks: {
 				onEpochEnd: (epoch, logs) => {
-					console.log(logs);
+					// console.log(logs);
 					trainLogs.push(logs);
-					console.log('epoch end:', epoch);
-					self.postMessage({ action: 'updateTrainingAccuracyCanvas', trainLogs, ticks: ['acc'] });
-					self.postMessage({ action: 'updateTrainingLossCanvas', trainLogs, ticks: ['loss'] });
+					// console.log('epoch end:', epoch);
+					if (self.canvasUUID) {
+						// console.log('canvas posted', self.canvasUUID);
+						self.postMessage({
+							uuid: self.canvasUUID,
+							action: 'updateTrainingAccuracyCanvas',
+							trainLogs,
+							ticks: ['acc'],
+						});
+						self.postMessage({
+							uuid: self.canvasUUID,
+							action: 'updateTrainingLossCanvas',
+							trainLogs,
+							ticks: ['loss'],
+						});
+					}
 				},
 				onTrainEnd: () => resolve(model),
 			},
