@@ -1,6 +1,6 @@
 import React from 'react';
 import { Row, Col, Container } from 'reactstrap';
-import { Box, Button, Grid, IconButton, Menu, MenuItem, Card } from '@material-ui/core';
+import { Box, Button, Grid, IconButton, Menu, MenuItem, Card, TextField } from '@material-ui/core';
 import logo from '../cpa_logo(blue).svg';
 import { Image, Dropdown, DropdownButton } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
@@ -13,11 +13,6 @@ import Fab from '@material-ui/core/Fab';
 import CheckIcon from '@material-ui/icons/Check';
 import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 
-import UploadHandler from '../classes/UploadHandler';
-import { ClassifierManager } from '../classes/ClassifierManager';
-import { ImageHandler } from '../classes/ImageHandler';
-import UserUploadFileHandler from '../classes/UserUploadFileHandler';
-import { ImageGridManager } from '../classes/imGridManager';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
@@ -82,7 +77,7 @@ function TestUIMVP() {
 	// var classifierManager = null;
 	// const [classifierManager, setClassifierManager] = React.useState(null)
 	const [fileListObject, setFileListObject] = React.useState(null);
-	const [tileState, setTileState] = React.useState(constructTileState([jones, jones, jones]));
+	const [tileState, setTileState] = React.useState(constructTileState([]));
 
 	const [fetchButtonEnabled, setFetchButtonEnabled] = React.useState(false);
 	const [trainButtonEnabled, setTrainButtonEnabled] = React.useState(false);
@@ -112,6 +107,11 @@ function TestUIMVP() {
 
 	const trainingLossCanvasParentRef = React.useRef();
 	const trainingAccuracyCanvasParentRef = React.useRef();
+
+	const [selectedFetchImageNumber, setSelectedFetchImageNumber] = React.useState(0);
+	const [fetchImageNumberButtonEnabled, setFetchImageNumberButtonEnabled] = React.useState(false);
+	const DEBUG = true;
+	var __ = null;
 
 	React.useEffect(() => {
 		const dataToCanvasWorkerChannel = new MessageChannel();
@@ -156,16 +156,6 @@ function TestUIMVP() {
 			handleFetch(fetchType);
 		}
 	};
-
-	// 	const handleCloseFetchDropDown = () => {
-	//         setAnchorEl(null)
-	//     };
-	//     const handleClickFetchDropDownOption = (fetchType) => {
-	//       setAnchorEl(null)
-	//        if (fetchType !== undefined) {
-	//           handleFetch(fetchType)
-	//        }
-	//   };
 
 	const disableIterationButtons = () => {
 		setFetchButtonEnabled(false);
@@ -256,17 +246,50 @@ function TestUIMVP() {
 					});
 				break;
 			}
+			case 'ImageNumber':
+				console.log('fetch by image number: ' + selectedFetchImageNumber);
+				workerActionPromise(dataWebWorker, 'get', {
+					getType: 'cellPairsFromImage',
+					getArgs: { ImageNumber: selectedFetchImageNumber },
+				})
+					.then((event) => {
+						const cellPairs = event.data.getResult;
+						console.log(cellPairs);
+						return workerActionPromise(classifierWebWorker, 'predictFilterCellPairs', {
+							cellPairs,
+							classType: fetchType,
+						});
+					})
+					.then((event) => {
+						const { filteredCellPairs } = event.data;
+						const slicedCellPairs = filteredCellPairs.slice(0, 16);
+						setActiveCellPairs(filteredCellPairs);
+						return workerActionPromise(canvasWebWorker, 'get', {
+							getType: 'blobUrlsFromCellPairs',
+							getArgs: { cellPairs: slicedCellPairs },
+						});
+					})
+					.then((event) => {
+						const newTileState = constructTileState(event.data.blobUrls);
+						setTileState(newTileState);
+						setFetching(false);
+					});
+				break;
+
 			case 'TrainingPositive':
-			case 'TrainingNegative':
-				const positiveCellPairs = trainingObject.trainingData.map((dataRow) => ({
+			case 'TrainingNegative': {
+				__ = DEBUG ? console.log(`Enter fetch: ${fetchType}`) : null;
+				const cellPairs = trainingObject.trainingData.map((dataRow) => ({
 					ImageNumber: dataRow[0],
 					ObjectNumber: dataRow[1],
 				}));
+				__ = DEBUG ? console.log(cellPairs) : null;
 				workerActionPromise(classifierWebWorker, 'predictFilterCellPairs', {
-					cellPairs: positiveCellPairs,
+					cellPairs,
 					classType: fetchType === 'TrainingPositive' ? 'Positive' : 'Negative',
 				})
 					.then((event) => {
+						__ = DEBUG ? console.log(`Return from predictFilterCellPairs `, event.data) : null;
 						const { filteredCellPairs } = event.data;
 						setActiveCellPairs(filteredCellPairs);
 						return workerActionPromise(canvasWebWorker, 'get', {
@@ -275,10 +298,13 @@ function TestUIMVP() {
 						});
 					})
 					.then((event) => {
+						__ = DEBUG ? console.log(`Return get blobUrlsFromCellPairs`, event.data) : null;
 						const newTileState = constructTileState(event.data.blobUrls);
 						setTileState(newTileState);
+						setFetching(false);
 					});
 				break;
+			}
 		}
 	};
 
@@ -318,15 +344,16 @@ function TestUIMVP() {
 		let updateCanvasesListener = (event) => {
 			if (UUID == event.data.uuid) {
 				switch (event.data.action) {
-					case 'updateTrainingLossCanvas':
-						tfvis.show.history(trainingLossCanvasParentRef.current, event.data.trainLogs, event.data.ticks);
-						break;
-					case 'updateTrainingAccuracyCanvas':
-						tfvis.show.history(
-							trainingAccuracyCanvasParentRef.current,
-							event.data.trainLogs,
-							event.data.ticks
-						);
+					case 'updateTrainingCanvases':
+						tfvis.show.history(trainingLossCanvasParentRef.current, event.data.trainLogs, [
+							...event.data.ticks.loss,
+							...event.data.ticks.accuracy,
+						]);
+						// tfvis.show.history(
+						// 	trainingAccuracyCanvasParentRef.current,
+						// 	event.data.trainLogs,
+
+						// );
 						break;
 					default:
 						console.log("didn't render bad action");
@@ -376,6 +403,14 @@ function TestUIMVP() {
 		setUploading(true);
 		workerActionPromise(dataWebWorker, 'init', { fileListObject: eventObject.target.files })
 			.then(() => {
+				console.log('done');
+				workerActionPromise(dataWebWorker, 'get', {
+					getType: 'cellPairData',
+					getArgs: { cellPair: { ImageNumber: 1, ObjectNumber: 1 } },
+				});
+			})
+			.then(() => {
+				console.log('next');
 				return workerActionPromise(dataWebWorker, 'get', { getType: 'trainingObject' });
 			})
 			.then((event) => {
@@ -397,6 +432,19 @@ function TestUIMVP() {
 			return workerActionPromise(classifierWebWorker, 'scoreObjectData').then((event) => {
 				const newScoreTableObject = event.data.scoreTableObject;
 				console.log(newScoreTableObject);
+				const scoreDataRows = Object.keys(newScoreTableObject.imageToCountsMap).map((key) => ({
+					imageNumber: key,
+					total: newScoreTableObject.imageToCountsMap[key][0] + newScoreTableObject.imageToCountsMap[key][1],
+					positive: newScoreTableObject.imageToCountsMap[key][1],
+					negative: newScoreTableObject.imageToCountsMap[key][0],
+					ratio: newScoreTableObject.ratios[key],
+					adjustratio: newScoreTableObject.adjustedRatios[key],
+				}));
+				const adjustedRatiosData = Object.values(newScoreTableObject.adjustedRatios).map((ratio) => {
+					x: ratio;
+				});
+				console.log(adjustedRatiosData);
+				console.log(scoreDataRows);
 				setScoreTableObject(newScoreTableObject);
 				setScoreTableIsUpToDate(true);
 			});
@@ -442,18 +490,20 @@ function TestUIMVP() {
 		});
 	}
 
-	const handleClickOpenFetchDropdown = () => {
+	const handleClickOpenImNumFetchDropdown = () => {
+		setAnchorEl(null);
 		setOpenFetchDropdown(true);
 	};
 
-	const handleCloseFetchDropdown = () => {
+	const handleClickCloseImNumFetchDropdown = () => {
 		setOpenFetchDropdown(false);
+		handleCloseFetchDropDown('ImageNumber');
 	};
 
 	return (
 		<GridContextProvider onChange={onChange}>
 			<div style={{ overflowX: 'hidden', height: '100%', width: '100%' }}>
-				<Row style ={{marginTop: "2%"}}>
+				<Row style={{ marginTop: '2%' }}>
 					<Image
 						src={logo}
 						style={{
@@ -465,7 +515,7 @@ function TestUIMVP() {
 							marginBottom: '2%',
 						}}
 					></Image>
-				
+
 					<Col style={{ left: '40%', right: 5 }}>
 						<div className={classes.root}>
 							<div className={classes.wrapper}>
@@ -476,15 +526,15 @@ function TestUIMVP() {
 										component="label"
 										className={buttonClassname}
 										// style={{ height: '5vw', width: '5vw' }}
-										style = {{marginRight: 5}}
+										style={{ marginRight: 5 }}
 									>
 										{success ? (
-											<CheckIcon 
-											// style={{ height: '50%', width: '50%'}} 
+											<CheckIcon
+											// style={{ height: '50%', width: '50%'}}
 											/>
 										) : (
-											<CloudUploadIcon 
-											// style={{ height: '50%', width: '50%' }} 
+											<CloudUploadIcon
+											// style={{ height: '50%', width: '50%' }}
 											/>
 										)}
 										<input
@@ -507,7 +557,7 @@ function TestUIMVP() {
 								{uploading && (
 									<CircularProgress
 										className={classes.fabProgress}
-										size={68} 
+										size={68}
 										// size={"6vw"}
 										//  style={{   marginTop: "3%", marginRight: '20vw'}}
 									/>
@@ -515,7 +565,7 @@ function TestUIMVP() {
 							</div>
 						</div>
 					</Col>
-					<Col style={{ left: '15%'}}>
+					<Col style={{ left: '15%' }}>
 						<Tooltip title="Download" aria-label="download">
 							<Fab
 								aria-label="save"
@@ -524,11 +574,11 @@ function TestUIMVP() {
 								disabled={!downloadButtonEnabled}
 								onClick={handleDownload}
 								// style={{ height: '5vw', width: '5vw'}}
-								style ={{positive: "relative"}}
+								style={{ positive: 'relative' }}
 							>
 								{' '}
-								<SaveAltIcon 
-								// style={{ height: '50%', width: '50%' }} 
+								<SaveAltIcon
+								// style={{ height: '50%', width: '50%' }}
 								/>
 							</Fab>
 						</Tooltip>
@@ -556,7 +606,7 @@ function TestUIMVP() {
 								<MenuItem onClick={() => handleCloseFetchDropDown('Random')}>Random</MenuItem>
 								<MenuItem onClick={() => handleCloseFetchDropDown('Positive')}>Positive</MenuItem>
 								<MenuItem onClick={() => handleCloseFetchDropDown('Negative')}>Negative</MenuItem>
-								<MenuItem onClick={handleClickOpenFetchDropdown}>By Image</MenuItem>
+								<MenuItem onClick={handleClickOpenImNumFetchDropdown}>By Image</MenuItem>
 								<MenuItem onClick={() => handleCloseFetchDropDown('TrainingPositive')}>
 									Training Set Positive
 								</MenuItem>
@@ -573,20 +623,31 @@ function TestUIMVP() {
 										</DialogContentText>
 										<form noValidate>
 											<FormControl>
-												<InputLabel>Image</InputLabel>
-												<Select autoFocus>
-													<MenuItem value="1">1</MenuItem>
-													<MenuItem value="2">2</MenuItem>
-													<MenuItem value="3">3</MenuItem>
-													<MenuItem value="4">4</MenuItem>
-													<MenuItem value="5">5</MenuItem>
-												</Select>
+												<TextField
+													onChange={(event) => {
+														if (
+															event.target.value === null ||
+															event.target.value === undefined ||
+															event.target.value === ''
+														) {
+															return;
+														}
+														setSelectedFetchImageNumber(event.target.value);
+														setFetchImageNumberButtonEnabled(true);
+													}}
+													type="number"
+													label="Image Number"
+												></TextField>
 											</FormControl>
 										</form>
 									</DialogContent>
 									<DialogActions>
-										<Button onClick={handleCloseFetchDropdown} color="primary">
-											Close
+										<Button
+											disabled={!fetchImageNumberButtonEnabled}
+											onClick={handleClickCloseImNumFetchDropdown}
+											color="primary"
+										>
+											Ok
 										</Button>
 									</DialogActions>
 								</Dialog>
@@ -631,10 +692,7 @@ function TestUIMVP() {
 								<ScoreAll handleScoreAll={handleScoreAll}></ScoreAll>
 							)}
 						</Grid>
-						<Grid key = {4} item>
-
-
-						</Grid>
+						<Grid key={4} item></Grid>
 					</Grid>
 				</Row>
 

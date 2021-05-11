@@ -96,27 +96,66 @@ self.fulfillAction = function (event) {
 			return self.initialTrainingObject;
 		case 'get':
 			switch (event.data.getType) {
-				case 'coordsFromCellPair':
+				case 'coordsFromCellPair': {
 					const { cellPair } = event.data.getArgs;
 					return self.dataProvider.getCoordsforCellDisplay(cellPair);
-				case 'pathsObjectFromImageNumber':
+				}
+				case 'pathsObjectFromImageNumber': {
 					const { imageNumber } = event.data.getArgs;
 
 					return self.dataProvider.returnAllImgFileNames(imageNumber);
-				case 'fileFromFileName':
+				}
+				case 'fileFromFileName': {
 					const { fileName } = event.data.getArgs;
 					return self.fileHandler.findFile(fileName);
+				}
 				case 'trainingObject':
 					return self.initialTrainingObject;
-				case 'cellPairs':
+				case 'cellPairs': {
 					const { amount } = event.data.getArgs;
 					const randomCellPairs = self.dataProvider.getNRandomObjs(amount);
 					return randomCellPairs;
-				case 'objectRowsFromCellpairs':
+				}
+				case 'objectRowsFromCellpairs': {
 					const { cellPairs } = event.data.getArgs;
 					return cellPairs.map((cellPair) => self.dataProvider.getRowArray('object_data', cellPair));
+				}
 				case 'objectData':
 					return self.dataProvider.getDataLines('object_data');
+				case 'cellPairsFromImage': {
+					const ImageNumber = parseInt(event.data.getArgs.ImageNumber);
+					// console.log(ImageNumber);
+					const objectData = self.dataProvider.getDataLines('object_data');
+					// console.log(objectData);
+					console.log(objectData[200][0], ImageNumber, objectData[200][0] === ImageNumber);
+					console.log(typeof (objectData[200][0], typeof ImageNumber));
+					const filteredObjectData = objectData.filter((row) => row[0] === ImageNumber);
+					console.log(filteredObjectData);
+					const filteredCellPairs = filteredObjectData.map((row) => ({ ImageNumber, ObjectNumber: row[1] }));
+					console.log(filteredCellPairs);
+					return filteredCellPairs;
+				}
+				case 'cellPairData': {
+					console.log('cellPairData');
+					const cellPair = {
+						ImageNumber: parseInt(event.data.getArgs.cellPair.ImageNumber),
+						ObjectNumber: parseInt(event.data.getArgs.cellPair.ObjectNumber),
+					};
+					console.log(cellPair);
+					const imageDataRow = this.dataProvider.getRow('image_data', { ImageNumber: cellPair.ImageNumber });
+					console.log(imageDataRow);
+
+					const cellData = {
+						ImageNumber: cellPair.ImageNumber,
+						ObjectNumber: cellPair.ObjectNumber,
+						Plate: imageDataRow.plate,
+						Well: imageDataRow.well,
+						Gene: imageDataRow.gene,
+						Puro: imageDataRow.puro,
+					};
+					console.log(cellData);
+					return cellData;
+				}
 			}
 		case 'test':
 			return 'data test';
