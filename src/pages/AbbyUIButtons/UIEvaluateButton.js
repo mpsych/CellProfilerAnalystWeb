@@ -12,7 +12,7 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 //this components is for pop-up dialog display the 'confusion_matrix_canvas' for Evaluation button
-export default function DialogForCanvas() {
+export default function DialogForCanvas(props) {
   const [open, setOpen] = useState(false);
 
   const handleClickOpen = () => {
@@ -40,7 +40,7 @@ export default function DialogForCanvas() {
 
         <CloseIcon onClick = {handleClose} style={{position: 'absolute', right: '10px', top: '10px',}}></CloseIcon>  
 
-        <ConfusionMatrix></ConfusionMatrix>
+        <ConfusionMatrix confusionMatrix={props.confusionMatrix}></ConfusionMatrix>
         
       </Dialog>
       

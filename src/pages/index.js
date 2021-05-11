@@ -10,7 +10,7 @@ import UploadHandler from '../classes/UploadHandler'
 import {ClassifierManager} from '../classes/ClassifierManager'
 import {ImageGridManager}  from '../classes/imGridManager'
 import {ImageHandler}  from '../classes/ImageHandler'
-
+import jones from '../jones.jpg'
 import {
     GridContextProvider,
     GridDropZone,
@@ -33,7 +33,7 @@ function TestUI(){
     // const [classifierManager, setClassifierManager] = React.useState(null)
     const [trainingObject, setTrainingObject] = React.useState(null)
     const [fileListObject, setFileListObject] = React.useState(null)
-    const [tileState, setTileState] = React.useState( constructTileState([]) );
+    const [tileState, setTileState] = React.useState( constructTileState([jones,jones , jones]) );
     const [imageGridManager, setImageGridManager] = React.useState(null)
     const [lastFetchState, setLastFetchState] = React.useState(null)
     const [featuresToUse, setFeaturesToUseState] = React.useState(null)
@@ -188,24 +188,35 @@ function TestUI(){
 
     function onChange(sourceId, sourceIndex, targetIndex, targetId) {
         if (targetId) {
+         
           const result = move(
             tileState[sourceId],
             tileState[targetId],
             sourceIndex,
             targetIndex
           );
+          
           return setTileState({
             ...tileState,
             [sourceId]: result[0],
             [targetId]: result[1]
           });
         }
-    
-        const result = swap(tileState[sourceId], sourceIndex, targetIndex);
+        console.log(sourceId, sourceIndex, targetIndex, )
+        if (sourceIndex !== targetIndex) {
+          const result = swap(tileState[sourceId], sourceIndex, tileState[sourceId].length);
+          return setTileState({
+            ...tileState,
+            [sourceId]: result
+          });
+        }
+        const result = swap(tileState[sourceId], sourceIndex, sourceIndex);
         return setTileState({
           ...tileState,
           [sourceId]: result
         });
+        
+        
       }
     
     return (

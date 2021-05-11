@@ -157,7 +157,6 @@ function TestUIMVP(){
        if (fetchType !== undefined) {
           handleFetch(fetchType)
        }
-       
   };
 
 
@@ -526,7 +525,7 @@ function TestUIMVP(){
             style={{height: "20vw", maxHeight: 200, minHeight:150, marginBottom:10, marginLeft: "10%", width:"80%"}}
           >   
             {!fetching ? tileState.unclassified.map(item => (
-              <GridItem className= "hoverTest"  style={{height:"10vw", width: "10vw", minHeight:80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding:10}} key={item.id}>
+              <GridItem className= "hoverTest"  style={{height: "20vw", width: "10vw", minHeight:80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding:10}} key={item.id}>
                     {/* {imageDialogComponent} */}
                 <Button className="grid-item" onClick = {handleClickOpenViewCell} >
                     <div className="grid-item-content"   style = {{backgroundImage:  `url(${item.address})`}} >
@@ -564,7 +563,7 @@ function TestUIMVP(){
           >
             
             {tileState.positive.map(item => (
-              <GridItem className= "hoverTest" style={{height:"10vw", width: "10vw", minHeight: 80, minWidth: 80, maxHeight: 105, maxWidth: 105, padding:10}} key={item.id}>
+              <GridItem className= "hoverTest" style={{height:"50vw", width: "10vw", minHeight: 80, minWidth: 80, maxHeight: 205, maxWidth: 105, padding:10}} key={item.id}>
                 <div className="grid-item"> 
                     <div className="grid-item-content" style = {{backgroundImage: `url(${item.address})`}}>
                     <span className= "hoverText">{item.info}</span>
