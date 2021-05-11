@@ -459,16 +459,17 @@ function TestUIMVP() {
 	return (
 		<GridContextProvider onChange={onChange}>
 			<div style={{ overflowX: 'hidden', height: '100%', width: '100%' }}>
-				<Row>
+				<Row style ={{}}>
 					<Image
 						src={logo}
 						style={{
-							marginLeft: '10%',
+							marginLeft: '11%',
 							height: '30%',
 							width: '25%',
 							position: 'relative',
 							maxHeight: '125px',
-							marginBottom: '1%',
+							marginBottom: '2%',
+							marginTop:"2%"
 						}}
 					></Image>
 
@@ -514,7 +515,7 @@ function TestUIMVP() {
 							</div>
 						</div>
 					</Col>
-					<Col style={{ left: '15%', marginTop: '.75%' }}>
+					<Col style={{ left: '15%', marginTop: '1%' }}>
 						<Tooltip title="Download" aria-label="download">
 							<Fab
 								aria-label="save"
