@@ -40,6 +40,7 @@ import { GridContextProvider, GridDropZone, GridItem, swap, move } from 'react-g
 
 import '../dndstyles.css';
 import * as tf from '@tensorflow/tfjs';
+import * as tfvis from '@tensorflow/tfjs-vis';
 import UploadButton from './UploadButton';
 
 const useStyles = makeStyles((theme) => ({
@@ -81,7 +82,7 @@ function TestUIMVP() {
 	// var classifierManager = null;
 	// const [classifierManager, setClassifierManager] = React.useState(null)
 	const [fileListObject, setFileListObject] = React.useState(null);
-	const [tileState, setTileState] = React.useState(constructTileState([]));
+	const [tileState, setTileState] = React.useState(constructTileState([jones, jones, jones]));
 
 	const [fetchButtonEnabled, setFetchButtonEnabled] = React.useState(false);
 	const [trainButtonEnabled, setTrainButtonEnabled] = React.useState(false);
@@ -108,6 +109,9 @@ function TestUIMVP() {
 
 	const [scoreTableIsUpToDate, setScoreTableIsUpToDate] = React.useState(false);
 	const [scoreTableObject, setScoreTableObject] = React.useState(null);
+
+	const trainingLossCanvasParentRef = React.useRef();
+	const trainingAccuracyCanvasParentRef = React.useRef();
 
 	React.useEffect(() => {
 		const dataToCanvasWorkerChannel = new MessageChannel();
@@ -148,20 +152,20 @@ function TestUIMVP() {
 
 	const handleCloseFetchDropDown = (fetchType) => {
 		setAnchorEl(null);
-		if (fetchType !== undefined) {
+		if (fetchType !== undefined && fetchType !== null) {
 			handleFetch(fetchType);
 		}
 	};
 
-// 	const handleCloseFetchDropDown = () => {
-//         setAnchorEl(null)
-//     };
-//     const handleClickFetchDropDownOption = (fetchType) => {
-//       setAnchorEl(null)
-//        if (fetchType !== undefined) {
-//           handleFetch(fetchType)
-//        }
-//   };
+	// 	const handleCloseFetchDropDown = () => {
+	//         setAnchorEl(null)
+	//     };
+	//     const handleClickFetchDropDownOption = (fetchType) => {
+	//       setAnchorEl(null)
+	//        if (fetchType !== undefined) {
+	//           handleFetch(fetchType)
+	//        }
+	//   };
 
 	const disableIterationButtons = () => {
 		setFetchButtonEnabled(false);
@@ -197,7 +201,6 @@ function TestUIMVP() {
 					})
 					.then((event) => {
 						const newTileState = constructTileState(event.data.blobUrls);
-						console.log(newTileState);
 						setTileState(newTileState);
 						setFetching(false);
 					});
@@ -216,7 +219,6 @@ function TestUIMVP() {
 					.then((event) => {
 						const { filteredCellPairs } = event.data;
 						const slicedCellPairs = filteredCellPairs.slice(0, 16);
-						console.log(event);
 						setActiveCellPairs(filteredCellPairs);
 						return workerActionPromise(canvasWebWorker, 'get', {
 							getType: 'blobUrlsFromCellPairs',
@@ -225,7 +227,6 @@ function TestUIMVP() {
 					})
 					.then((event) => {
 						const newTileState = constructTileState(event.data.blobUrls);
-						console.log(newTileState);
 						setTileState(newTileState);
 						setFetching(false);
 					});
@@ -241,7 +242,6 @@ function TestUIMVP() {
 					})
 					.then((event) => {
 						const { sortedCellPairs } = event.data;
-						console.log(event);
 						const slicedSortedCellPairs = sortedCellPairs.slice(0, 16);
 						setActiveCellPairs(slicedSortedCellPairs);
 						return workerActionPromise(canvasWebWorker, 'get', {
@@ -251,7 +251,6 @@ function TestUIMVP() {
 					})
 					.then((event) => {
 						const newTileState = constructTileState(event.data.blobUrls);
-						console.log(newTileState);
 						setTileState(newTileState);
 						setFetching(false);
 					});
@@ -263,14 +262,12 @@ function TestUIMVP() {
 					ImageNumber: dataRow[0],
 					ObjectNumber: dataRow[1],
 				}));
-				console.log(positiveCellPairs, trainingObject.trainingLabels, trainingObject.trainingData);
 				workerActionPromise(classifierWebWorker, 'predictFilterCellPairs', {
 					cellPairs: positiveCellPairs,
 					classType: fetchType === 'TrainingPositive' ? 'Positive' : 'Negative',
 				})
 					.then((event) => {
 						const { filteredCellPairs } = event.data;
-						console.log(event);
 						setActiveCellPairs(filteredCellPairs);
 						return workerActionPromise(canvasWebWorker, 'get', {
 							getType: 'blobUrlsFromCellPairs',
@@ -279,7 +276,6 @@ function TestUIMVP() {
 					})
 					.then((event) => {
 						const newTileState = constructTileState(event.data.blobUrls);
-						console.log(newTileState);
 						setTileState(newTileState);
 					});
 				break;
@@ -295,7 +291,6 @@ function TestUIMVP() {
 		const newLabels = new Array(positiveCellPairs.length)
 			.fill(1)
 			.concat(new Array(negativeCellPairs.length).fill(0));
-		console.log(totalCellPairs, newLabels);
 
 		setScoreTableIsUpToDate(false);
 		setTileState(constructTileState([]));
@@ -314,42 +309,44 @@ function TestUIMVP() {
 				featureIndicesToUse: trainingObject.featureIndicesToUse,
 			};
 			return trainSequencePromise(newTrainingObject);
-			// console.log(trainingObject);
-			// console.log(dataRows);
-			// const newTrainingObject = {
-			// 	classifierType: 'LogisticRegression',
-			// 	trainingData: [...trainingObject.trainingData, ...dataRows],
-			// 	trainingLabels: [...trainingObject.trainingLabels, ...newLabels],
-			// 	featureIndicesToUse: trainingObject.featureIndicesToUse,
-			// };
-			// console.log(newTrainingObject);
-			// setOpenTrainDropdown(true);
-			// setTrainingObject(newTrainingObject);
-			// return workerActionPromise(classifierWebWorker, 'train', { trainingObject: newTrainingObject });
 		});
-		// .then(() => {
-		// 	return workerActionPromise(classifierWebWorker, 'confusionMatrix');
-		// })
-		// .then((event) => {
-		// 	const newConfusionMatrix = event.data.confusionMatrix;
-		// 	console.log(newConfusionMatrix);
-		// 	setConfusionMatrix(newConfusionMatrix);
-		// })
-		// .then(() => {
-		// 	setOpenTrainDropdown(false);
-		// });
 	};
 
 	const trainSequencePromise = function (currentTrainingObject) {
 		setOpenTrainDropdown(true);
+		var UUID = null;
+		let updateCanvasesListener = (event) => {
+			if (UUID == event.data.uuid) {
+				switch (event.data.action) {
+					case 'updateTrainingLossCanvas':
+						tfvis.show.history(trainingLossCanvasParentRef.current, event.data.trainLogs, event.data.ticks);
+						break;
+					case 'updateTrainingAccuracyCanvas':
+						tfvis.show.history(
+							trainingAccuracyCanvasParentRef.current,
+							event.data.trainLogs,
+							event.data.ticks
+						);
+						break;
+					default:
+						console.log("didn't render bad action");
+				}
+			}
+		};
 
-		return workerActionPromise(classifierWebWorker, 'train', { trainingObject: currentTrainingObject })
+		workerActionPromise(classifierWebWorker, 'startTrainingGraphsConnection', {})
+			.then((event) => {
+				UUID = event.data.uuid;
+				classifierWebWorker.addEventListener('message', updateCanvasesListener);
+				return workerActionPromise(classifierWebWorker, 'train', { trainingObject: currentTrainingObject });
+			})
 			.then(() => {
+				workerActionPromise(classifierWebWorker, 'endTrainingGraphsConnection', {});
+				classifierWebWorker.removeEventListener('message', updateCanvasesListener);
 				return workerActionPromise(classifierWebWorker, 'confusionMatrix');
 			})
 			.then((event) => {
 				const newConfusionMatrix = event.data.confusionMatrix;
-				console.log(newConfusionMatrix);
 				setConfusionMatrix(newConfusionMatrix);
 			})
 			.then(() => {
@@ -359,7 +356,6 @@ function TestUIMVP() {
 	};
 
 	const workerActionPromise = function (worker, action, data) {
-		console.log(worker, action, data);
 		const UUID = uuidv4();
 
 		return new Promise((resolve) => {
@@ -383,7 +379,6 @@ function TestUIMVP() {
 				return workerActionPromise(dataWebWorker, 'get', { getType: 'trainingObject' });
 			})
 			.then((event) => {
-				console.log(event);
 				const initialTrainingObject = event.data.getResult;
 				return trainSequencePromise(initialTrainingObject);
 			})
@@ -411,7 +406,6 @@ function TestUIMVP() {
 	const handleDownload = async () => {
 		console.log('Download!');
 		return workerActionPromise(classifierWebWorker, 'getClassifier').then((event) => {
-			console.log(event);
 			tf.loadLayersModel(`indexeddb://${trainingObject.classifierType}`).then((model) => {
 				model.save(`downloads://${trainingObject.classifierType}`);
 			});
@@ -548,7 +542,7 @@ function TestUIMVP() {
 								anchorEl={anchorEl}
 								keepMounted
 								open={Boolean(anchorEl)}
-								onClose={handleCloseFetchDropDown}
+								onClose={() => handleCloseFetchDropDown(null)}
 							>
 								<MenuItem onClick={() => handleCloseFetchDropDown('Random')}>Random</MenuItem>
 								<MenuItem onClick={() => handleCloseFetchDropDown('Positive')}>Positive</MenuItem>
@@ -562,7 +556,7 @@ function TestUIMVP() {
 								</MenuItem>
 								<MenuItem onClick={() => handleCloseFetchDropDown('Confusing')}>Confusing</MenuItem>
 
-								<Dialog open={openFetchDropdown} onClose={handleCloseFetchDropdown}>
+								<Dialog open={openFetchDropdown} onClose={() => handleCloseFetchDropDown(null)}>
 									<DialogTitle>Fetch By Image</DialogTitle>
 									<DialogContent>
 										<DialogContentText>
@@ -595,10 +589,12 @@ function TestUIMVP() {
 							<Button disabled={!trainButtonEnabled} variant="contained" onClick={handleTrain}>
 								Train
 							</Button>
-							<Dialog open={openTrainDropdown}>
+							<Dialog fullWidth={500} open={openTrainDropdown}>
 								<DialogTitle>Loss and Accuracy</DialogTitle>
 								<DialogContent>
-									<img width={100} height={100} src={jones}></img>
+									{/* <img width={100} height={100} src={jones}></img> */}
+									<div width={300} ref={trainingAccuracyCanvasParentRef}></div>
+									<div width={300} ref={trainingLossCanvasParentRef}></div>
 								</DialogContent>
 							</Dialog>
 						</Grid>
@@ -663,16 +659,24 @@ function TestUIMVP() {
 									<GridItem
 										className="hoverTest"
 										style={{
-											height:"15vw", width: "15vw", minHeight:80, minWidth: 80, maxHeight: 120, maxWidth: 120, padding:10
+											height: '15vw',
+											width: '15vw',
+											minHeight: 80,
+											minWidth: 80,
+											maxHeight: 120,
+											maxWidth: 120,
+											padding: 10,
 										}}
 										key={item.id}
 									>
 										<div className="grid-item">
 											<div
 												className="grid-item-content"
-												style={{ backgroundImage: `url(${item.address})`,
-														height: "5vw",
-														width: "5vw"}}
+												style={{
+													backgroundImage: `url(${item.address})`,
+													height: '5vw',
+													width: '5vw',
+												}}
 											>
 												<span className="hoverText">{item.info}</span>
 											</div>
@@ -681,7 +685,7 @@ function TestUIMVP() {
 								))
 							) : (
 								<CircularProgress
-								 style= {{height: '6vw', width: '6vw', marginTop: "6%", marginLeft: "45%"}}
+									style={{ height: '6vw', width: '6vw', marginTop: '6%', marginLeft: '45%' }}
 								/>
 							)}
 						</GridDropZone>
@@ -741,9 +745,11 @@ function TestUIMVP() {
 									<div className="grid-item">
 										<div
 											className="grid-item-content"
-											style={{ backgroundImage: `url(${item.address})`,
-											height: "5vw",
-											width: "5vw"}}
+											style={{
+												backgroundImage: `url(${item.address})`,
+												height: '5vw',
+												width: '5vw',
+											}}
 										>
 											<span className="hoverText">{item.info}</span>
 										</div>
@@ -776,9 +782,11 @@ function TestUIMVP() {
 									<div className="grid-item">
 										<div
 											className="grid-item-content"
-											style={{ backgroundImage: `url(${item.address})`,
-											height: "5vw",
-											width: "5vw"}}
+											style={{
+												backgroundImage: `url(${item.address})`,
+												height: '5vw',
+												width: '5vw',
+											}}
 										>
 											<span className="hoverText">{item.info}</span>
 										</div>
