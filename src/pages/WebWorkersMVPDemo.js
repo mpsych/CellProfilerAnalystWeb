@@ -31,7 +31,7 @@ import Tooltip from '@material-ui/core/Tooltip';
 //import UploadButton from './UploadButton'
 
 import Evaluate from './AbbyUIButtons/UIEvaluateButton';
-import ScoreAll from './AbbyUIButtons/UIScoreAllButton';
+import ScoreAll from './UIScoreAllButton';
 import { v4 as uuidv4 } from 'uuid';
 
 import jones from '../jones.jpg';
@@ -49,7 +49,7 @@ const useStyles = makeStyles((theme) => ({
 		alignItems: 'center',
 	},
 	wrapper: {
-		margin: theme.spacing(1),
+		//margin: theme.spacing(1),
 		position: 'relative',
 	},
 	buttonSuccess: {
@@ -453,7 +453,7 @@ function TestUIMVP() {
 	return (
 		<GridContextProvider onChange={onChange}>
 			<div style={{ overflowX: 'hidden', height: '100%', width: '100%' }}>
-				<Row style ={{}}>
+				<Row style ={{marginTop: "2%"}}>
 					<Image
 						src={logo}
 						style={{
@@ -463,11 +463,10 @@ function TestUIMVP() {
 							position: 'relative',
 							maxHeight: '125px',
 							marginBottom: '2%',
-							marginTop:"2%"
 						}}
 					></Image>
-
-					<Col style={{ left: '40%' }}>
+				
+					<Col style={{ left: '40%', right: 5 }}>
 						<div className={classes.root}>
 							<div className={classes.wrapper}>
 								<Tooltip title="Load Data" aria-label="load data">
@@ -476,12 +475,17 @@ function TestUIMVP() {
 										color="primary"
 										component="label"
 										className={buttonClassname}
-										style={{ height: '5vw', width: '5vw' }}
+										// style={{ height: '5vw', width: '5vw' }}
+										style = {{marginRight: 5}}
 									>
 										{success ? (
-											<CheckIcon style={{ height: '50%', width: '50%' }} />
+											<CheckIcon 
+											// style={{ height: '50%', width: '50%'}} 
+											/>
 										) : (
-											<CloudUploadIcon style={{ height: '50%', width: '50%' }} />
+											<CloudUploadIcon 
+											// style={{ height: '50%', width: '50%' }} 
+											/>
 										)}
 										<input
 											type="file"
@@ -503,13 +507,15 @@ function TestUIMVP() {
 								{uploading && (
 									<CircularProgress
 										className={classes.fabProgress}
-										style={{ height: '6vw', width: '6vw', marginTop: '4%', marginRight: '4%' }}
+										size={68} 
+										// size={"6vw"}
+										//  style={{   marginTop: "3%", marginRight: '20vw'}}
 									/>
 								)}
 							</div>
 						</div>
 					</Col>
-					<Col style={{ left: '15%', marginTop: '1%' }}>
+					<Col style={{ left: '15%'}}>
 						<Tooltip title="Download" aria-label="download">
 							<Fab
 								aria-label="save"
@@ -517,10 +523,13 @@ function TestUIMVP() {
 								component="label"
 								disabled={!downloadButtonEnabled}
 								onClick={handleDownload}
-								style={{ height: '5vw', width: '5vw' }}
+								// style={{ height: '5vw', width: '5vw'}}
+								style ={{positive: "relative"}}
 							>
 								{' '}
-								<SaveAltIcon style={{ height: '50%', width: '50%' }} />
+								<SaveAltIcon 
+								// style={{ height: '50%', width: '50%' }} 
+								/>
 							</Fab>
 						</Tooltip>
 					</Col>
@@ -592,7 +601,6 @@ function TestUIMVP() {
 							<Dialog fullWidth={500} open={openTrainDropdown}>
 								<DialogTitle>Loss and Accuracy</DialogTitle>
 								<DialogContent>
-									{/* <img width={100} height={100} src={jones}></img> */}
 									<div width={300} ref={trainingAccuracyCanvasParentRef}></div>
 									<div width={300} ref={trainingLossCanvasParentRef}></div>
 								</DialogContent>
@@ -622,6 +630,10 @@ function TestUIMVP() {
 							) : (
 								<ScoreAll handleScoreAll={handleScoreAll}></ScoreAll>
 							)}
+						</Grid>
+						<Grid key = {4} item>
+
+
 						</Grid>
 					</Grid>
 				</Row>
