@@ -769,8 +769,8 @@ function TestUIMVP() {
 								<GridItem
 									className="hoverTest"
 									style={{
-										height: '10vw',
-										width: '10vw',
+										height: '15vw',
+										width: '15vw',
 										minHeight: 80,
 										minWidth: 80,
 										maxHeight: 105,
