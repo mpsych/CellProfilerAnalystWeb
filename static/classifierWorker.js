@@ -51,6 +51,10 @@ self.onmessage = async (event) => {
 			const { cellPairs } = event.data;
 			const { classType } = event.data;
 			const UUID = event.data.uuid;
+			if (cellPairs.length === 0) {
+				self.postMessage({ filteredCellPairs: [], uuid: UUID });
+				return;
+			}
 			// console.log(cellPairs, classType);
 			self.workerActionPromise(dataWorkerPort, 'get', {
 				getType: 'objectRowsFromCellpairs',
@@ -355,19 +359,19 @@ self.basicTrainPromise = function (model, training_dataset, number_epochs) {
 						// console.log('canvas posted', self.canvasUUID);
 						self.postMessage({
 							uuid: self.canvasUUID,
-							action: 'updateTrainingAccuracyCanvas',
+							action: 'updateTrainingCanvases',
 							trainLogs,
-							ticks: ['acc'],
+							ticks: { accuracy: ['acc'], loss: ['loss'] },
 						});
-						self.postMessage({
-							uuid: self.canvasUUID,
-							action: 'updateTrainingLossCanvas',
-							trainLogs,
-							ticks: ['loss'],
-						});
+						// self.postMessage({
+						// 	uuid: self.canvasUUID,
+						// 	action: 'updateTrainingLossCanvas',
+						// 	trainLogs,
+						// 	ticks: ['loss'],
+						// });
 					}
 				},
-				onTrainEnd: () => resolve(model),
+				onTrainEnd: () => resolve(),
 			},
 		});
 	});
