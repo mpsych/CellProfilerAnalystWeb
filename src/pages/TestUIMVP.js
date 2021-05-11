@@ -38,7 +38,7 @@ import ConfusionMatrix from './AbbyUIButtons/Evaluate_Canvas'
 //import UploadButton from './UploadButton'
 
 import Evaluate from './AbbyUIButtons/UIEvaluateButton'
-import ScoreAll from './AbbyUIButtons/UIScoreAllButton'
+import ScoreAll from './UIScoreAllButton'
 
 
 import {

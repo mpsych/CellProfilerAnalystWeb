@@ -2,56 +2,53 @@ import React from 'react';
 import { makeStyles, Paper,Table, TableBody,TableCell,TableContainer,TableHead,
   TablePagination,TableRow} from '@material-ui/core';
 
+
 const columns = [
-  { id: 'imageNumber', label: 'Image Number', minWidth: 50},
-  { id: 'imageLink', 
-    label: 'Image Link',
-    minWidth: 50,
-    
-},
+  { id: 'imageNumber', label: 'Image Number', width: 20},
+  
   {
     id: 'total',
     label: 'Total',
-    minWidth: 100,
+    width: 20,
     align: 'right',
     
   },
   {
     id: 'positive',
     label: 'Positive\u00a0',
-    minWidth: 100,
+    width: 40,
     align: 'right',
     format: (value) => value.toLocaleString('en-US'),
   },
   {
     id: 'negative',
     label: 'Negative\u00a0',
-    minWidth: 100,
+    width: 40,
     align: 'right',
-    format: (value) => value.toFixed(2),
+    format: (value) => value.toFixed(3),
   },
   {
     id: 'ratio',
     label: 'Ratio\u00a0',
-    minWidth: 100,
+    width: 40,
     align: 'right',
     format: (value) => value.toFixed(2),
   },
   {
     id: 'adjustratio',
     label: 'Adjusted Ratio\u00a0',
-    minWidth: 100,
+    width: 40,
     align: 'right',
     format: (value) => value.toFixed(2),
   },
 ];
 
 //fake data
-function createData(imageNumber, imageLink, total, positive) {
+function createData(imageNumber, total, positive) {
   const ratio = '50%';
   const adjustratio = '90%';
   const negative = total - positive;
-  return { imageNumber, imageLink, total, positive, negative,ratio,adjustratio };
+  return { imageNumber, total, positive, negative,ratio, adjustratio };
 }
 
 
@@ -89,9 +86,13 @@ export default function ScoreTableUI() {
   };
 
   return (
-    <Paper>
-      <TableContainer style = {{maxHeight: 440}}>
-        <Table stickyHeader aria-label="sticky table">
+    <Paper >
+      <TableContainer 
+      // style = {{height: 700, width: 700}}
+      >
+        <Table size="small" stickyHeader aria-label="sticky table" 
+            style = {{ width: 200, marginTop: 45}} 
+        >
           <TableHead>
             <TableRow>
               {columns.map((column) => (
