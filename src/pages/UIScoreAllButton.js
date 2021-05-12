@@ -5,13 +5,8 @@ import Slide from '@material-ui/core/Slide';
 import CloseIcon from '@material-ui/icons/Close';
 import SaveIcon from '@material-ui/icons/Save';
 import ScoreAllTable from './AbbyUIButtons/Score_Table';
-<<<<<<< HEAD
-import ScoreAllHistagram from './ScoreAllGraph';
-import { Row } from 'reactstrap';
-=======
 import ScoreAllHistagram from './ScoreAllGraph'
 import { Row, Col} from 'reactstrap';
->>>>>>> 57a85d2661caaf998b473f2d76f04628527a1db4
 import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 import CircularProgress from '@material-ui/core/CircularProgress';
