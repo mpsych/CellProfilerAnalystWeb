@@ -141,12 +141,10 @@ self.fitBetaDistribution = function (counts) {
 	var counter = 0;
 	// careful named arguments are still positional
 	const N = tensorCounts.sum((axis = 1), (keepDims = true));
-	N.print();
 	var alphas = tensorCounts
 		.sum((axis = 0))
 		.div(tensorCounts.sum())
 		.add(tf.scalar(0.1));
-	alphas.print();
 	while (true) {
 		counter++;
 		// const sum1 = tensorCounts.mul(tf.log(tensorCounts.sub(1).add(alphas))).sum();
@@ -164,21 +162,10 @@ self.fitBetaDistribution = function (counts) {
 		const delta = tf.abs(new_alphas.sub(alphas).sum());
 
 		if (delta.arraySync() < 0.0001) {
-			console.log(new_alphas.arraySync());
+			// console.log(new_alphas.arraySync());
 			return new_alphas.arraySync();
 		}
 
 		alphas = new_alphas;
-
-		if (counter % 100 === 0) {
-			delta.arraySync();
-			// sum1.print();
-			// sum2.print();
-			// log_liklihood.print();
-			numerator.print();
-			denominator.print();
-			delta.print();
-			alphas.print();
-		}
 	}
 };

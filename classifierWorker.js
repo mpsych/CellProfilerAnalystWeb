@@ -6,6 +6,7 @@ console.log(typeof tf !== 'undefined' ? 'TensorFlow Loaded In WebWorker' : 'Tens
 // console.log(typeof tfvis !== "undefined"? "TensorFlow-Visor Loaded In WebWorker" : "TensorFlow-Visor Failed To Load In WebWorker")
 self.importScripts('https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuid.min.js');
 self.canvasUUID = null;
+console.log('Classifier WebWorker Loaded');
 self.onmessage = async (event) => {
 	switch (event.data.action) {
 		case 'init':
@@ -51,6 +52,10 @@ self.onmessage = async (event) => {
 			const { cellPairs } = event.data;
 			const { classType } = event.data;
 			const UUID = event.data.uuid;
+			if (cellPairs.length === 0) {
+				self.postMessage({ filteredCellPairs: [], uuid: UUID });
+				return;
+			}
 			// console.log(cellPairs, classType);
 			self.workerActionPromise(dataWorkerPort, 'get', {
 				getType: 'objectRowsFromCellpairs',
@@ -124,7 +129,7 @@ self.onmessage = async (event) => {
 			break;
 		case 'endTrainingGraphsConnection':
 			self.canvasUUID = null;
-			console.log('ended');
+			// console.log('ended');
 			self.postMessage({ uuid: event.data.uuid });
 			break;
 		case 'printObjectDataRow':
@@ -195,7 +200,7 @@ self.onmessage = async (event) => {
 			console.log('initial entry train and predict classifierworker send to dataworker for object data');
 
 			self.dataWorkerActionPromise('getObjectData', async (event) => {
-				console.log('start training after getting back from dataworker');
+				// console.log('start training after getting back from dataworker');
 				const featureIndices = [30, 31];
 				const batchSize = 32;
 				const objectDataSubset = event.data.objectData.slice(0, 100);
@@ -211,9 +216,9 @@ self.onmessage = async (event) => {
 				// mutates model to be trained
 				await self.basicTrainPromise(model, tf_dataset, numberEpochs);
 
-				console.log('finished training, start predicting');
+				// console.log('finished training, start predicting');
 				const testDataTensor = self.createTestset(event.data.objectData, featureIndices);
-				console.log(self.predict(model, testDataTensor));
+				// console.log(self.predict(model, testDataTensor));
 				self.classifier = model;
 			});
 			break;
@@ -246,7 +251,7 @@ self.workerActionPromise = function (worker, action, data) {
 self.dataWorkerActionPromise = function (action, callback) {
 	const { v4: uuidv4 } = uuid;
 	const UUID = uuidv4();
-	console.log('DataWorkerActionPromise: ' + UUID, 'started call: ' + action);
+	// console.log('DataWorkerActionPromise: ' + UUID, 'started call: ' + action);
 
 	return new Promise((resolve) => {
 		self.dataWorkerPort.addEventListener(
@@ -265,15 +270,15 @@ self.dataWorkerActionPromise = function (action, callback) {
 };
 
 self.handleDataWorkerMessage = function (event) {
-	console.log('classifier worker received data worker data normal way');
+	// console.log('classifier worker received data worker data normal way');
 	// console.log(event.data);
 	switch (event.data.action) {
 		case 'printObjectDataRow':
-			console.log(event.data.objectData[0]);
+			// console.log(event.data.objectData[0]);
 
 			break;
 		case 'trainAndPredict':
-			console.log('start training after getting back from dataworker');
+			// console.log('start training after getting back from dataworker');
 			const featureIndices = [30, 31];
 			const batchSize = 32;
 			const objectDataSubset = event.data.objectData.slice(0, 100);
@@ -283,9 +288,9 @@ self.handleDataWorkerMessage = function (event) {
 			const tf_dataset = self.createDatasetFromDataArrays(objectDataSubset, labels, featureIndices, batchSize);
 			// mutates model to be trained
 			self.basicTrainPromise(model, tf_dataset, numberEpochs).then(() => {
-				console.log('finished training, start predicting');
+				// console.log('finished training, start predicting');
 				const testDataTensor = self.createTestset(event.data.objectData, featureIndices);
-				console.log(self.predict(model, testDataTensor));
+				// console.log(self.predict(model, testDataTensor));
 			});
 			break;
 		default:
@@ -348,26 +353,17 @@ self.basicTrainPromise = function (model, training_dataset, number_epochs) {
 			epochs: number_epochs,
 			callbacks: {
 				onEpochEnd: (epoch, logs) => {
-					// console.log(logs);
 					trainLogs.push(logs);
-					// console.log('epoch end:', epoch);
 					if (self.canvasUUID) {
-						// console.log('canvas posted', self.canvasUUID);
 						self.postMessage({
 							uuid: self.canvasUUID,
-							action: 'updateTrainingAccuracyCanvas',
+							action: 'updateTrainingCanvases',
 							trainLogs,
-							ticks: ['acc'],
-						});
-						self.postMessage({
-							uuid: self.canvasUUID,
-							action: 'updateTrainingLossCanvas',
-							trainLogs,
-							ticks: ['loss'],
+							ticks: { accuracy: ['acc'], loss: ['loss'] },
 						});
 					}
 				},
-				onTrainEnd: () => resolve(model),
+				onTrainEnd: () => resolve(),
 			},
 		});
 	});
