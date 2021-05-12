@@ -115,7 +115,7 @@ function TestUIMVP() {
 	const DEBUG = true;
 
 	const [cellBigPictureDialogOpen, setCellBigPictureDialogOpen] = React.useState(false);
-	const [bigPictureSource, setBigPictureSource] = React.useState(null);
+	const [bigPictureSource, setBigPictureSource] = React.useState(jones);
 	const [bigPictureTitle, setBigPictureTitle] = React.useState('');
 	const [currentlyScoring, setCurrentlyScoring] = React.useState(false);
 

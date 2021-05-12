@@ -89,6 +89,8 @@ export default function ScoreTableUI(props) {
 		setPage(0);
 	};
 
+
+
 	return (
 		<Paper>
 			<TableContainer
@@ -106,7 +108,7 @@ export default function ScoreTableUI(props) {
 					</TableHead>
 
 					<TableBody>
-						{props.scoreTable.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+						{props.scoreTable? props.scoreTable.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
 							return (
 								<TableRow hover role="checkbox" tabIndex={-1} key={row.code}>
 									{columns.map((column) => {
@@ -118,10 +120,10 @@ export default function ScoreTableUI(props) {
 													: value}
 											</TableCell>
 										);
-									})}
+									}) }
 								</TableRow>
 							);
-						})}
+						}) : null}
 					</TableBody>
 				</Table>
 			</TableContainer>
