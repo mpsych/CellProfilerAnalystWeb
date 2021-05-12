@@ -1,7 +1,7 @@
 import React from 'react';
 import { Row, Col, Container } from 'reactstrap';
 import { Box, Button, Grid, IconButton, Menu, MenuItem, Card, TextField } from '@material-ui/core';
-import logo from '../cpa_logo(blue).svg';
+import logo from '../cpa_logo(blue).png';
 import { Image, Dropdown, DropdownButton } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
@@ -77,7 +77,7 @@ function TestUIMVP() {
 	// var classifierManager = null;
 	// const [classifierManager, setClassifierManager] = React.useState(null)
 	const [fileListObject, setFileListObject] = React.useState(null);
-	const [tileState, setTileState] = React.useState(constructTileState([]));
+	const [tileState, setTileState] = React.useState({ unclassified: [], positive: [], negative: [] });
 
 	const [fetchButtonEnabled, setFetchButtonEnabled] = React.useState(false);
 	const [trainButtonEnabled, setTrainButtonEnabled] = React.useState(false);
@@ -104,6 +104,8 @@ function TestUIMVP() {
 
 	const [scoreTableIsUpToDate, setScoreTableIsUpToDate] = React.useState(false);
 	const [scoreTableObject, setScoreTableObject] = React.useState(null);
+	const [scoreTable, setScoreTable] = React.useState([]);
+	const [histogramData, setHistogramData] = React.useState([]);
 
 	const trainingLossCanvasParentRef = React.useRef();
 	const trainingAccuracyCanvasParentRef = React.useRef();
@@ -111,6 +113,9 @@ function TestUIMVP() {
 	const [selectedFetchImageNumber, setSelectedFetchImageNumber] = React.useState(0);
 	const [fetchImageNumberButtonEnabled, setFetchImageNumberButtonEnabled] = React.useState(false);
 	const DEBUG = true;
+
+	const [cellBigPictureDialogOpen, setCellBigPictureDialogOpen] = React.useState(false);
+	const [bigPictureSource, setBigPictureSource] = React.useState(jones);
 	var __ = null;
 
 	React.useEffect(() => {
@@ -170,6 +175,22 @@ function TestUIMVP() {
 		setEvaluateButtonEnabled(true);
 	};
 
+	const handleOpenCellBigPicture = async function (cellPair) {
+		console.log('open big picture');
+		console.log(cellPair);
+		setCellBigPictureDialogOpen(true);
+		return workerActionPromise(canvasWebWorker, 'get', {
+			getType: 'blobUrlBigPictureFromCellPair',
+			getArgs: { cellPair },
+		}).then((event) => {
+			setBigPictureSource(event.data.blobUrl);
+		});
+	};
+	const handleCloseCellBigPicture = function () {
+		console.log('close big picture');
+		setCellBigPictureDialogOpen(false);
+	};
+
 	const handleFetch = async (fetchType) => {
 		console.log('Fetch!');
 		if ((fetchType === undefined) | (fetchType == null)) {
@@ -178,25 +199,32 @@ function TestUIMVP() {
 		setFetching(true);
 		const emptyTileState = { unclassified: [], positive: [], negative: [] };
 		setTileState(emptyTileState);
+		var newCellPairs = [];
 		switch (fetchType) {
 			case 'Random':
 				workerActionPromise(dataWebWorker, 'get', { getType: 'cellPairs', getArgs: { amount: 16 } })
 					.then((event) => {
 						const cellPairs = event.data.getResult;
+						newCellPairs = cellPairs;
 						setActiveCellPairs(cellPairs);
+						console.log(cellPairs);
 						return workerActionPromise(canvasWebWorker, 'get', {
 							getType: 'blobUrlsFromCellPairs',
 							getArgs: { cellPairs },
 						});
 					})
 					.then((event) => {
-						const newTileState = constructTileState(event.data.blobUrls);
+						console.log('tile state time');
+						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
+					})
+					.then((newTileState) => {
 						setTileState(newTileState);
 						setFetching(false);
 					});
 				break;
 			case 'Positive':
-			case 'Negative':
+			case 'Negative': {
+				var newCellPairs = null;
 				workerActionPromise(dataWebWorker, 'get', { getType: 'cellPairs', getArgs: { amount: 100 } })
 					.then((event) => {
 						const cellPairs = event.data.getResult;
@@ -209,6 +237,7 @@ function TestUIMVP() {
 					.then((event) => {
 						const { filteredCellPairs } = event.data;
 						const slicedCellPairs = filteredCellPairs.slice(0, 16);
+						newCellPairs = filteredCellPairs;
 						setActiveCellPairs(filteredCellPairs);
 						return workerActionPromise(canvasWebWorker, 'get', {
 							getType: 'blobUrlsFromCellPairs',
@@ -216,12 +245,16 @@ function TestUIMVP() {
 						});
 					})
 					.then((event) => {
-						const newTileState = constructTileState(event.data.blobUrls);
+						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
+					})
+					.then((newTileState) => {
 						setTileState(newTileState);
 						setFetching(false);
 					});
 				break;
+			}
 			case 'Confusing': {
+				var newCellPairs = null;
 				workerActionPromise(dataWebWorker, 'get', { getType: 'cellPairs', getArgs: { amount: 100 } })
 					.then((event) => {
 						const cellPairs = event.data.getResult;
@@ -234,19 +267,23 @@ function TestUIMVP() {
 						const { sortedCellPairs } = event.data;
 						const slicedSortedCellPairs = sortedCellPairs.slice(0, 16);
 						setActiveCellPairs(slicedSortedCellPairs);
+						newCellPairs = slicedSortedCellPairs;
 						return workerActionPromise(canvasWebWorker, 'get', {
 							getType: 'blobUrlsFromCellPairs',
 							getArgs: { cellPairs: slicedSortedCellPairs },
 						});
 					})
 					.then((event) => {
-						const newTileState = constructTileState(event.data.blobUrls);
+						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
+					})
+					.then((newTileState) => {
 						setTileState(newTileState);
 						setFetching(false);
 					});
 				break;
 			}
-			case 'ImageNumber':
+			case 'ImageNumber': {
+				var newCellPairs = null;
 				console.log('fetch by image number: ' + selectedFetchImageNumber);
 				workerActionPromise(dataWebWorker, 'get', {
 					getType: 'cellPairsFromImage',
@@ -264,20 +301,24 @@ function TestUIMVP() {
 						const { filteredCellPairs } = event.data;
 						const slicedCellPairs = filteredCellPairs.slice(0, 16);
 						setActiveCellPairs(filteredCellPairs);
+						newCellPairs = filteredCellPairs;
 						return workerActionPromise(canvasWebWorker, 'get', {
 							getType: 'blobUrlsFromCellPairs',
 							getArgs: { cellPairs: slicedCellPairs },
 						});
 					})
 					.then((event) => {
-						const newTileState = constructTileState(event.data.blobUrls);
+						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
+					})
+					.then((newTileState) => {
 						setTileState(newTileState);
 						setFetching(false);
 					});
 				break;
-
+			}
 			case 'TrainingPositive':
 			case 'TrainingNegative': {
+				var newCellPairs = null;
 				__ = DEBUG ? console.log(`Enter fetch: ${fetchType}`) : null;
 				const cellPairs = trainingObject.trainingData.map((dataRow) => ({
 					ImageNumber: dataRow[0],
@@ -292,6 +333,7 @@ function TestUIMVP() {
 						__ = DEBUG ? console.log(`Return from predictFilterCellPairs `, event.data) : null;
 						const { filteredCellPairs } = event.data;
 						setActiveCellPairs(filteredCellPairs);
+						newCellPairs = filteredCellPairs;
 						return workerActionPromise(canvasWebWorker, 'get', {
 							getType: 'blobUrlsFromCellPairs',
 							getArgs: { cellPairs: filteredCellPairs },
@@ -299,7 +341,9 @@ function TestUIMVP() {
 					})
 					.then((event) => {
 						__ = DEBUG ? console.log(`Return get blobUrlsFromCellPairs`, event.data) : null;
-						const newTileState = constructTileState(event.data.blobUrls);
+						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
+					})
+					.then((newTileState) => {
 						setTileState(newTileState);
 						setFetching(false);
 					});
@@ -319,7 +363,8 @@ function TestUIMVP() {
 			.concat(new Array(negativeCellPairs.length).fill(0));
 
 		setScoreTableIsUpToDate(false);
-		setTileState(constructTileState([]));
+		const emptyTileState = { unclassified: [], positive: [], negative: [] };
+		setTileState(emptyTileState);
 		setActiveCellPairs([]);
 
 		workerActionPromise(dataWebWorker, 'get', {
@@ -440,12 +485,13 @@ function TestUIMVP() {
 					ratio: newScoreTableObject.ratios[key],
 					adjustratio: newScoreTableObject.adjustedRatios[key],
 				}));
-				const adjustedRatiosData = Object.values(newScoreTableObject.adjustedRatios).map((ratio) =>({
-					x: ratio
+				const adjustedRatiosData = Object.values(newScoreTableObject.adjustedRatios).map((ratio) => ({
+					x: ratio,
 				}));
-				console.log(adjustedRatiosData);
-				console.log(scoreDataRows);
-				setScoreTableObject(newScoreTableObject);
+				setHistogramData(adjustedRatiosData);
+				setScoreTable(scoreDataRows);
+
+				// setScoreTableObject(newScoreTableObject);
 				setScoreTableIsUpToDate(true);
 			});
 		}
@@ -463,10 +509,30 @@ function TestUIMVP() {
 		});
 	};
 
-	function constructTileState(dataURLs) {
+	async function constructTileStatePromise(dataURLs, newCellPairs) {
+		const cellDatas = await Promise.all(
+			newCellPairs.map((cellPair) =>
+				workerActionPromise(dataWebWorker, 'get', {
+					getType: 'cellPairData',
+					getArgs: { cellPair: cellPair },
+				}).then((event) => event.data.getResult)
+			)
+		);
+
 		return {
-			unclassified: dataURLs.map((dataURL, idx, info) => {
-				return { id: idx, address: dataURL, info: 'cell info, biology stuff' };
+			unclassified: dataURLs.map((dataURL, idx) => {
+				const cellData = cellDatas[idx];
+
+				const label = `Ob: ${cellData.ObjectNumber} Im: ${cellData.ImageNumber}`;
+				// We: ${cellData.Well}
+				// Pl: ${cellData.Plate}`;
+				console.log(label);
+				return {
+					id: idx,
+					address: dataURL,
+					info: label,
+					cellPair: { ImageNumber: cellData.ImageNumber, ObjectNumber: cellData.ObjectNumber },
+				};
 			}),
 			positive: [],
 			negative: [],
@@ -689,10 +755,15 @@ function TestUIMVP() {
 									Score All
 								</Button>
 							) : (
-								<ScoreAll handleScoreAll={handleScoreAll}></ScoreAll>
+								<ScoreAll
+									histogramData={histogramData}
+									scoreTable={scoreTable}
+									handleScoreAll={handleScoreAll}
+									scoreTableIsUpToDate = {scoreTableIsUpToDate}
+								></ScoreAll> 
 							)}
 						</Grid>
-						<Grid key={4} item></Grid>
+			
 					</Grid>
 				</Row>
 
@@ -741,6 +812,10 @@ function TestUIMVP() {
 									>
 										<div className="grid-item">
 											<div
+												onDoubleClick={() => {
+													console.log('double click: ' + item.info);
+													handleOpenCellBigPicture(item.cellPair);
+												}}
 												className="grid-item-content"
 												style={{
 													backgroundImage: `url(${item.address})`,
@@ -759,6 +834,17 @@ function TestUIMVP() {
 								/>
 							)}
 						</GridDropZone>
+						<Dialog
+							style={{ alignItems: 'center' }}
+							onClose={handleCloseCellBigPicture}
+							fullWidth={512}
+							open={cellBigPictureDialogOpen}
+						>
+							{/* <DialogTitle>Loss and Accuracy</DialogTitle> */}
+							<DialogContent style={{ justifyContent: 'center' }}>
+								<img width={480} height={480} src={bigPictureSource}></img>
+							</DialogContent>
+						</Dialog>
 					</div>
 
 					<Row>
@@ -795,7 +881,7 @@ function TestUIMVP() {
 							className="dropzone positive"
 							id="positive"
 							boxesPerRow={4}
-							rowHeight={0}
+							rowHeight={80}
 							style={{ height: '20vw', maxHeight: 200, minHeight: 150 }}
 						>
 							{tileState.positive.map((item) => (
