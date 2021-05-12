@@ -734,9 +734,9 @@ function TestUIMVP() {
 
 								<Dialog open={openFetchDropdown} onClose={() => handleCloseFetchDropDown(null)}>
 									<DialogTitle>
-										<Typography variant="h3" align="center">
+										{/* <Typography variant="h3" align="center"> */}
 											Fetch By Image
-										</Typography>
+										{/* </Typography> */}
 									</DialogTitle>
 									<DialogContent>
 										<DialogContentText>
@@ -958,6 +958,10 @@ function TestUIMVP() {
 								>
 									<div className="grid-item">
 										<div
+											onDoubleClick={() => {
+												console.log('double click: ' + item.info);
+												handleOpenCellBigPicture(item.cellPair);
+											}}
 											className="grid-item-content"
 											style={{
 												backgroundImage: `url(${item.address})`,
@@ -995,6 +999,10 @@ function TestUIMVP() {
 								>
 									<div className="grid-item">
 										<div
+											onDoubleClick={() => {
+												console.log('double click: ' + item.info);
+												handleOpenCellBigPicture(item.cellPair);
+											}}
 											className="grid-item-content"
 											style={{
 												backgroundImage: `url(${item.address})`,
