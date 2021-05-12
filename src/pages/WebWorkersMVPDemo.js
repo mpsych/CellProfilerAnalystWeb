@@ -1,6 +1,6 @@
 import React from 'react';
 import { Row, Col, Container } from 'reactstrap';
-import { Box, Button, Grid, IconButton, Menu, MenuItem, Card, TextField } from '@material-ui/core';
+import { Box, Button, Grid, IconButton, Menu, MenuItem, Card, TextField, Typography } from '@material-ui/core';
 import logo from '../cpa_logo(blue).svg';
 import { Image, Dropdown, DropdownButton } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
@@ -37,6 +37,7 @@ import '../dndstyles.css';
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
 import UploadButton from './UploadButton';
+import { downloadFile } from '../downloadFile';
 
 const useStyles = makeStyles((theme) => ({
 	root: {
@@ -116,6 +117,8 @@ function TestUIMVP() {
 
 	const [cellBigPictureDialogOpen, setCellBigPictureDialogOpen] = React.useState(false);
 	const [bigPictureSource, setBigPictureSource] = React.useState(jones);
+	const [bigPictureTitle, setBigPictureTitle] = React.useState('');
+	const [currentlyScoring, setCurrentlyScoring] = React.useState(false);
 	var __ = null;
 
 	React.useEffect(() => {
@@ -179,6 +182,7 @@ function TestUIMVP() {
 		console.log('open big picture');
 		console.log(cellPair);
 		setCellBigPictureDialogOpen(true);
+		setBigPictureTitle(`Image: ${cellPair.ImageNumber}, Object: ${cellPair.ObjectNumber}`);
 		return workerActionPromise(canvasWebWorker, 'get', {
 			getType: 'blobUrlBigPictureFromCellPair',
 			getArgs: { cellPair },
@@ -444,6 +448,7 @@ function TestUIMVP() {
 	};
 
 	const handleUpload = async (eventObject) => {
+		downloadDataAsCSV(rows, headers);
 		console.log('Upload!');
 		setUploading(true);
 		workerActionPromise(dataWebWorker, 'init', { fileListObject: eventObject.target.files })
@@ -470,9 +475,31 @@ function TestUIMVP() {
 			});
 	};
 
+	/*
+		@param (Array<Array<any>>) data The 2D array of data to convert and download as csv
+		@param? (Array<string>) headers The possible headers at the top of the fiile
+		@return (void)
+	*/
+	const downloadDataAsCSV = (data, headers = null) => {
+		let csvContent = '';
+		if (headers !== null) {
+			csvContent += headers.join(',') + '\n';
+		}
+		csvContent += data.map((l) => l.join(',')).join('\n');
+		console.log(csvContent);
+		downloadFile('enrichmentScores', csvContent, '.csv');
+	};
+
+	const rows = [
+		['name1', 'city1', 'some other info'],
+		['name2', 'city2', 'more info'],
+	];
+	const headers = ['a', 'b', 'c'];
+
 	const handleScoreAll = async () => {
 		console.log('Score All!');
-		if (!scoreTableIsUpToDate) {
+		if (!scoreTableIsUpToDate && !currentlyScoring) {
+			setCurrentlyScoring(true);
 			console.log('Score All!');
 			return workerActionPromise(classifierWebWorker, 'scoreObjectData').then((event) => {
 				const newScoreTableObject = event.data.scoreTableObject;
@@ -490,7 +517,7 @@ function TestUIMVP() {
 				}));
 				setHistogramData(adjustedRatiosData);
 				setScoreTable(scoreDataRows);
-
+				setCurrentlyScoring(false);
 				// setScoreTableObject(newScoreTableObject);
 				setScoreTableIsUpToDate(true);
 			});
@@ -682,7 +709,11 @@ function TestUIMVP() {
 								<MenuItem onClick={() => handleCloseFetchDropDown('Confusing')}>Confusing</MenuItem>
 
 								<Dialog open={openFetchDropdown} onClose={() => handleCloseFetchDropDown(null)}>
-									<DialogTitle>Fetch By Image</DialogTitle>
+									<DialogTitle>
+										<Typography variant="h3" align="center">
+											Fetch By Image
+										</Typography>
+									</DialogTitle>
 									<DialogContent>
 										<DialogContentText>
 											Select the image number you would like to fetch from.
@@ -726,7 +757,7 @@ function TestUIMVP() {
 								Train
 							</Button>
 							<Dialog fullWidth={500} open={openTrainDropdown}>
-								<DialogTitle>Loss and Accuracy</DialogTitle>
+								<DialogTitle>Training the Classifier</DialogTitle>
 								<DialogContent>
 									<div width={300} ref={trainingAccuracyCanvasParentRef}></div>
 									<div width={300} ref={trainingLossCanvasParentRef}></div>
@@ -836,12 +867,14 @@ function TestUIMVP() {
 						<Dialog
 							style={{ alignItems: 'center' }}
 							onClose={handleCloseCellBigPicture}
-							fullWidth={512}
+							// fullWidth={480}
+							// maxWidth={480}
 							open={cellBigPictureDialogOpen}
 						>
+							<DialogTitle>{bigPictureTitle}</DialogTitle>
 							{/* <DialogTitle>Loss and Accuracy</DialogTitle> */}
-							<DialogContent style={{ justifyContent: 'center' }}>
-								<img width={480} height={480} src={bigPictureSource}></img>
+							<DialogContent style={{ alignItems: 'center', justifyContent: 'center' }}>
+								<img width={430} height={430} src={bigPictureSource}></img>
 							</DialogContent>
 						</Dialog>
 					</div>
