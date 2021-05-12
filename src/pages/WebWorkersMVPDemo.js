@@ -440,9 +440,9 @@ function TestUIMVP() {
 					ratio: newScoreTableObject.ratios[key],
 					adjustratio: newScoreTableObject.adjustedRatios[key],
 				}));
-				const adjustedRatiosData = Object.values(newScoreTableObject.adjustedRatios).map((ratio) => {
-					x: ratio;
-				});
+				const adjustedRatiosData = Object.values(newScoreTableObject.adjustedRatios).map((ratio) =>({
+					x: ratio
+				}));
 				console.log(adjustedRatiosData);
 				console.log(scoreDataRows);
 				setScoreTableObject(newScoreTableObject);

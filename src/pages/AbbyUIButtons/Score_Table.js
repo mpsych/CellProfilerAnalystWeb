@@ -91,7 +91,7 @@ export default function ScoreTableUI() {
       // style = {{height: 700, width: 700}}
       >
         <Table size="small" stickyHeader aria-label="sticky table" 
-            style = {{ width: 200, marginTop: 45}} 
+            style = {{ width: 200, marginTop: 50}} 
         >
           <TableHead>
             <TableRow>
