@@ -2,10 +2,9 @@ import React from 'react';
 import { VictoryHistogram, VictoryChart, VictoryLine, VictoryBar } from 'victory';
 
 function ScoreAllGraph(props) {
-	const sampleHistogramData = [{ x: 1 }, { x: 2 }, { x: 6 }, { x: 5.3 }, { x: 4.44 }, { x: 12 }];
 	return (
 		<div>
-			<VictoryChart domainPadding={{ x: 30 }}>
+			<VictoryChart>
 				<VictoryHistogram
 					style={{
 						data: { fill: '#c43a31' },
@@ -13,6 +12,7 @@ function ScoreAllGraph(props) {
 						width: 200,
 					}}
 					data={props.histogramData}
+					bins={30}
 				/>
 			</VictoryChart>
 		</div>
