@@ -37,7 +37,6 @@ import '../dndstyles.css';
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
 import UploadButton from './UploadButton';
-import { downloadFile } from '../downloadFile';
 
 const useStyles = makeStyles((theme) => ({
 	root: {
@@ -119,6 +118,9 @@ function TestUIMVP() {
 	const [bigPictureSource, setBigPictureSource] = React.useState(jones);
 	const [bigPictureTitle, setBigPictureTitle] = React.useState('');
 	const [currentlyScoring, setCurrentlyScoring] = React.useState(false);
+
+	// const [downloadScoreTableFunction, setDownloadScoreTableFunction] = React.useState(() => {});
+	const [scoreTableCsvString, setScoreTableCsvString] = React.useState('');
 	var __ = null;
 
 	React.useEffect(() => {
@@ -448,7 +450,6 @@ function TestUIMVP() {
 	};
 
 	const handleUpload = async (eventObject) => {
-		downloadDataAsCSV(rows, headers);
 		console.log('Upload!');
 		setUploading(true);
 		workerActionPromise(dataWebWorker, 'init', { fileListObject: eventObject.target.files })
@@ -478,16 +479,16 @@ function TestUIMVP() {
 	/*
 		@param (Array<Array<any>>) data The 2D array of data to convert and download as csv
 		@param? (Array<string>) headers The possible headers at the top of the fiile
-		@return (void)
+		@return (string)
 	*/
-	const downloadDataAsCSV = (data, headers = null) => {
+	const dataToCsvString = (data, headers = null) => {
 		let csvContent = '';
 		if (headers !== null) {
 			csvContent += headers.join(',') + '\n';
 		}
 		csvContent += data.map((l) => l.join(',')).join('\n');
-		console.log(csvContent);
-		downloadFile('enrichmentScores', csvContent, '.csv');
+		// downloadFile('enrichmentScores', csvContent, '.csv');
+		return csvContent;
 	};
 
 	const rows = [
@@ -519,6 +520,29 @@ function TestUIMVP() {
 				setScoreTable(scoreDataRows);
 				setCurrentlyScoring(false);
 				// setScoreTableObject(newScoreTableObject);
+
+				const headers = [
+					'ImageNumber',
+					'PositiveCount',
+					'NegativeCount',
+					'TotalCount',
+					'Ratio',
+					'AdjustedRatio',
+				];
+				const csvdata = scoreDataRows.map((dataRow) => [
+					dataRow.imageNumber,
+					dataRow.positive,
+					dataRow.negative,
+					dataRow.total,
+					dataRow.ratio,
+					dataRow.adjustratio,
+				]);
+				// const onDownload = () => {
+				// 	downloadDataAsCSV(csvdata, headers);
+				// };
+				const csvContent = dataToCsvString(csvdata, headers);
+				setScoreTableCsvString(csvContent);
+				// setDownloadScoreTableFunction(onDownload);
 				setScoreTableIsUpToDate(true);
 			});
 		}
@@ -550,7 +574,7 @@ function TestUIMVP() {
 			unclassified: dataURLs.map((dataURL, idx) => {
 				const cellData = cellDatas[idx];
 
-				const label = `Ob: ${cellData.ObjectNumber} Im: ${cellData.ImageNumber}`;
+				const label = `Ob: ${cellData.ObjectNumber}\nIm: ${cellData.ImageNumber}`;
 				// We: ${cellData.Well}
 				// Pl: ${cellData.Plate}`;
 				console.log(label);
@@ -791,6 +815,8 @@ function TestUIMVP() {
 									scoreTable={scoreTable}
 									handleScoreAll={handleScoreAll}
 									scoreTableIsUpToDate={scoreTableIsUpToDate}
+									// downloadScoreTableFunction={downloadScoreTableFunction}
+									scoreTableCsvString={scoreTableCsvString}
 								></ScoreAll>
 							)}
 						</Grid>
