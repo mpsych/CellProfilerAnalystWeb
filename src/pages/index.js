@@ -1,7 +1,7 @@
 import React from 'react';
 import { Row, Col, Container } from 'reactstrap';
-import { Box, Button, Grid, IconButton, Menu, MenuItem, Card } from '@material-ui/core';
-import logo from '../cpa_logo(blue).svg';
+import { Box, Button, Grid, IconButton, Menu, MenuItem, Card, TextField, Typography } from '@material-ui/core';
+import logo from '../cpa_logo(blue).png';
 import { Image, Dropdown, DropdownButton } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
@@ -44,7 +44,7 @@ const useStyles = makeStyles((theme) => ({
 		alignItems: 'center',
 	},
 	wrapper: {
-		margin: theme.spacing(1),
+		//margin: theme.spacing(1),
 		position: 'relative',
 	},
 	buttonSuccess: {
@@ -77,7 +77,7 @@ function TestUIMVP() {
 	// var classifierManager = null;
 	// const [classifierManager, setClassifierManager] = React.useState(null)
 	const [fileListObject, setFileListObject] = React.useState(null);
-	const [tileState, setTileState] = React.useState(constructTileState([]));
+	const [tileState, setTileState] = React.useState({ unclassified: [], positive: [], negative: [] });
 
 	const [fetchButtonEnabled, setFetchButtonEnabled] = React.useState(false);
 	const [trainButtonEnabled, setTrainButtonEnabled] = React.useState(false);
@@ -104,9 +104,24 @@ function TestUIMVP() {
 
 	const [scoreTableIsUpToDate, setScoreTableIsUpToDate] = React.useState(false);
 	const [scoreTableObject, setScoreTableObject] = React.useState(null);
+	const [scoreTable, setScoreTable] = React.useState([]);
+	const [histogramData, setHistogramData] = React.useState([]);
 
 	const trainingLossCanvasParentRef = React.useRef();
 	const trainingAccuracyCanvasParentRef = React.useRef();
+
+	const [selectedFetchImageNumber, setSelectedFetchImageNumber] = React.useState(0);
+	const [fetchImageNumberButtonEnabled, setFetchImageNumberButtonEnabled] = React.useState(false);
+	const DEBUG = true;
+
+	const [cellBigPictureDialogOpen, setCellBigPictureDialogOpen] = React.useState(false);
+	const [bigPictureSource, setBigPictureSource] = React.useState(null);
+	const [bigPictureTitle, setBigPictureTitle] = React.useState('');
+	const [currentlyScoring, setCurrentlyScoring] = React.useState(false);
+
+	// const [downloadScoreTableFunction, setDownloadScoreTableFunction] = React.useState(() => {});
+	const [scoreTableCsvString, setScoreTableCsvString] = React.useState('');
+	var __ = null;
 
 	React.useEffect(() => {
 		const dataToCanvasWorkerChannel = new MessageChannel();
@@ -165,6 +180,23 @@ function TestUIMVP() {
 		setEvaluateButtonEnabled(true);
 	};
 
+	const handleOpenCellBigPicture = async function (cellPair) {
+		console.log('open big picture');
+		console.log(cellPair);
+		setCellBigPictureDialogOpen(true);
+		setBigPictureTitle(`Image: ${cellPair.ImageNumber}, Object: ${cellPair.ObjectNumber}`);
+		return workerActionPromise(canvasWebWorker, 'get', {
+			getType: 'blobUrlBigPictureFromCellPair',
+			getArgs: { cellPair },
+		}).then((event) => {
+			setBigPictureSource(event.data.blobUrl);
+		});
+	};
+	const handleCloseCellBigPicture = function () {
+		console.log('close big picture');
+		setCellBigPictureDialogOpen(false);
+	};
+
 	const handleFetch = async (fetchType) => {
 		console.log('Fetch!');
 		if ((fetchType === undefined) | (fetchType == null)) {
@@ -173,25 +205,32 @@ function TestUIMVP() {
 		setFetching(true);
 		const emptyTileState = { unclassified: [], positive: [], negative: [] };
 		setTileState(emptyTileState);
+		var newCellPairs = [];
 		switch (fetchType) {
 			case 'Random':
 				workerActionPromise(dataWebWorker, 'get', { getType: 'cellPairs', getArgs: { amount: 16 } })
 					.then((event) => {
 						const cellPairs = event.data.getResult;
+						newCellPairs = cellPairs;
 						setActiveCellPairs(cellPairs);
+						console.log(cellPairs);
 						return workerActionPromise(canvasWebWorker, 'get', {
 							getType: 'blobUrlsFromCellPairs',
 							getArgs: { cellPairs },
 						});
 					})
 					.then((event) => {
-						const newTileState = constructTileState(event.data.blobUrls);
+						console.log('tile state time');
+						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
+					})
+					.then((newTileState) => {
 						setTileState(newTileState);
 						setFetching(false);
 					});
 				break;
 			case 'Positive':
-			case 'Negative':
+			case 'Negative': {
+				var newCellPairs = null;
 				workerActionPromise(dataWebWorker, 'get', { getType: 'cellPairs', getArgs: { amount: 100 } })
 					.then((event) => {
 						const cellPairs = event.data.getResult;
@@ -204,6 +243,7 @@ function TestUIMVP() {
 					.then((event) => {
 						const { filteredCellPairs } = event.data;
 						const slicedCellPairs = filteredCellPairs.slice(0, 16);
+						newCellPairs = filteredCellPairs;
 						setActiveCellPairs(filteredCellPairs);
 						return workerActionPromise(canvasWebWorker, 'get', {
 							getType: 'blobUrlsFromCellPairs',
@@ -211,12 +251,16 @@ function TestUIMVP() {
 						});
 					})
 					.then((event) => {
-						const newTileState = constructTileState(event.data.blobUrls);
+						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
+					})
+					.then((newTileState) => {
 						setTileState(newTileState);
 						setFetching(false);
 					});
 				break;
+			}
 			case 'Confusing': {
+				var newCellPairs = null;
 				workerActionPromise(dataWebWorker, 'get', { getType: 'cellPairs', getArgs: { amount: 100 } })
 					.then((event) => {
 						const cellPairs = event.data.getResult;
@@ -229,41 +273,88 @@ function TestUIMVP() {
 						const { sortedCellPairs } = event.data;
 						const slicedSortedCellPairs = sortedCellPairs.slice(0, 16);
 						setActiveCellPairs(slicedSortedCellPairs);
+						newCellPairs = slicedSortedCellPairs;
 						return workerActionPromise(canvasWebWorker, 'get', {
 							getType: 'blobUrlsFromCellPairs',
 							getArgs: { cellPairs: slicedSortedCellPairs },
 						});
 					})
 					.then((event) => {
-						const newTileState = constructTileState(event.data.blobUrls);
+						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
+					})
+					.then((newTileState) => {
+						setTileState(newTileState);
+						setFetching(false);
+					});
+				break;
+			}
+			case 'ImageNumber': {
+				var newCellPairs = null;
+				console.log('fetch by image number: ' + selectedFetchImageNumber);
+				workerActionPromise(dataWebWorker, 'get', {
+					getType: 'cellPairsFromImage',
+					getArgs: { ImageNumber: selectedFetchImageNumber },
+				})
+					.then((event) => {
+						const cellPairs = event.data.getResult;
+						console.log(cellPairs);
+						return workerActionPromise(classifierWebWorker, 'predictFilterCellPairs', {
+							cellPairs,
+							classType: fetchType,
+						});
+					})
+					.then((event) => {
+						const { filteredCellPairs } = event.data;
+						const slicedCellPairs = filteredCellPairs.slice(0, 16);
+						setActiveCellPairs(filteredCellPairs);
+						newCellPairs = filteredCellPairs;
+						return workerActionPromise(canvasWebWorker, 'get', {
+							getType: 'blobUrlsFromCellPairs',
+							getArgs: { cellPairs: slicedCellPairs },
+						});
+					})
+					.then((event) => {
+						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
+					})
+					.then((newTileState) => {
 						setTileState(newTileState);
 						setFetching(false);
 					});
 				break;
 			}
 			case 'TrainingPositive':
-			case 'TrainingNegative':
-				const positiveCellPairs = trainingObject.trainingData.map((dataRow) => ({
+			case 'TrainingNegative': {
+				var newCellPairs = null;
+				__ = DEBUG ? console.log(`Enter fetch: ${fetchType}`) : null;
+				const cellPairs = trainingObject.trainingData.map((dataRow) => ({
 					ImageNumber: dataRow[0],
 					ObjectNumber: dataRow[1],
 				}));
+				__ = DEBUG ? console.log(cellPairs) : null;
 				workerActionPromise(classifierWebWorker, 'predictFilterCellPairs', {
-					cellPairs: positiveCellPairs,
+					cellPairs,
 					classType: fetchType === 'TrainingPositive' ? 'Positive' : 'Negative',
 				})
 					.then((event) => {
+						__ = DEBUG ? console.log(`Return from predictFilterCellPairs `, event.data) : null;
 						const { filteredCellPairs } = event.data;
 						setActiveCellPairs(filteredCellPairs);
+						newCellPairs = filteredCellPairs;
 						return workerActionPromise(canvasWebWorker, 'get', {
 							getType: 'blobUrlsFromCellPairs',
 							getArgs: { cellPairs: filteredCellPairs },
 						});
 					})
 					.then((event) => {
-						const newTileState = constructTileState(event.data.blobUrls);
+						__ = DEBUG ? console.log(`Return get blobUrlsFromCellPairs`, event.data) : null;
+						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
+					})
+					.then((newTileState) => {
 						setTileState(newTileState);
+						setFetching(false);
 					});
 				break;
+			}
 		}
 	};
 
@@ -278,7 +369,8 @@ function TestUIMVP() {
 			.concat(new Array(negativeCellPairs.length).fill(0));
 
 		setScoreTableIsUpToDate(false);
-		setTileState(constructTileState([]));
+		const emptyTileState = { unclassified: [], positive: [], negative: [] };
+		setTileState(emptyTileState);
 		setActiveCellPairs([]);
 
 		workerActionPromise(dataWebWorker, 'get', {
@@ -303,15 +395,16 @@ function TestUIMVP() {
 		let updateCanvasesListener = (event) => {
 			if (UUID == event.data.uuid) {
 				switch (event.data.action) {
-					case 'updateTrainingLossCanvas':
-						tfvis.show.history(trainingLossCanvasParentRef.current, event.data.trainLogs, event.data.ticks);
-						break;
-					case 'updateTrainingAccuracyCanvas':
-						tfvis.show.history(
-							trainingAccuracyCanvasParentRef.current,
-							event.data.trainLogs,
-							event.data.ticks
-						);
+					case 'updateTrainingCanvases':
+						tfvis.show.history(trainingLossCanvasParentRef.current, event.data.trainLogs, [
+							...event.data.ticks.loss,
+							...event.data.ticks.accuracy,
+						]);
+						// tfvis.show.history(
+						// 	trainingAccuracyCanvasParentRef.current,
+						// 	event.data.trainLogs,
+
+						// );
 						break;
 					default:
 						console.log("didn't render bad action");
@@ -361,6 +454,14 @@ function TestUIMVP() {
 		setUploading(true);
 		workerActionPromise(dataWebWorker, 'init', { fileListObject: eventObject.target.files })
 			.then(() => {
+				console.log('done');
+				workerActionPromise(dataWebWorker, 'get', {
+					getType: 'cellPairData',
+					getArgs: { cellPair: { ImageNumber: 1, ObjectNumber: 1 } },
+				});
+			})
+			.then(() => {
+				console.log('next');
 				return workerActionPromise(dataWebWorker, 'get', { getType: 'trainingObject' });
 			})
 			.then((event) => {
@@ -375,14 +476,73 @@ function TestUIMVP() {
 			});
 	};
 
+	/*
+		@param (Array<Array<any>>) data The 2D array of data to convert and download as csv
+		@param? (Array<string>) headers The possible headers at the top of the fiile
+		@return (string)
+	*/
+	const dataToCsvString = (data, headers = null) => {
+		let csvContent = '';
+		if (headers !== null) {
+			csvContent += headers.join(',') + '\n';
+		}
+		csvContent += data.map((l) => l.join(',')).join('\n');
+		// downloadFile('enrichmentScores', csvContent, '.csv');
+		return csvContent;
+	};
+
+	const rows = [
+		['name1', 'city1', 'some other info'],
+		['name2', 'city2', 'more info'],
+	];
+	const headers = ['a', 'b', 'c'];
+
 	const handleScoreAll = async () => {
 		console.log('Score All!');
-		if (!scoreTableIsUpToDate) {
+		if (!scoreTableIsUpToDate && !currentlyScoring) {
+			setCurrentlyScoring(true);
 			console.log('Score All!');
 			return workerActionPromise(classifierWebWorker, 'scoreObjectData').then((event) => {
 				const newScoreTableObject = event.data.scoreTableObject;
 				console.log(newScoreTableObject);
-				setScoreTableObject(newScoreTableObject);
+				const scoreDataRows = Object.keys(newScoreTableObject.imageToCountsMap).map((key) => ({
+					imageNumber: key,
+					total: newScoreTableObject.imageToCountsMap[key][0] + newScoreTableObject.imageToCountsMap[key][1],
+					positive: newScoreTableObject.imageToCountsMap[key][1],
+					negative: newScoreTableObject.imageToCountsMap[key][0],
+					ratio: newScoreTableObject.ratios[key],
+					adjustratio: newScoreTableObject.adjustedRatios[key],
+				}));
+				const adjustedRatiosData = Object.values(newScoreTableObject.adjustedRatios).map((ratio) => ({
+					x: ratio,
+				}));
+				setHistogramData(adjustedRatiosData);
+				setScoreTable(scoreDataRows);
+				setCurrentlyScoring(false);
+				// setScoreTableObject(newScoreTableObject);
+
+				const headers = [
+					'ImageNumber',
+					'PositiveCount',
+					'NegativeCount',
+					'TotalCount',
+					'Ratio',
+					'AdjustedRatio',
+				];
+				const csvdata = scoreDataRows.map((dataRow) => [
+					dataRow.imageNumber,
+					dataRow.positive,
+					dataRow.negative,
+					dataRow.total,
+					dataRow.ratio,
+					dataRow.adjustratio,
+				]);
+				// const onDownload = () => {
+				// 	downloadDataAsCSV(csvdata, headers);
+				// };
+				const csvContent = dataToCsvString(csvdata, headers);
+				setScoreTableCsvString(csvContent);
+				// setDownloadScoreTableFunction(onDownload);
 				setScoreTableIsUpToDate(true);
 			});
 		}
@@ -400,10 +560,30 @@ function TestUIMVP() {
 		});
 	};
 
-	function constructTileState(dataURLs) {
+	async function constructTileStatePromise(dataURLs, newCellPairs) {
+		const cellDatas = await Promise.all(
+			newCellPairs.map((cellPair) =>
+				workerActionPromise(dataWebWorker, 'get', {
+					getType: 'cellPairData',
+					getArgs: { cellPair: cellPair },
+				}).then((event) => event.data.getResult)
+			)
+		);
+
 		return {
-			unclassified: dataURLs.map((dataURL, idx, info) => {
-				return { id: idx, address: dataURL, info: 'cell info, biology stuff' };
+			unclassified: dataURLs.map((dataURL, idx) => {
+				const cellData = cellDatas[idx];
+
+				const label = `Ob: ${cellData.ObjectNumber}\nIm: ${cellData.ImageNumber}`;
+				// We: ${cellData.Well}
+				// Pl: ${cellData.Plate}`;
+				console.log(label);
+				return {
+					id: idx,
+					address: dataURL,
+					info: label,
+					cellPair: { ImageNumber: cellData.ImageNumber, ObjectNumber: cellData.ObjectNumber },
+				};
 			}),
 			positive: [],
 			negative: [],
@@ -427,18 +607,20 @@ function TestUIMVP() {
 		});
 	}
 
-	const handleClickOpenFetchDropdown = () => {
+	const handleClickOpenImNumFetchDropdown = () => {
+		setAnchorEl(null);
 		setOpenFetchDropdown(true);
 	};
 
-	const handleCloseFetchDropdown = () => {
+	const handleClickCloseImNumFetchDropdown = () => {
 		setOpenFetchDropdown(false);
+		handleCloseFetchDropDown('ImageNumber');
 	};
 
 	return (
 		<GridContextProvider onChange={onChange}>
 			<div style={{ overflowX: 'hidden', height: '100%', width: '100%' }}>
-				<Row style={{}}>
+				<Row style={{ marginTop: '2%' }}>
 					<Image
 						src={logo}
 						style={{
@@ -448,11 +630,10 @@ function TestUIMVP() {
 							position: 'relative',
 							maxHeight: '125px',
 							marginBottom: '2%',
-							marginTop: '2%',
 						}}
 					></Image>
 
-					<Col style={{ left: '40%' }}>
+					<Col style={{ left: '40%', right: 5 }}>
 						<div className={classes.root}>
 							<div className={classes.wrapper}>
 								<Tooltip title="Load Data" aria-label="load data">
@@ -461,12 +642,17 @@ function TestUIMVP() {
 										color="primary"
 										component="label"
 										className={buttonClassname}
-										style={{ height: '5vw', width: '5vw' }}
+										// style={{ height: '5vw', width: '5vw' }}
+										style={{ marginRight: 5 }}
 									>
 										{success ? (
-											<CheckIcon style={{ height: '50%', width: '50%' }} />
+											<CheckIcon
+											// style={{ height: '50%', width: '50%'}}
+											/>
 										) : (
-											<CloudUploadIcon style={{ height: '50%', width: '50%' }} />
+											<CloudUploadIcon
+											// style={{ height: '50%', width: '50%' }}
+											/>
 										)}
 										<input
 											type="file"
@@ -488,13 +674,15 @@ function TestUIMVP() {
 								{uploading && (
 									<CircularProgress
 										className={classes.fabProgress}
-										style={{ height: '6vw', width: '6vw', marginTop: '4%', marginRight: '4%' }}
+										size={68}
+										// size={"6vw"}
+										//  style={{   marginTop: "3%", marginRight: '20vw'}}
 									/>
 								)}
 							</div>
 						</div>
 					</Col>
-					<Col style={{ left: '15%', marginTop: '1%' }}>
+					<Col style={{ left: '15%' }}>
 						<Tooltip title="Download" aria-label="download">
 							<Fab
 								aria-label="save"
@@ -502,10 +690,13 @@ function TestUIMVP() {
 								component="label"
 								disabled={!downloadButtonEnabled}
 								onClick={handleDownload}
-								style={{ height: '5vw', width: '5vw' }}
+								// style={{ height: '5vw', width: '5vw'}}
+								style={{ positive: 'relative' }}
 							>
 								{' '}
-								<SaveAltIcon style={{ height: '50%', width: '50%' }} />
+								<SaveAltIcon
+								// style={{ height: '50%', width: '50%' }}
+								/>
 							</Fab>
 						</Tooltip>
 					</Col>
@@ -532,7 +723,7 @@ function TestUIMVP() {
 								<MenuItem onClick={() => handleCloseFetchDropDown('Random')}>Random</MenuItem>
 								<MenuItem onClick={() => handleCloseFetchDropDown('Positive')}>Positive</MenuItem>
 								<MenuItem onClick={() => handleCloseFetchDropDown('Negative')}>Negative</MenuItem>
-								<MenuItem onClick={handleClickOpenFetchDropdown}>By Image</MenuItem>
+								<MenuItem onClick={handleClickOpenImNumFetchDropdown}>By Image</MenuItem>
 								<MenuItem onClick={() => handleCloseFetchDropDown('TrainingPositive')}>
 									Training Set Positive
 								</MenuItem>
@@ -542,27 +733,42 @@ function TestUIMVP() {
 								<MenuItem onClick={() => handleCloseFetchDropDown('Confusing')}>Confusing</MenuItem>
 
 								<Dialog open={openFetchDropdown} onClose={() => handleCloseFetchDropDown(null)}>
-									<DialogTitle>Fetch By Image</DialogTitle>
+									<DialogTitle>
+										{/* <Typography variant="h3" align="center"> */}
+											Fetch By Image
+										{/* </Typography> */}
+									</DialogTitle>
 									<DialogContent>
 										<DialogContentText>
 											Select the image number you would like to fetch from.
 										</DialogContentText>
 										<form noValidate>
 											<FormControl>
-												<InputLabel>Image</InputLabel>
-												<Select autoFocus>
-													<MenuItem value="1">1</MenuItem>
-													<MenuItem value="2">2</MenuItem>
-													<MenuItem value="3">3</MenuItem>
-													<MenuItem value="4">4</MenuItem>
-													<MenuItem value="5">5</MenuItem>
-												</Select>
+												<TextField
+													onChange={(event) => {
+														if (
+															event.target.value === null ||
+															event.target.value === undefined ||
+															event.target.value === ''
+														) {
+															return;
+														}
+														setSelectedFetchImageNumber(event.target.value);
+														setFetchImageNumberButtonEnabled(true);
+													}}
+													type="number"
+													label="Image Number"
+												></TextField>
 											</FormControl>
 										</form>
 									</DialogContent>
 									<DialogActions>
-										<Button onClick={handleCloseFetchDropdown} color="primary">
-											Close
+										<Button
+											disabled={!fetchImageNumberButtonEnabled}
+											onClick={handleClickCloseImNumFetchDropdown}
+											color="primary"
+										>
+											Ok
 										</Button>
 									</DialogActions>
 								</Dialog>
@@ -575,9 +781,8 @@ function TestUIMVP() {
 								Train
 							</Button>
 							<Dialog fullWidth={500} open={openTrainDropdown}>
-								<DialogTitle>Loss and Accuracy</DialogTitle>
+								<DialogTitle>Training the Classifier</DialogTitle>
 								<DialogContent>
-									{/* <img width={100} height={100} src={jones}></img> */}
 									<div width={300} ref={trainingAccuracyCanvasParentRef}></div>
 									<div width={300} ref={trainingLossCanvasParentRef}></div>
 								</DialogContent>
@@ -605,7 +810,14 @@ function TestUIMVP() {
 									Score All
 								</Button>
 							) : (
-								<ScoreAll handleScoreAll={handleScoreAll}></ScoreAll>
+								<ScoreAll
+									histogramData={histogramData}
+									scoreTable={scoreTable}
+									handleScoreAll={handleScoreAll}
+									scoreTableIsUpToDate={scoreTableIsUpToDate}
+									// downloadScoreTableFunction={downloadScoreTableFunction}
+									scoreTableCsvString={scoreTableCsvString}
+								></ScoreAll>
 							)}
 						</Grid>
 					</Grid>
@@ -656,6 +868,10 @@ function TestUIMVP() {
 									>
 										<div className="grid-item">
 											<div
+												onDoubleClick={() => {
+													console.log('double click: ' + item.info);
+													handleOpenCellBigPicture(item.cellPair);
+												}}
 												className="grid-item-content"
 												style={{
 													backgroundImage: `url(${item.address})`,
@@ -674,6 +890,19 @@ function TestUIMVP() {
 								/>
 							)}
 						</GridDropZone>
+						<Dialog
+							style={{ alignItems: 'center' }}
+							onClose={handleCloseCellBigPicture}
+							// fullWidth={480}
+							// maxWidth={480}
+							open={cellBigPictureDialogOpen}
+						>
+							<DialogTitle>{bigPictureTitle}</DialogTitle>
+							{/* <DialogTitle>Loss and Accuracy</DialogTitle> */}
+							<DialogContent style={{ alignItems: 'center', justifyContent: 'center' }}>
+								<img width={430} height={430} src={bigPictureSource}></img>
+							</DialogContent>
+						</Dialog>
 					</div>
 
 					<Row>
@@ -710,7 +939,7 @@ function TestUIMVP() {
 							className="dropzone positive"
 							id="positive"
 							boxesPerRow={4}
-							rowHeight={0}
+							rowHeight={80}
 							style={{ height: '20vw', maxHeight: 200, minHeight: 150 }}
 						>
 							{tileState.positive.map((item) => (
@@ -729,6 +958,10 @@ function TestUIMVP() {
 								>
 									<div className="grid-item">
 										<div
+											onDoubleClick={() => {
+												console.log('double click: ' + item.info);
+												handleOpenCellBigPicture(item.cellPair);
+											}}
 											className="grid-item-content"
 											style={{
 												backgroundImage: `url(${item.address})`,
@@ -766,6 +999,10 @@ function TestUIMVP() {
 								>
 									<div className="grid-item">
 										<div
+											onDoubleClick={() => {
+												console.log('double click: ' + item.info);
+												handleOpenCellBigPicture(item.cellPair);
+											}}
 											className="grid-item-content"
 											style={{
 												backgroundImage: `url(${item.address})`,
