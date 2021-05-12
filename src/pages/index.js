@@ -26,7 +26,7 @@ import Tooltip from '@material-ui/core/Tooltip';
 //import UploadButton from './UploadButton'
 
 import Evaluate from './AbbyUIButtons/UIEvaluateButton';
-import ScoreAll from './AbbyUIButtons/UIScoreAllButton';
+import ScoreAll from './UIScoreAllButton';
 import { v4 as uuidv4 } from 'uuid';
 
 import jones from '../jones.jpg';
