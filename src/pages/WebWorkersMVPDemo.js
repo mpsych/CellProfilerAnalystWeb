@@ -1,7 +1,7 @@
 import React from 'react';
 import { Row, Col, Container } from 'reactstrap';
 import { Box, Button, Grid, IconButton, Menu, MenuItem, Card, TextField, Typography } from '@material-ui/core';
-import logo from '../cpa_logo(blue).svg';
+import logo from '../cpa_logo(blue).png';
 import { Image, Dropdown, DropdownButton } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
@@ -790,10 +790,10 @@ function TestUIMVP() {
 									histogramData={histogramData}
 									scoreTable={scoreTable}
 									handleScoreAll={handleScoreAll}
+									scoreTableIsUpToDate={scoreTableIsUpToDate}
 								></ScoreAll>
 							)}
 						</Grid>
-						<Grid key={4} item></Grid>
 					</Grid>
 				</Row>
 
@@ -913,7 +913,7 @@ function TestUIMVP() {
 							className="dropzone positive"
 							id="positive"
 							boxesPerRow={4}
-							rowHeight={0}
+							rowHeight={80}
 							style={{ height: '20vw', maxHeight: 200, minHeight: 150 }}
 						>
 							{tileState.positive.map((item) => (
