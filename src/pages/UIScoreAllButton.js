@@ -4,14 +4,14 @@ import Dialog from '@material-ui/core/Dialog';
 import Slide from '@material-ui/core/Slide';
 import CloseIcon from '@material-ui/icons/Close';
 import SaveIcon from '@material-ui/icons/Save';
-import ScoreAllTable from './AbbyUIButtons/Score_Table';
 import ScoreAllHistagram from './ScoreAllGraph'
 import { Row, Col} from 'reactstrap';
 import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import { downloadFile } from '../downloadFile';
-//TODO: need place to hold two graphs
+import ScoreAllTable from './ScoreAll_Table'
+
 
 const Transition = React.forwardRef(function Transition(props, ref) {
 	return <Slide direction="up" ref={ref} {...props} />;
@@ -21,7 +21,6 @@ const downloadCSV = function (props) {
 	downloadFile('enrichment', props.scoreTableCsvString, '.csv');
 };
 
-//this components is for pop-up dialog display the 'confusion_matrix_canvas' for Evaluation button
 export default function DialogForCanvas(props) {
 	const [open, setOpen] = useState(false);
 
