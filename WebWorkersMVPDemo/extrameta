@@ -1,10 +1,10 @@
-<meta property="og:title" content="The Audioventure" />
+<meta property="og:title" content="CellProfiler Analyst Web" />
 				<meta
 					property="og:description"
-					content="An interactive album where YOU get to choose what to listen to and where the story will take you"
+					content="A port of the core features of the desktop-app CellProfiler Analyst to the web"
 				/>
 				<meta
 					property="og:image"
-					content="https://yahtzeerage.github.io/CYOA-Assets/assets/031_cover_kstr2.png"
+					content="https://yahtzeerage.github.io/CellProfilerAnalystForTheWeb/static/cpa_logo(blue)-fe2e956042094f68a0afbe23f4755b43.png"
 				/>
-				<meta property="og:url" content="https://yahtzeerage.github.io/The-Audioventure" />
+				<meta property="og:url" content="https://yahtzeerage.github.io/CellProfilerAnalystForTheWeb/WebWorkersMVPDemo/" />
