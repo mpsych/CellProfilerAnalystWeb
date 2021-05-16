@@ -50,30 +50,6 @@ self.onmessage = async (event) => {
 			self.canvasWorkerPort = event.ports[0];
 			self.canvasWorkerPort.onmessage = handleCanvasWorkerMessage;
 			break;
-		case 'testSendToClassifierWorker':
-			self.classifierWorkerPort.postMessage({ test: 'test' });
-			break;
-		case 'printObjectDataRow':
-			console.log(self.dataProvider.getObjectLines()[event.data.index]);
-			break;
-		// case "trainAndPredict":
-		//     self.postMessage({action: "trainAndPredict", objectData:self.objectData})
-		//     break;
-		case 'sendObjectData':
-			console.log('entry to dataworker, sendObjectData');
-			self.postMessage({ action: 'sendObjectData', objectData: self.dataProvider.getDataLines('object_data') });
-			break;
-		case 'getObjectRow':
-			const searchObject = { ObjectNumber: event.data.ObjectNumber, ImageNumber: event.data.ImageNumber };
-			self.postMessage({
-				action: 'sendObjectData',
-				objectData: self.dataProvider.getRow('object_data', searchObject),
-				uuid: event.data.uuid,
-			});
-			break;
-		case 'getTrainingObject':
-			self.postMessage({ trainingObject: self.initialTrainingObject });
-			break;
 		case 'get':
 			const result = self.fulfillAction(event);
 			self.postMessage({ getResult: result, uuid: event.data.uuid });
