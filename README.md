@@ -29,7 +29,7 @@ You could navigate to the website, but if you don't want to:
 4.  **Start Analyzing!**
     
     [Download the Example ZIP file](http://d1zymp9ayga15t.cloudfront.net/content/Examplezips/cpa_2.0_example.zip)
-    [It come's from here](https://github.com/CellProfiler/CellProfiler-Analyst)
+    [It comes from here](https://github.com/CellProfiler/CellProfiler-Analyst)
 
     Unzip the file, and press the upload button in the app and upload the folder. Once uploading and initial training is complete, you can now:
     * Fetch images (Random, Positive, Negative, By Image, Training Set Positive/Negative, Confusing)
