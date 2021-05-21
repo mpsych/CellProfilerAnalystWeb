@@ -1,48 +1,37 @@
 <p align="center">
-  <a href="https://www.gatsbyjs.com/?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter">
-    <img alt="Gatsby" src="https://www.gatsbyjs.com/Gatsby-Monogram.svg" width="60" />
+  <a href="https://yahtzeerage.github.io/CellProfilerAnalystForTheWeb/static/cpa_logo(blue)-fe2e956042094f68a0afbe23f4755b43.png">
+    <img alt="Gatsby" height=200 width=900 src="https://yahtzeerage.github.io/CellProfilerAnalystForTheWeb/static/cpa_logo(blue)-fe2e956042094f68a0afbe23f4755b43.png" width="60" />
   </a>
 </p>
-<h1 align="center">
-  Gatsby minimal starter
-</h1>
+
 
 ## 🚀 Quick start
 
-1.  **Create a Gatsby site.**
+1.  clone the repo
 
-    Use the Gatsby CLI to create a new site, specifying the minimal starter.
-
-    ```shell
-    # create a new Gatsby site using the minimal starter
-    npm init gatsby
-    ```
-
-2.  **Start developing.**
+2.  **Install dependencies.**
 
     Navigate into your new site’s directory and start it up.
 
     ```shell
-    cd my-gatsby-site/
-    npm run develop
+    yarn install
     ```
 
-3.  **Open the code and start customizing!**
+3.  **Start the App!**
 
+    ```shell
+    yarn start
+    ```
     Your site is now running at http://localhost:8000!
 
-    Edit `src/pages/index.js` to see your site update in real-time!
+4.  **Start Analyzing!**
+    
+    [Download the Example ZIP file](http://d1zymp9ayga15t.cloudfront.net/content/Examplezips/cpa_2.0_example.zip)
+    [It come's from here](https://github.com/CellProfiler/CellProfiler-Analyst)
 
-4.  **Learn more**
-
-    - [Documentation](https://www.gatsbyjs.com/docs/?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter)
-
-    - [Tutorials](https://www.gatsbyjs.com/tutorial/?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter)
-
-    - [Guides](https://www.gatsbyjs.com/tutorial/?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter)
-
-    - [API Reference](https://www.gatsbyjs.com/docs/api-reference/?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter)
-
-    - [Plugin Library](https://www.gatsbyjs.com/plugins?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter)
-
-    - [Cheat Sheet](https://www.gatsbyjs.com/docs/cheat-sheet/?utm_source=starter&utm_medium=readme&utm_campaign=minimal-starter)
+    Unzip the file, and press the upload button in the app and upload the folder. Once uploading and initial training is complete, you can now:
+    * Fetch images (Random, Positive, Negative, By Image, Training Set Positive/Negative, Confusing)
+    * Train on images dragged from Unclassified into Positive and Negative grids
+    * Evaluate (look at the confusion matrix on the training set)
+    * Score All (calculate the enrichment scores with Empirical Bayes and look at/download the data)
+    * Download the model spec and its corresponding weights files
