@@ -5,7 +5,9 @@
 </p>
 
 
-## 🚀 Quick start
+## 🚀 Quick start to use source code
+
+You could navigate to the website, but if you don't want to:
 
 1.  clone the repo
 
