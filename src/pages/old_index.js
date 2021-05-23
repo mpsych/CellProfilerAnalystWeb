@@ -5,14 +5,12 @@ import logo from '../CPA_newlogo.png';
 import {Image, Dropdown, DropdownButton} from 'react-bootstrap';
 import "bootstrap/dist/css/bootstrap.css";
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
-import {UploadHandler2} from '../classes/UploadHandler2'
+
+import UploadHandler from '../classes/UploadHandler'
 import {ClassifierManager} from '../classes/ClassifierManager'
-import {ImageProvider2} from '../classes/ImageProvider2.js';
-import UserUploadFileHandler from '../classes/UserUploadFileHandler'
-import {Classifier} from '../classes/Classifier'
 import {ImageGridManager}  from '../classes/imGridManager'
 import {ImageHandler}  from '../classes/ImageHandler'
-
+import jones from '../jones.jpg'
 import {
     GridContextProvider,
     GridDropZone,
@@ -35,7 +33,7 @@ function TestUI(){
     // const [classifierManager, setClassifierManager] = React.useState(null)
     const [trainingObject, setTrainingObject] = React.useState(null)
     const [fileListObject, setFileListObject] = React.useState(null)
-    const [tileState, setTileState] = React.useState( constructTileState([]) );
+    const [tileState, setTileState] = React.useState( constructTileState([jones,jones , jones]) );
     const [imageGridManager, setImageGridManager] = React.useState(null)
     const [lastFetchState, setLastFetchState] = React.useState(null)
     const [featuresToUse, setFeaturesToUseState] = React.useState(null)
@@ -71,18 +69,16 @@ function TestUI(){
 
     const handleFetch = async (fetchType) => {
       disableIterationButtons()
-      console.time('fetch with stupid dumb way thats deff not faster because Iknow everything since I had four semesters of cs')
-      //console.time('Superior fetch that even though it takes up all this extra ram for no real reason is still deff better')
       const emptyTileState = { unclassified: [], positive: [], negative: []}
       setTileState(emptyTileState)
       const classifierManager = new ClassifierManager(dataProvider, trainingObject)
       await classifierManager.initTrainPromise()
       setLastFetchState(fetchType)
       
-     var classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
-    // var classedCellPairObjects =  dataProvider.getObjsPerImg(60)
-    // classedCellPairObjects.splice(20, 800)
-    // console.log(classedCellPairObjects)
+      var classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
+      // dataProvider.getObjsPerImg(60)
+     // classedCellPairObjects.splice(20, 800)
+     // console.log(classedCellPairObjects)
       classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
       const ih = new ImageHandler(fileListObject, dataProvider)
       const dataURLS = await ih.getObjsToURLs(classedCellPairObjects)
@@ -90,8 +86,6 @@ function TestUI(){
       setTileState(newTileState)
       setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLS))
       enableIterationButtons()
-     // console.timeEnd('Superior fetch that even though it takes up all this extra ram for no real reason is still deff better')
-      console.timeEnd('fetch with stupid dumb way thats deff not faster because Iknow everything since I had four semesters of cs')
       return
   }
 
@@ -138,45 +132,43 @@ function TestUI(){
     const handleUpload = async (fileListObject) => {
         setUploadButtonEnabled(false)
         setFileListObject(fileListObject)
-        const uploadHandler2 = new UploadHandler2(fileListObject)
-        var props = await uploadHandler2.getProperties();
-        const dataProvider = await uploadHandler2.getDataProvider()
-        const trainingTable = await uploadHandler2.getTrainingSet()
+        const uploadHandler = new UploadHandler(fileListObject)
+        const uploadReturnObject = await uploadHandler.getDataHandlerandStartingTrainingSet();
+        const dataProvider = uploadReturnObject.data_provider
+        console.log(dataProvider.getObjsPerImg(4))
+        setDataProvider(dataProvider)
+        const trainingTable = uploadReturnObject.training_data.training_table
+        const trainingDataTable = trainingTable.getDataColumnsPaired()
 
-    //     setDataProvider(dataProvider)
-    //     const trainingTable = uploadReturnObject.training_data.training_table
-    //     const trainingDataTable = trainingTable.getDataColumnsPaired()
+        const trainingLabels = trainingTable.getTrainingLabels()
+        const initialTrainingData = trainingDataTable.map(row_object => {
+            const ObjectNumber = row_object['objectnum']
+            const ImageNumber = row_object['imagenum']
+            return dataProvider.getRow('object_data', {ObjectNumber, ImageNumber})
+        })
+        const totalFeatures = uploadReturnObject.training_data.features
+        const tempFeaturesToUse = totalFeatures.filter((elem)=>!elem.includes("Location") && (elem !== "ObjectNumber") && (elem !== "ImageNumber"))
+        setFeaturesToUseState(tempFeaturesToUse)
+        console.log("finished data initialization")
+        const initialTrainingObject = {
+            classifierType: "LogisticRegression",
+            trainingData: initialTrainingData,
+            trainingLabels: trainingLabels,
+            featuresToUse: tempFeaturesToUse
+        }
+        setTrainingObject(initialTrainingObject)
+        // console.log("starting initial training")
+        // const newClassifierManager = new ClassifierManager(dataProvider, initialTrainingObject)
+        
+        // setClassifierManager(newClassifierManager)
 
-    //     const trainingLabels = trainingTable.getTrainingLabels()
-    //     const initialTrainingData = trainingDataTable.map(row_object => {
-    //         const ObjectNumber = row_object['objectnum']
-    //         const ImageNumber = row_object['imagenum']
-    //         return dataProvider.getRow('object_data', {ObjectNumber, ImageNumber})
-    //     })
-    //     const totalFeatures = uploadReturnObject.training_data.features
-    //     const tempFeaturesToUse = totalFeatures.filter((elem)=>!elem.includes("Location") && (elem !== "ObjectNumber") && (elem !== "ImageNumber"))
-    //     setFeaturesToUseState(tempFeaturesToUse)
-    //     console.log("finished data initialization")
-    //     const initialTrainingObject = {
-    //         classifierType: "LogisticRegression",
-    //         trainingData: initialTrainingData,
-    //         trainingLabels: trainingLabels,
-    //         featuresToUse: tempFeaturesToUse
-    //     }
-    //     setTrainingObject(initialTrainingObject)
-    //     // console.log("starting initial training")
-    //     // const newClassifierManager = new ClassifierManager(dataProvider, initialTrainingObject)
-        
-    //     // setClassifierManager(newClassifierManager)
-
-    //     setFetchButtonEnabled(true)
-    //     setTrainButtonEnabled(true)
-    //     setDownloadButtonEnabled(true)
+        setFetchButtonEnabled(true)
+        setTrainButtonEnabled(true)
+        setDownloadButtonEnabled(true)
         
         
-    //     console.log("finished upload")
-    //     console.log(dataProvider.getToolTip(3))
-     }
+        console.log("finished upload")
+    }
 
     const handleDownload = async () => {
       disableIterationButtons()
@@ -196,24 +188,35 @@ function TestUI(){
 
     function onChange(sourceId, sourceIndex, targetIndex, targetId) {
         if (targetId) {
+         
           const result = move(
             tileState[sourceId],
             tileState[targetId],
             sourceIndex,
             targetIndex
           );
+          
           return setTileState({
             ...tileState,
             [sourceId]: result[0],
             [targetId]: result[1]
           });
         }
-    
-        const result = swap(tileState[sourceId], sourceIndex, targetIndex);
+        console.log(sourceId, sourceIndex, targetIndex, )
+        if (sourceIndex !== targetIndex) {
+          const result = swap(tileState[sourceId], sourceIndex, tileState[sourceId].length);
+          return setTileState({
+            ...tileState,
+            [sourceId]: result
+          });
+        }
+        const result = swap(tileState[sourceId], sourceIndex, sourceIndex);
         return setTileState({
           ...tileState,
           [sourceId]: result
         });
+        
+        
       }
     
     return (

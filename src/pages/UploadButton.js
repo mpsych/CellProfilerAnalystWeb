@@ -46,7 +46,7 @@ const useStyles = makeStyles((theme) => ({
     
   }));
 
-function UploadButton(){
+function UploadButton(props){
     const [userUploadFileHandler, setUserUploadFileHandler] = React.useState(null)
     const [featuresToUse, setFeaturesToUseState] = React.useState(null)
     const [trainingObject, setTrainingObject] = React.useState(null)
@@ -133,7 +133,7 @@ function UploadButton(){
                 odirectory="true"
                 directory="true"
                 multiple
-                onChange = {(eventObject)=>{handleUpload(eventObject)}}  
+                onChange = {(eventObject)=>{props.handleUpload(eventObject)}}  
                
         />
         </Fab>
