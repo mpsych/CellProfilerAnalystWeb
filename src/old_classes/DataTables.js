@@ -2,7 +2,8 @@ import _ from "lodash";
 export class DataTables {
     constructor(data_lines, column_lines) {
         this.data_lines = data_lines
-        this.data_table = data_lines.map(data_row=>{ return _.zipObject(column_lines, data_row)})
+        this.data_table = data_lines.map(data_row=>
+            { return _.zipObject(column_lines, data_row)})
         this.column_lines = column_lines;
     }
     find (search_obj = {}) {

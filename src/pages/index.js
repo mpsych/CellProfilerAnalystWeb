@@ -6,7 +6,7 @@ import {Image, Dropdown, DropdownButton} from 'react-bootstrap';
 import "bootstrap/dist/css/bootstrap.css";
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
 
-import UploadHandler from '../classes/UploadHandler'
+import {UploadHandler2} from '../classes/UploadHandler2'
 import {ClassifierManager} from '../classes/ClassifierManager'
 import {ImageGridManager}  from '../classes/imGridManager'
 import {ImageHandler}  from '../classes/ImageHandler'
@@ -69,16 +69,18 @@ function TestUI(){
 
     const handleFetch = async (fetchType) => {
       disableIterationButtons()
+      console.time('fetch with stupid dumb way thats deff not faster because Iknow everything since I had four semesters of cs')
+      //console.time('Superior fetch that even though it takes up all this extra ram for no real reason is still deff better')
       const emptyTileState = { unclassified: [], positive: [], negative: []}
       setTileState(emptyTileState)
       const classifierManager = new ClassifierManager(dataProvider, trainingObject)
       await classifierManager.initTrainPromise()
       setLastFetchState(fetchType)
       
-      var classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
-      // dataProvider.getObjsPerImg(60)
-     // classedCellPairObjects.splice(20, 800)
-     // console.log(classedCellPairObjects)
+     var classedCellPairObjects = classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
+    // var classedCellPairObjects =  dataProvider.getObjsPerImg(60)
+    // classedCellPairObjects.splice(20, 800)
+    // console.log(classedCellPairObjects)
       classifierManager.fetchUpToNCellPairsByClass(fetchType, N)
       const ih = new ImageHandler(fileListObject, dataProvider)
       const dataURLS = await ih.getObjsToURLs(classedCellPairObjects)
@@ -86,6 +88,8 @@ function TestUI(){
       setTileState(newTileState)
       setImageGridManager(new ImageGridManager(classedCellPairObjects, dataURLS))
       enableIterationButtons()
+     // console.timeEnd('Superior fetch that even though it takes up all this extra ram for no real reason is still deff better')
+      console.timeEnd('fetch with stupid dumb way thats deff not faster because Iknow everything since I had four semesters of cs')
       return
   }
 
@@ -132,22 +136,21 @@ function TestUI(){
     const handleUpload = async (fileListObject) => {
         setUploadButtonEnabled(false)
         setFileListObject(fileListObject)
-        const uploadHandler = new UploadHandler(fileListObject)
-        const uploadReturnObject = await uploadHandler.getDataHandlerandStartingTrainingSet();
-        const dataProvider = uploadReturnObject.data_provider
-        console.log(dataProvider.getObjsPerImg(4))
+        const uploadHandler2 = new UploadHandler2(fileListObject)
+        var props = await uploadHandler2.getProperties();
+        const dataProvider = await uploadHandler2.getDataProvider()
+        const trainingTable = await uploadHandler2.getTrainingSet()
         setDataProvider(dataProvider)
-        const trainingTable = uploadReturnObject.training_data.training_table
         const trainingDataTable = trainingTable.getDataColumnsPaired()
 
         const trainingLabels = trainingTable.getTrainingLabels()
         const initialTrainingData = trainingDataTable.map(row_object => {
-            const ObjectNumber = row_object['objectnum']
-            const ImageNumber = row_object['imagenum']
+            const ObjectNumber = row_object['ObjectNumber']
+            const ImageNumber = row_object['ImageNumber']
             return dataProvider.getRow('object_data', {ObjectNumber, ImageNumber})
         })
-        const totalFeatures = uploadReturnObject.training_data.features
-        const tempFeaturesToUse = totalFeatures.filter((elem)=>!elem.includes("Location") && (elem !== "ObjectNumber") && (elem !== "ImageNumber"))
+        trainingTable.setFeatures(dataProvider.getColumnLines('object_table'))
+        const tempFeaturesToUse = trainingTable.getFeatures()
         setFeaturesToUseState(tempFeaturesToUse)
         console.log("finished data initialization")
         const initialTrainingObject = {
@@ -168,7 +171,8 @@ function TestUI(){
         
         
         console.log("finished upload")
-    }
+        console.log(dataProvider.getToolTip(3))
+     }
 
     const handleDownload = async () => {
       disableIterationButtons()

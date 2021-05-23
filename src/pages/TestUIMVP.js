@@ -174,7 +174,7 @@ function TestUIMVP(){
       imageGridManager.setClassByIndexArray('negative', negativeIDs)
       imageGridManager.setClassByIndexArray('positive', positiveIDs)
 
-      const negativeCellPairs = imageGridManager.getPairsByClass('negative')
+      const negativeCellPairs = imageGridManager.getPairsByClass('negative')`1`
       const positiveCellPairs = imageGridManager.getPairsByClass('positive')
  
       const negativeObjectDataRows = negativeCellPairs.map(cellPair => dataProvider.getRow('object_data', {ImageNumber: cellPair.ImageNumber, ObjectNumber: cellPair.ObjectNumber}))

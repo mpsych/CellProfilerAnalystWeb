@@ -8,7 +8,6 @@ export default class ImageTable{
         for (var i = 0; i < this.column_lines.length; i++) {
             this.image_column[this.column_lines[i]] = i;
         }
-        var obj_index = this.image_column.imageNumber
         var img_index = this.image_column.ImageNumber
         for (var i = 0; i < this.image_lines.length; i++) {
             var key = this.image_lines[i][img_index].toString() 

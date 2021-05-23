@@ -1,4 +1,3 @@
-  
 export default class UserUploadFileHandler {
 
     constructor(fileListObject) {
@@ -10,10 +9,13 @@ export default class UserUploadFileHandler {
             return this.findFile(file_name)
         })
     }
-    findFile = (file_name) => {
+    findFile = (search_key) => {
         const fileIndex = Array.from(this.fileListObject.target.files).findIndex((elem) => {
-            return (elem.name === file_name);
+            if (search_key.startsWith('.'))
+                return (elem.name.endsWith(search_key))
+            return (elem.name === search_key);
         });
+        if (fileIndex === -1) return -1
         return this.fileListObject.target.files[fileIndex];
     }
     fileReaderPromiseText =  function(file_result) {

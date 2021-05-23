@@ -4,6 +4,7 @@ import UserUploadFileHandler from "./UserUploadFileHandler.js";
 import _ from "lodash";                                                                                                                                                                                                         
 import DataProvider from "./DataProvider.js";
 import TrainingTable from "./TrainingTable.js";
+import { CollectionsOutlined } from "@material-ui/icons";
 export default class UploadHandler {
 
     constructor(fileListObject) {
@@ -51,11 +52,14 @@ export default class UploadHandler {
         return Promise.all( file_objects.map( file_object => {
             if (file_object.name.endsWith(".csv") || file_object.name.endsWith(".txt")) {
                 var papa_parser = new PapaParser();
+
                 return papa_parser.papaTextfromCSV(file_object);
             }
             else {
                 var file_handler = new UserUploadFileHandler(this.fileListObject)
+                console.log(file_object)
                 return file_handler.fileReaderPromiseText(file_object.file);
+                
             }
         }))
     }
@@ -108,3 +112,4 @@ export default class UploadHandler {
     }
 
 }
+export {UploadHandler}

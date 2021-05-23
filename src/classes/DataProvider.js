@@ -1,48 +1,50 @@
 
-import { ThreeSixty, ThumbDownSharp } from "@material-ui/icons";
 import ImageTable from "./ImageTable.js";
 import ObjectTable from "./ObjectTable.js";
+/*
+    @param {object_table : {columns: , data: } image_table : {columns: , data: }}
+*/
 export default class DataProvider {
     constructor(uniform_data) {
         this.testConstructorInputPreconditions(uniform_data);
 
         this.data = {
-            'object_data' : new ObjectTable(uniform_data.object_data, uniform_data.object_columns),
-            'image_data' :  new ImageTable(uniform_data.image_data, uniform_data.image_columns)
+            'object_data' : new ObjectTable(uniform_data.object_table.data, uniform_data.object_table.columns),
+            'image_data' :  new ImageTable(uniform_data.image_table.data, uniform_data.image_table.columns)
         }  
     }
     testConstructorInputPreconditions(uniform_data) {
         if (uniform_data == undefined) {
             throw new Error("Constructor Error on uniform_data is not defined")
         }
-        if (uniform_data.image_data == undefined || 
-            uniform_data.object_data == undefined ||
-            uniform_data.image_columns == undefined ||
-            uniform_data.object_columns == undefined) {
+        if (uniform_data.image_table.data== undefined || 
+            uniform_data.object_table.data == undefined ||
+            uniform_data.image_table.columns == undefined ||
+            uniform_data.object_table.columns == undefined) {
             
             throw new Error("Constructor Error on uniform_data is missing fields")
         }
-        if (uniform_data.object_data[0][0] == undefined) {
+        if (uniform_data.object_table.data[0][0] == undefined) {
             throw new Error("Constructor Error on object_data is not a 2d array")
         }
-        if (uniform_data.image_data[0][0] == undefined) {
+        if (uniform_data.image_table.data[0][0] == undefined) {
             throw new Error("Constructor Error on image_data is not a 2d array")
         }
-        if (uniform_data.object_data[0].length !== uniform_data.object_columns.length) {
+        if (uniform_data.object_table.data[0].length !== uniform_data.object_table.columns.length) {
             throw new Error("Constructor Error on object_data length mismatch with object_columns length")
         }
-        if (uniform_data.image_data[0].length !== uniform_data.image_columns.length) {
+        if (uniform_data.image_table.data[0].length !== uniform_data.image_table.columns.length) {
             throw new Error("Constructor Error on image_data length mismatch with image_columns length")
         }
-        if (!uniform_data.object_columns.includes("ObjectNumber") ||
-            !uniform_data.object_columns.includes("ImageNumber")) {
+        if (!uniform_data.object_table.columns.includes("ObjectNumber") ||
+            !uniform_data.object_table.columns.includes("ImageNumber")) {
                 throw new Error("Constructor Error on object_columns doesn't have ObjectNumber and ImageNumber")
             }
-        if (!uniform_data.image_columns.includes("ImageNumber")) {
+        if (!uniform_data.image_table.columns.includes("ImageNumber")) {
                 throw new Error("Constructor Error on image_columns doesn't have ImageNumber")
             }
-        if (!uniform_data.object_columns.includes("Nuclei_Location_CenterX") ||
-            !uniform_data.object_columns.includes("Nuclei_Location_CenterY")) {
+        if (!uniform_data.object_table.columns.includes("Nuclei_Location_CenterX") ||
+            !uniform_data.object_table.columns.includes("Nuclei_Location_CenterY")) {
                 throw new Error("Constructor Error on uniform_data doesn't have Nuclei_Location_CenterX or Nuclei_Location_CenterY")
             }
     }
@@ -54,7 +56,8 @@ export default class DataProvider {
             {'file_lookup' : "Image_FileNames_Filename_OrigDNA"  , 'color' : "blue"}
         ]
          var image_paths = channels.map( channel => {
-            var file_name =  this.getValue('image_data', {'ImageNumber': img, 'value': channel.file_lookup}) 
+            var index = this.data.image_data.findIndex({'ImageNumber': img})
+            var file_name = this.data.image_data.get(index, channel.file_lookup)
             return {'filename' : file_name , 'color' : channel.color}   
          });
         return image_paths;
@@ -76,11 +79,11 @@ export default class DataProvider {
         }
         return objsInImg;
     }
-    getToolTip(search_obj) {
-        var index = this.data.image_data.findIndex(search_obj)
+    getToolTip(img) {
+        var index = this.data.image_data.findIndex({'ImageNumber': img})
         var plate = this.data.image_data.get(index, 'plate')
         var well = this.data.image_data.get(index, 'well')
-        return "Plate: " + plate + " Well: " + well + " ImageNumber: " + search_obj.ImageNumber
+        return "Plate: " + plate + " Well: " + well + " ImageNumber: " + img
     }
     getNRandomObjs(n) {
         var num_of_objs = this.data.object_data.getSize()
