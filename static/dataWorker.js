@@ -1,6 +1,6 @@
 //import UploadHandler
-self.importScripts('UploadHandler.js');
-// self.importScripts('UserUploadFileHandler.js')
+self.importScripts('UploadHandler2.js');
+//self.importScripts('UserUploadFileHandler2.js')
 self.initialized = false;
 
 self.onmessage = async (event) => {
@@ -11,21 +11,15 @@ self.onmessage = async (event) => {
 			if (fileListObject === undefined || fileListObject === null) {
 				throw new Error('[dataWebWorker] fileListObject not defined');
 			}
-			self.fileHandler = new UserUploadFileHandler(fileListObject);
-			const uploadHandler = new UploadHandler(event.data.fileListObject);
-			const uploadReturnObject = await uploadHandler.getDataHandlerandStartingTrainingSet();
-			self.dataProvider = uploadReturnObject.data_provider;
-
-			const trainingTable = uploadReturnObject.training_data.training_table;
+			self.fileHandler = new UserUploadFileHandler2(fileListObject);
+			const uploadHandler = new UploadHandler2(event.data.fileListObject);
+			const uploadReturnObject = await uploadHandler.getDataProvider();
+			self.dataProvider = uploadReturnObject
+			const trainingTable = await uploadHandler.getTrainingSet();
 			const trainingDataTable = trainingTable.getDataColumnsPaired();
 			const trainingLabels = trainingTable.getTrainingLabels();
-			const initialTrainingData = trainingDataTable.map((row_object) => {
-				const ObjectNumber = row_object['objectnum'];
-				const ImageNumber = row_object['imagenum'];
-				return dataProvider.getRowArray('object_data', { ObjectNumber, ImageNumber });
-			});
-			const totalFeatures = uploadReturnObject.training_data.features;
-
+			const initialTrainingData = trainingTable.getInitialTrainingData(dataProvider)
+			const totalFeatures = dataProvider.getColumnLines('object_data');
 			const featureIsUsed = (feature) =>
 				!feature.includes('Location') && feature !== 'ObjectNumber' && feature !== 'ImageNumber';
 			const tempIndices = totalFeatures.map((feature, idx) => (featureIsUsed(feature) ? idx : -1));
@@ -49,30 +43,6 @@ self.onmessage = async (event) => {
 		case 'connectToCanvasWorker':
 			self.canvasWorkerPort = event.ports[0];
 			self.canvasWorkerPort.onmessage = handleCanvasWorkerMessage;
-			break;
-		case 'testSendToClassifierWorker':
-			self.classifierWorkerPort.postMessage({ test: 'test' });
-			break;
-		case 'printObjectDataRow':
-			console.log(self.dataProvider.getObjectLines()[event.data.index]);
-			break;
-		// case "trainAndPredict":
-		//     self.postMessage({action: "trainAndPredict", objectData:self.objectData})
-		//     break;
-		case 'sendObjectData':
-			console.log('entry to dataworker, sendObjectData');
-			self.postMessage({ action: 'sendObjectData', objectData: self.dataProvider.getDataLines('object_data') });
-			break;
-		case 'getObjectRow':
-			const searchObject = { ObjectNumber: event.data.ObjectNumber, ImageNumber: event.data.ImageNumber };
-			self.postMessage({
-				action: 'sendObjectData',
-				objectData: self.dataProvider.getRow('object_data', searchObject),
-				uuid: event.data.uuid,
-			});
-			break;
-		case 'getTrainingObject':
-			self.postMessage({ trainingObject: self.initialTrainingObject });
 			break;
 		case 'get':
 			const result = self.fulfillAction(event);
@@ -189,4 +159,4 @@ const handleCanvasWorkerMessage = function (event) {
 	const { uuid } = event.data;
 	// console.log(postResult, uuid)
 	self.canvasWorkerPort.postMessage({ postResult, uuid });
-};
+}

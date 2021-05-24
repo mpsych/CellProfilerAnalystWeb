@@ -1,53 +1,49 @@
 
-
 self.importScripts('ImageTable.js')
 self.importScripts('ObjectTable.js')
 class DataProvider {
-    constructor(uniform_data) {
-        
-
-
+    
+    constructor(uniform_data, props) {
         this.testConstructorInputPreconditions(uniform_data);
 
         this.data = {
-            'object_data' : new ObjectTable(uniform_data.object_data, uniform_data.object_columns),
-            'image_data' :  new ImageTable(uniform_data.image_data, uniform_data.image_columns)
-        }
-        
+            'object_data' : new ObjectTable(uniform_data.object_table.data, uniform_data.object_table.columns),
+            'image_data' :  new ImageTable(uniform_data.image_table.data, uniform_data.image_table.columns)
+        }  
+        this.props = props
     }
-
     testConstructorInputPreconditions(uniform_data) {
         if (uniform_data == undefined) {
             throw new Error("Constructor Error on uniform_data is not defined")
         }
-        if (uniform_data.image_data == undefined || 
-            uniform_data.object_data == undefined ||
-            uniform_data.image_columns == undefined ||
-            uniform_data.object_columns == undefined) {
+        if (uniform_data.image_table.data== undefined || 
+            uniform_data.object_table.data == undefined ||
+            uniform_data.image_table.columns == undefined ||
+            uniform_data.object_table.columns == undefined) {
             
             throw new Error("Constructor Error on uniform_data is missing fields")
         }
-        if (uniform_data.object_data[0][0] == undefined) {
+        if (uniform_data.object_table.data[0][0] == undefined) {
             throw new Error("Constructor Error on object_data is not a 2d array")
         }
-        if (uniform_data.image_data[0][0] == undefined) {
+        if (uniform_data.image_table.data[0][0] == undefined) {
             throw new Error("Constructor Error on image_data is not a 2d array")
         }
-        if (uniform_data.object_data[0].length !== uniform_data.object_columns.length) {
+        if (uniform_data.object_table.data[0].length !== uniform_data.object_table.columns.length) {
             throw new Error("Constructor Error on object_data length mismatch with object_columns length")
         }
-        if (uniform_data.image_data[0].length !== uniform_data.image_columns.length) {
+        if (uniform_data.image_table.data[0].length !== uniform_data.image_table.columns.length) {
             throw new Error("Constructor Error on image_data length mismatch with image_columns length")
         }
-        if (!uniform_data.object_columns.includes("ObjectNumber") ||
-            !uniform_data.object_columns.includes("ImageNumber")) {
+        if (!uniform_data.object_table.columns.includes("ObjectNumber") ||
+            !uniform_data.object_table.columns.includes("ImageNumber")) {
                 throw new Error("Constructor Error on object_columns doesn't have ObjectNumber and ImageNumber")
             }
-        if (!uniform_data.image_columns.includes("ImageNumber")) {
+        if (!uniform_data.image_table.columns.includes("ImageNumber")) {
                 throw new Error("Constructor Error on image_columns doesn't have ImageNumber")
             }
-        if (!uniform_data.object_columns.includes("Nuclei_Location_CenterX") ||
-            !uniform_data.object_columns.includes("Nuclei_Location_CenterY")) {
+        if (!uniform_data.object_table.columns.includes("Nuclei_Location_CenterX") ||
+            !uniform_data.object_table.columns.includes("Nuclei_Location_CenterY")) {
                 throw new Error("Constructor Error on uniform_data doesn't have Nuclei_Location_CenterX or Nuclei_Location_CenterY")
             }
     }
@@ -108,7 +104,7 @@ class DataProvider {
         @return {Array<(number | string)> | null} row
             The first row of the accessed Table corresponding to the search object
     */
-    getRow(key, search_obj, ) {
+    getRow(key, search_obj) {
         if (!(this.data.hasOwnProperty(key))) return -1;
         var row = this.data[key].find(search_obj)
         return row;
@@ -139,7 +135,10 @@ class DataProvider {
         coords.y = celly
         return coords;
     }
-
+    /*
+        @param {{ImageNumber: int, ObjectNumber: int}} search_obj
+        @return {value}
+    */
     getValue(key, search_obj) {
         if (!this.data.hasOwnProperty(key)) return -1;         
         var value = null

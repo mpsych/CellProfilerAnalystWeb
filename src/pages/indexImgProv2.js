@@ -139,10 +139,10 @@ function TestUI(){
         setUploadButtonEnabled(false)
         setFileListObject(fileListObject)
         const uploadHandler2 = new UploadHandler2(fileListObject)
-        var props = await uploadHandler2.getProperties();
         const dataProvider = await uploadHandler2.getDataProvider()
         const trainingTable = await uploadHandler2.getTrainingSet()
-
+        console.log(dataProvider)
+        console.log(trainingTable)
     //     setDataProvider(dataProvider)
     //     const trainingTable = uploadReturnObject.training_data.training_table
     //     const trainingDataTable = trainingTable.getDataColumnsPaired()

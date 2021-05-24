@@ -5,13 +5,14 @@ import ObjectTable from "./ObjectTable.js";
     @param {object_table : {columns: , data: } image_table : {columns: , data: }}
 */
 export default class DataProvider {
-    constructor(uniform_data) {
+    constructor(uniform_data, props) {
         this.testConstructorInputPreconditions(uniform_data);
 
         this.data = {
             'object_data' : new ObjectTable(uniform_data.object_table.data, uniform_data.object_table.columns),
             'image_data' :  new ImageTable(uniform_data.image_table.data, uniform_data.image_table.columns)
         }  
+        this.props = props
     }
     testConstructorInputPreconditions(uniform_data) {
         if (uniform_data == undefined) {

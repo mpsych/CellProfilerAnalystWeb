@@ -1,6 +1,4 @@
-import {obj_obj_array} from './Utils.js'
-export default class Properties {
-//Todo: STATIC
+class Properties {
     constructor() {
         this.all_prop_keys = [['db_sql_file'],['image_table', 'object_table'], ['training_set'],
                        ['image_id', 'object_id', 'plate_id', 'well_id', 'cell_x_loc',
@@ -25,8 +23,9 @@ export default class Properties {
 
     // }
 
-    /*  @param text 
-             properties file string parsed from .properties file for initializing program properties
+    /*  @param {text}
+           properties file string parsed from .properties file for initializing program properties
+           gotten from uploadHandler
     */  
     init(text) {
         for (var i = 0; i < this.all_prop_keys.length; i++) {
@@ -75,7 +74,7 @@ export default class Properties {
         return this.props.setup.db_sql_file
     }
     dataFileProperties() {
-        return Object.assign(this.props.data_file_props) 
+        return this.props.data_file_props
     }
     trainingSetProperties() {
         return this.props.training_file_props.training_set
@@ -91,4 +90,3 @@ export default class Properties {
         }
     }
 }
-export {Properties}

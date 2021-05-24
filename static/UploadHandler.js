@@ -53,7 +53,7 @@ class UploadHandler {
                 return papa_parser.papaTextfromCSV(file_object);
             }
             else {
-                var file_handler = new UserUploadFileHandler(this.fileListObject)
+                var file_handler = new UserUploadFileHandler2(this.fileListObject)
                 return file_handler.fileReaderPromiseText(file_object.file);
             }
         }))

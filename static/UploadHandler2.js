@@ -1,15 +1,15 @@
-//import DataUtils from "./DataUtils";
-import PapaParser from "./PapaParser.js";
-import UserUploadFileHandler2 from "./UserUploadFileHandler2.js";
-import {Properties} from "./Properties.js"
-import {sliceArrayByValue} from './Utils.js'                                                                                                                                                                                                   
-import DataProvider from "./DataProvider.js";
-import TrainingTable from "./TrainingTable.js";
-export default class UploadHandler2 {
+self.importScripts("https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js")
+self.importScripts("UserUploadFileHandler2.js")
+self.importScripts("DataProvider.js")                                                                                                                                                                                                   
+self.importScripts("TrainingTable.js")
+self.importScripts("PapaParser.js")
+self.importScripts("Utils.js")
+self.importScripts("Properties.js")
+class UploadHandler2 {
 
     constructor(fileListObject) {
         this.fileListObject = fileListObject
-        this.props = null
+        this.prop = null
     }
    /*
         @param {"file_name"}
@@ -24,7 +24,7 @@ export default class UploadHandler2 {
     }
 
     /*
-        @param {'name' : "file_name", 'file': file}
+        @param {{'name' : "file_name", 'file': file}}
             of type return argument of getFile, used to handle file correctly
         @return {text} 
             raw text of file, sometimes 2D array, sometimes 1D depending
@@ -72,8 +72,8 @@ export default class UploadHandler2 {
              An object holding all properties from properties folder
    */
     getProperties = async function() {
-        var file = this.getFile(".properties")
-        console.log(file)
+        var search_string = ".properties"
+        var file = this.getFile(search_string)
         return this.getText(file)
         .then (text => {
            var prop = new Properties()
@@ -134,4 +134,3 @@ export default class UploadHandler2 {
     }
 
 }
-export {UploadHandler2}
