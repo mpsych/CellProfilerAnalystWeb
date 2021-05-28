@@ -1,3 +1,4 @@
+
     /*  @param keysOuter = outer most keys
         @param keysInner = inner most keys
         @param values = values
@@ -31,4 +32,17 @@ function sliceArrayByValue(array, value1, value2) {
   
     return array.slice(index1, index2);
   }
+  function initImagesData(table, image_data) {
+      for (var i = 0; i < image_data.length; i++) {
+            table.initImagesData(i, image_data[i])
+      }
+      console.log(table)
+  }
+function initObjectData(table, object_data) {
+    for (var i = 0; i < image_data.length; i++) {
+          table.initImagesData(i, image_data[i])
+    }
+    console.log(table)
+}
+
 //export {sliceArrayByValue}

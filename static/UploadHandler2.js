@@ -1,6 +1,6 @@
 self.importScripts("https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js")
 self.importScripts("UserUploadFileHandler2.js")
-self.importScripts("DataProvider.js")                                                                                                                                                                                                   
+self.importScripts("DataProvider2.js")                                                                                                                                                                                                   
 self.importScripts("TrainingTable.js")
 self.importScripts("PapaParser.js")
 self.importScripts("Utils.js")
@@ -116,7 +116,7 @@ class UploadHandler2 {
         .then(texts=>{
             for (var key in data_info) 
                 data_info[key].data = texts[data_info[key].index]
-             return new DataProvider(data_info, this.props)
+             return new DataProvider2(data_info, this.props)
         })
    }
     /*

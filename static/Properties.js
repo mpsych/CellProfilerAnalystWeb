@@ -80,8 +80,14 @@ class Properties {
         return this.props.training_file_props.training_set
     }
     //TODO
+    columnProperties() {
+        return this.props.column_props
+    }
     classifierProperties() {
 
+    }
+    imageFileLookupProperties() {
+        return this.props.image_props.image_channel_files
     }
     imageProperties() {
         return {
