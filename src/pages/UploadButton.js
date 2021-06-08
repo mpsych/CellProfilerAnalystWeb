@@ -10,7 +10,7 @@ import { green } from '@material-ui/core/colors';
 import Fab from '@material-ui/core/Fab';
 import CheckIcon from '@material-ui/icons/Check';
 import CloudUploadIcon from '@material-ui/icons/CloudUpload';
-
+import Tooltip from '@material-ui/core/Tooltip';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -19,13 +19,13 @@ const useStyles = makeStyles((theme) => ({
       alignItems: 'center',
     },
     wrapper: {
-      margin: theme.spacing(1),
+    //  margin: theme.spacing(1),
       position: 'relative',
     },
     buttonSuccess: {
-      backgroundColor: green[500],
+    //  backgroundColor: green[500],
       '&:hover': {
-        backgroundColor: green[700],
+   //     backgroundColor: green[700],
       },
     },
     fabProgress: {
@@ -47,105 +47,66 @@ const useStyles = makeStyles((theme) => ({
   }));
 
 function UploadButton(props){
-    const [userUploadFileHandler, setUserUploadFileHandler] = React.useState(null)
-    const [featuresToUse, setFeaturesToUseState] = React.useState(null)
-    const [trainingObject, setTrainingObject] = React.useState(null)
-    const [dataProvider, setDataProvider] = React.useState(null)
-    const [fetchButtonEnabled, setFetchButtonEnabled] = React.useState(false)
-    const [trainButtonEnabled, setTrainButtonEnabled] = React.useState(false)
-    const [evaluateButtonEnabled, setEvaluateButtonEnabled] = React.useState(false)
-    const [downloadButtonEnabled, setDownloadButtonEnabled] = React.useState(false)
-    const [uploadButtonEnabled, setUploadButtonEnabled] = React.useState(true)
-    const [uploading, setUploading] = React.useState(false)
-    const [success, setSuccess] = React.useState(false)
+    // const [uploading, setUploading] = React.useState(false)
+    // const [success, setSuccess] = React.useState(false)
     
     const classes = useStyles();
     const buttonClassname = clsx({
-      [classes.buttonSuccess]: success,
+      [classes.buttonSuccess]: props.success,
     });
 
-   
-    const handleUpload = async (eventObject) => {
-        setUploading(true)
-        // setUploadButtonEnabled(false)
-        const userUploadFileHandler = new UserUploadFileHandler(eventObject)
-        setUserUploadFileHandler(userUploadFileHandler)
-
-        const uploadHandler = new UploadHandler(eventObject)
-        const uploadReturnObject = await uploadHandler.getDataHandlerandStartingTrainingSet();
-
-        const dataProvider = uploadReturnObject.data_provider
-        setDataProvider(dataProvider)
-        const trainingTable = uploadReturnObject.training_data.training_table
-        const trainingDataTable = trainingTable.getDataColumnsPaired()
-
-        const trainingLabels = trainingTable.getTrainingLabels()
-        const initialTrainingData = trainingDataTable.map(row_object => {
-            const ObjectNumber = row_object['objectnum']
-            const ImageNumber = row_object['imagenum']
-            return dataProvider.getRow('object_data', {ObjectNumber, ImageNumber})
-        })
-        const totalFeatures = uploadReturnObject.training_data.features
-        const tempFeaturesToUse = totalFeatures.filter((elem)=>!elem.includes("Location") && (elem !== "ObjectNumber") && (elem !== "ImageNumber"))
-        setFeaturesToUseState(tempFeaturesToUse)
-        console.log("finished data initialization")
-        const initialTrainingObject = {
-            classifierType: "LogisticRegression",
-            trainingData: initialTrainingData,
-            trainingLabels: trainingLabels,
-            featuresToUse: tempFeaturesToUse
-        }
-        setTrainingObject(initialTrainingObject)
-        // console.log("starting initial training")
-        // const newClassifierManager = new ClassifierManager(dataProvider, initialTrainingObject)
-        
-        // setClassifierManager(newClassifierManager)
-
-        setFetchButtonEnabled(true)
-        setTrainButtonEnabled(true)
-        setDownloadButtonEnabled(true)
-        
-        
-        console.log("finished upload")
-        setUploading(false)
-        setSuccess(true)
-    
-    }
-  
 
     return(
-        <div>
-          
     <div className={classes.root}>
-      <div className={classes.wrapper}>
-        <Fab
-          aria-label="save"
-          color="primary"
-          component="label"
-          className={buttonClassname}
-        >
-        
-          {success ? <CheckIcon /> : <CloudUploadIcon />}
-          <input  type="file"
-                hidden webkitdirectory="true"
-                mozdirectory="true"
-                msdirectory="true"
-                odirectory="true"
-                directory="true"
-                multiple
-                onChange = {(eventObject)=>{props.handleUpload(eventObject)}}  
-               
-        />
-        </Fab>
-        {uploading && <CircularProgress size={68} className={classes.fabProgress} />}
-      </div>
-      <CircularProgress />
-      
-    </div>
-
-
-
-     </div>
+							<div className={classes.wrapper}>
+								<Tooltip title="Load Data" aria-label="load data">
+									<Fab
+                   					//size="medium"
+										aria-label="save"
+										color="primary"
+										component="label"
+										className={buttonClassname}
+										// style={{ height: '5vw', width: '5vw' }}
+										style={{ marginRight: 5 }}
+									>
+										{props.success ? (
+											// <CheckIcon
+											// // style={{ height: '50%', width: '50%'}}
+											// />
+											<CloudUploadIcon
+											// style={{ height: '50%', width: '50%' }}
+											/>
+										) : (
+											<CloudUploadIcon
+											// style={{ height: '50%', width: '50%' }}
+											/>
+										)}
+										<input
+											type="file"
+											hidden
+											webkitdirectory="true"
+											mozdirectory="true"
+											msdirectory="true"
+											odirectory="true"
+											directory="true"
+											multiple
+											onChange={(eventObject) => {
+												props.handleUpload(eventObject);
+											}}
+											disabled={!props.uploadButtonEnabled}
+										/>
+									</Fab>
+								</Tooltip>
+								{props.uploading && (
+									<CircularProgress
+										className={classes.fabProgress}
+										size={68}
+										// size={"6vw"}
+										//  style={{   marginTop: "3%", marginRight: '20vw'}}
+									/>
+								)}
+							</div>
+						</div>
      
      );
 }

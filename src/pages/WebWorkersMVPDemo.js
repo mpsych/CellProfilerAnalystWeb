@@ -5,13 +5,9 @@ import logo from '../cpa_logo(blue).png';
 import { Image, Dropdown, DropdownButton } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
-import clsx from 'clsx';
-import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import { green } from '@material-ui/core/colors';
 import Fab from '@material-ui/core/Fab';
-import CheckIcon from '@material-ui/icons/Check';
-import CloudUploadIcon from '@material-ui/icons/CloudUpload';
+
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
@@ -23,12 +19,13 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import InputLabel from '@material-ui/core/InputLabel';
 import Select from '@material-ui/core/Select';
 import Tooltip from '@material-ui/core/Tooltip';
-//import UploadButton from './UploadButton'
+import UploadButton from './UploadButton'
+import Paper from '@material-ui/core/Paper';
 
 import Evaluate from './AbbyUIButtons/UIEvaluateButton';
 import ScoreAll from './UIScoreAllButton';
 import { v4 as uuidv4 } from 'uuid';
-
+import Help from './Help';
 import jones from '../jones.jpg';
 
 import { GridContextProvider, GridDropZone, GridItem, swap, move } from 'react-grid-dnd';
@@ -36,39 +33,9 @@ import { GridContextProvider, GridDropZone, GridItem, swap, move } from 'react-g
 import '../dndstyles.css';
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
-import UploadButton from './UploadButton';
 
-const useStyles = makeStyles((theme) => ({
-	root: {
-		display: 'flex',
-		alignItems: 'center',
-	},
-	wrapper: {
-		//margin: theme.spacing(1),
-		position: 'relative',
-	},
-	buttonSuccess: {
-		backgroundColor: green[500],
-		'&:hover': {
-			backgroundColor: green[700],
-		},
-	},
-	fabProgress: {
-		color: green[500],
-		position: 'absolute',
-		top: -6,
-		left: -6,
-		zIndex: 1,
-	},
-	buttonProgress: {
-		color: green[500],
-		position: 'absolute',
-		top: '50%',
-		left: '50%',
-		marginTop: -12,
-		marginLeft: -12,
-	},
-}));
+
+
 
 function TestUIMVP() {
 	const [anchorEl, setAnchorEl] = React.useState(null);
@@ -149,10 +116,10 @@ function TestUIMVP() {
 		return worker;
 	};
 
-	const classes = useStyles();
-	const buttonClassname = clsx({
-		[classes.buttonSuccess]: success,
-	});
+	// const classes = useStyles();
+	// const buttonClassname = clsx({
+	// 	[classes.buttonSuccess]: success,
+	// });
 
 	const N = 20;
 
@@ -506,7 +473,7 @@ function TestUIMVP() {
 				const newScoreTableObject = event.data.scoreTableObject;
 				console.log(newScoreTableObject);
 				const scoreDataRows = Object.keys(newScoreTableObject.imageToCountsMap).map((key) => ({
-					imageNumber: key,
+					imageNumber: parseInt(key),
 					total: newScoreTableObject.imageToCountsMap[key][0] + newScoreTableObject.imageToCountsMap[key][1],
 					positive: newScoreTableObject.imageToCountsMap[key][1],
 					negative: newScoreTableObject.imageToCountsMap[key][0],
@@ -619,6 +586,7 @@ function TestUIMVP() {
 
 	return (
 		<GridContextProvider onChange={onChange}>
+			{/* <Paper variant="outlined" style = {{height: '100%', width: '80%', margin:"3%"}}> */}
 			<div style={{ overflowX: 'hidden', height: '100%', width: '100%' }}>
 				<Row style={{ marginTop: '2%' }}>
 					<Image
@@ -632,59 +600,22 @@ function TestUIMVP() {
 							marginBottom: '2%',
 						}}
 					></Image>
-
-					<Col style={{ left: '40%', right: 5 }}>
-						<div className={classes.root}>
-							<div className={classes.wrapper}>
-								<Tooltip title="Load Data" aria-label="load data">
-									<Fab
-										aria-label="save"
-										color="primary"
-										component="label"
-										className={buttonClassname}
-										// style={{ height: '5vw', width: '5vw' }}
-										style={{ marginRight: 5 }}
-									>
-										{success ? (
-											<CheckIcon
-											// style={{ height: '50%', width: '50%'}}
-											/>
-										) : (
-											<CloudUploadIcon
-											// style={{ height: '50%', width: '50%' }}
-											/>
-										)}
-										<input
-											type="file"
-											hidden
-											webkitdirectory="true"
-											mozdirectory="true"
-											msdirectory="true"
-											odirectory="true"
-											directory="true"
-											multiple
-											onChange={(eventObject) => {
-												handleUpload(eventObject);
-											}}
-											disabled={!uploadButtonEnabled}
-										/>
-									</Fab>
-								</Tooltip>
-								{/* size={68}  */}
-								{uploading && (
-									<CircularProgress
-										className={classes.fabProgress}
-										size={68}
-										// size={"6vw"}
-										//  style={{   marginTop: "3%", marginRight: '20vw'}}
-									/>
-								)}
-							</div>
-						</div>
+					<Col style={{ left: '35%'}}>
+					<Help></Help>
 					</Col>
-					<Col style={{ left: '15%' }}>
+
+					<Col style={{ left: '20%', right: 5 }}>
+						<UploadButton
+						handleUpload = {handleUpload}
+						uploadButtonEnabled = {uploadButtonEnabled}
+						uploading = {uploading}
+						success = {success}
+						></UploadButton>
+					</Col>
+					<Col style={{ left: '5%' }}>
 						<Tooltip title="Download" aria-label="download">
 							<Fab
+							//	size="medium"
 								aria-label="save"
 								color="primary"
 								component="label"
@@ -701,8 +632,18 @@ function TestUIMVP() {
 						</Tooltip>
 					</Col>
 				</Row>
+				
 				<Row>
-					<Grid container justify="center" spacing={2} style={{ marginBottom: 15 }}>
+				<Paper 
+				 variant="outlined"
+				color="primary"
+				//elevation={3} 
+				style = {{marginLeft: "30%", marginRight: "30%", height: 75, width: 550,
+				boxShadow: "0px 3px 1px -2px #6697CD,0px 2px 2px 0px #6697CD ,0px 1px 5px 0px #6697CD"
+				//boxShadow: "blue"
+			}}
+				 >
+					<Grid container justify="center" spacing={2} style={{ marginBottom: 10, marginTop: 10 }}>
 						<Grid key={0} item>
 							<Button
 								disabled={!fetchButtonEnabled}
@@ -821,8 +762,9 @@ function TestUIMVP() {
 							)}
 						</Grid>
 					</Grid>
+					</Paper>
 				</Row>
-
+				
 				<div>
 					<label
 						style={{
@@ -1019,6 +961,7 @@ function TestUIMVP() {
 					</Row>
 				</div>
 			</div>
+			{/* </Paper> */}
 		</GridContextProvider>
 	);
 }

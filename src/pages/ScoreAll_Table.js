@@ -12,26 +12,6 @@ import TableSortLabel from '@material-ui/core/TableSortLabel';
 import Paper from '@material-ui/core/Paper';
 
 
-function createData(imageNum, total, positive,negative,ratio,adjRatio) {
-  return { imageNum, total, positive,negative,ratio,adjRatio };
-}
-
-const rows = [
-  createData( 1, 36, 305, 3.7, 67, 4.3),
-  createData (2, 29, 452, 25.0, 51, 4.9),
-  createData( 3, 47, 262, 16.0, 24, 6.0),
-  createData( 4, 24, 159, 6.0, 24, 4.0),
-  createData(5, 34, 356, 16.0, 49, 3.9),
-  createData(6, 77, 408, 3.2, 87, 6.5),
-  createData(7, 87, 237, 9.0, 37, 4.3),
-  createData(8, 92, 375, 0.0, 94, 0.0),
-  createData(9, 28, 518, 26.0, 65, 7.0),
-  createData(10, 32, 392, 0.2, 98, 0.0),
-  createData(11, 82, 318, 0, 81, 2.0),
-  createData(12, 98, 360, 19.0, 9, 37.0),
-  createData(13, 828, 437, 18.0, 63, 4.0),
-];
-
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
     return -1;
@@ -49,13 +29,14 @@ function getComparator(order, orderBy) {
 }
 
 function stableSort(array, comparator) {
+  console.log(array)
   const stabilizedThis = array.map((el, index) => [el, index]);
-  stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
+   stabilizedThis.sort((a, b) => {
+   const order = comparator(a[0], b[0]);
     if (order !== 0) return order;
-    return a[1] - b[1];
+     return a[1] - b[1];
   });
-  return stabilizedThis.map((el) => el[0]);
+   return stabilizedThis.map((el) => el[0]);
 }
 
 const headCells = [
@@ -68,7 +49,7 @@ const headCells = [
 ];
 
 function EnhancedTableHead(props) {
-  const { classes, onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
+  const { classes,  order, orderBy, rowCount, onRequestSort } = props;
   const createSortHandler = (property) => (event) => {
     onRequestSort(event, property);
   };
@@ -80,11 +61,11 @@ function EnhancedTableHead(props) {
         {headCells.map((headCell) => (
           <TableCell
             key={headCell.id}
-            sortDirection={orderBy === headCell.id ? order : false}
+          //  sortDirection={orderBy === headCell.id ? order : false}
             padding={headCell.disablePadding ? 'none' : 'default'}
           >
             <TableSortLabel
-              active={orderBy === headCell.id}
+              //active={orderBy === headCell.id}
               direction={orderBy === headCell.id ? order : 'asc'}
               onClick={createSortHandler(headCell.id)}
             >
@@ -140,7 +121,7 @@ const useStyles = makeStyles((theme) => ({
 export default function EnhancedTable(props) {
   const classes = useStyles();
   const [order, setOrder] = React.useState('asc');
-  const [orderBy, setOrderBy] = React.useState('calories');
+  const [orderBy, setOrderBy] = React.useState(null);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
