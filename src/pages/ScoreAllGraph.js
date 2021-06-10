@@ -8,7 +8,7 @@ function ScoreAllGraph(props) {
 				<VictoryHistogram
 					style={{
 						data: { fill: 'rgb(84,136,187)' },
-					
+						top:0 
 					}}
 					data={props.histogramData}
 					bins={30}
