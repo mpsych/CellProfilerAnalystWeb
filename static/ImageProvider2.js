@@ -64,6 +64,41 @@ class ImageProvider2 {
 		});
 	}
 
+	async getBigPictureDataURLOnlyImagePromise() {
+		this.setDimensionsofImg('image');
+		var main_canvas = new OffscreenCanvas(this.dimensions.x, this.dimensions.y);
+
+		var ctx = main_canvas.getContext('2d');
+		ctx.fillStyle = 'black';
+		ctx.fillRect(0, 0, main_canvas.width, main_canvas.height);
+
+		for (var i = 0; i < this.img_info.length; i++) {
+			var colorName = this.img_info[i].color.toString();
+
+			this.canvases[colorName] = this.createColorCanvas(
+				this.img_info[i].image,
+				colorName,
+				{ x: this.dimensions.x / 2, y: this.dimensions.y / 2 },
+				this.dimensions
+			);
+		}
+
+		ctx.globalCompositeOperation = 'lighter';
+		for (var i = 0; i < this.img_info.length; i++) {
+			var colorName = this.img_info[i].color;
+			ctx.drawImage(this.canvases[colorName], 0, 0);
+		}
+
+		// restore to default
+		ctx.globalCompositeOperation = 'source-over';
+		this.normalizeBrightness(main_canvas);
+		// ensquare the cell in question
+
+		return main_canvas.convertToBlob().then((blob) => {
+			return URL.createObjectURL(blob);
+		});
+	}
+
 	async getDataURLPromise() {
 		this.setDimensionsofImg('object');
 		var main_canvas = new OffscreenCanvas(this.dimensions.x, this.dimensions.y);

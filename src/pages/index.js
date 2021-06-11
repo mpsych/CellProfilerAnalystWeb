@@ -162,6 +162,21 @@ function TestUIMVP() {
 			setBigPictureSource(event.data.blobUrl);
 		});
 	};
+	const handleOpenBigPicture = async function (imageNumber) {
+		if (!imageNumber) {
+			return;
+		}
+		console.log('open big picture');
+		console.log(imageNumber);
+		setCellBigPictureDialogOpen(true);
+		setBigPictureTitle(`Image: ${imageNumber}`);
+		return workerActionPromise(canvasWebWorker, 'get', {
+			getType: 'blobUrlBigPictureByImageNumber',
+			getArgs: { imageNumber },
+		}).then((event) => {
+			setBigPictureSource(event.data.blobUrl);
+		});
+	};
 	const handleCloseCellBigPicture = function () {
 		console.log('close big picture');
 		setCellBigPictureDialogOpen(false);
@@ -1023,6 +1038,7 @@ function TestUIMVP() {
 										alphas={scoreAlphas}
 										// downloadScoreTableFunction={downloadScoreTableFunction}
 										scoreTableCsvString={scoreTableCsvString}
+										handleOpenBigPicture={handleOpenBigPicture}
 									></ScoreAll>
 								)}
 							</Grid>

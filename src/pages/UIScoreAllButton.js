@@ -60,9 +60,9 @@ export default function DialogForCanvas(props) {
 								<CloseIcon style={{ color: 'black' }} />
 							</IconButton>
 						</Row>
-						<h6 style={{ marginLeft: 30, bottom: 0 }}>
-							Alpha: {props.alphas[1]} Beta: {props.alphas[0]}{' '}
-						</h6>
+						{/* <h6 style={{ marginLeft: 30, bottom: 0 }}>
+							Alpha: {props.alphas[1].toFixed(3)} Beta: {props.alphas[0].toFixed(3)}{' '}
+						</h6> */}
 
 						<ScoreAllHistagram
 							style={{ top: 0 }}
@@ -70,7 +70,10 @@ export default function DialogForCanvas(props) {
 							histogramData={props.histogramData}
 						></ScoreAllHistagram>
 
-						<ScoreAllTable scoreTable={props.scoreTable}></ScoreAllTable>
+						<ScoreAllTable
+							handleOpenBigPicture={props.handleOpenBigPicture}
+							scoreTable={props.scoreTable}
+						></ScoreAllTable>
 					</div>
 				)}
 			</Dialog>

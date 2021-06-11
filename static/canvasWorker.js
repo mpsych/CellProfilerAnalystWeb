@@ -27,17 +27,27 @@ self.onmessage = async (event) => {
 			break;
 		case 'get':
 			switch (event.data.getType) {
-				case 'blobUrlsFromCellPairs':
+				case 'blobUrlsFromCellPairs': {
+					console.log(event);
 					const { cellPairs } = event.data.getArgs;
 					const blobUrls = await self.getObjsToURLs(cellPairs);
+					console.log(blobUrls);
 					self.postMessage({ blobUrls, uuid: event.data.uuid });
 
 					break;
-				case 'blobUrlBigPictureFromCellPair':
+				}
+				case 'blobUrlBigPictureFromCellPair': {
 					const { cellPair } = event.data.getArgs;
 					const blobUrl = await self.getBigPictureURL(cellPair);
 					self.postMessage({ blobUrl, uuid: event.data.uuid });
 					break;
+				}
+				case 'blobUrlBigPictureByImageNumber': {
+					const { imageNumber } = event.data.getArgs;
+					const blobUrl = await self.getBigPictureURLByImage(imageNumber);
+					self.postMessage({ blobUrl, uuid: event.data.uuid });
+					break;
+				}
 			}
 			break;
 	}
@@ -82,6 +92,19 @@ self.getBigPictureURL = async function (cellPair) {
 	return url;
 };
 
+self.getBigPictureURLByImage = async function (imageNumber) {
+	var image_info = [];
+
+	image_info = await this.getImagesByNumber(imageNumber);
+	// console.log(image_info)
+	// this.images_seen[key] = image_info
+
+	// console.log(coords)
+	var ip = new ImageProvider2(image_info);
+	var url = await ip.getBigPictureDataURLOnlyImagePromise();
+	return url;
+};
+
 /*
     @param {Array<{ImageNumber: int, ObjectNumber: int}>} cellPairs
         The array of cell pairs that we want to return as urls
@@ -107,7 +130,6 @@ self.getObjsToURLs = async function (cellPairs) {
 		});
 		var coords = event.data.postResult;
 		// console.log(coords)
-		console.log(`Obj: ${cellPairs[i].ObjectNumber} Img: ${cellPairs[i].ImageNumber}`);
 		var ip = new ImageProvider2(image_info, coords);
 		var url = await ip.getDataURLPromise();
 		urls.push(url);
