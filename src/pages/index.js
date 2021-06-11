@@ -105,16 +105,20 @@ function TestUIMVP() {
 		const dataToCanvasWorkerChannel = new MessageChannel();
 		const dataToClassifierWorkerChannel = new MessageChannel();
 
-		const dataWebWorker = constructWebWorker('../dataWorker.js', 'dataWebWorker');
+		// github has it directly part of the folder???
+		const dataWebWorker = constructWebWorker('dataWorker.js', 'dataWebWorker');
+		// const dataWebWorker = constructWebWorker('../dataWorker.js', 'dataWebWorker');
 		dataWebWorker.postMessage({ action: 'connectToCanvasWorker' }, [dataToCanvasWorkerChannel.port1]);
 		dataWebWorker.postMessage({ action: 'connectToClassifierWorker' }, [dataToClassifierWorkerChannel.port1]);
 		setDataWebWorker(dataWebWorker);
 
-		const canvasWebWorker = constructWebWorker('../canvasWorker.js', 'CanvasWebWorker');
+		// const canvasWebWorker = constructWebWorker('../canvasWorker.js', 'CanvasWebWorker');
+		const canvasWebWorker = constructWebWorker('canvasWorker.js', 'CanvasWebWorker');
 		canvasWebWorker.postMessage({ action: 'connectToDataWorker' }, [dataToCanvasWorkerChannel.port2]);
 		setCanvasWebWorker(canvasWebWorker);
 
-		const classifierWebWorker = constructWebWorker('../classifierWorker.js', 'classifierWebWorker');
+		const classifierWebWorker = constructWebWorker('classifierWorker.js', 'classifierWebWorker');
+		// const classifierWebWorker = constructWebWorker('../classifierWorker.js', 'classifierWebWorker');
 		classifierWebWorker.postMessage({ action: 'connectToDataWorker' }, [dataToClassifierWorkerChannel.port2]);
 		setClassifierWebWorker(classifierWebWorker);
 	}, []);

@@ -12,100 +12,79 @@ import Button from '@material-ui/core/Button';
 import { Row, Col, Container } from 'reactstrap';
 import SaveIcon from '@material-ui/icons/Save';
 
+function DownloadButton(props) {
+	const [open, setOpen] = React.useState(false);
+	const [downloadClassifer, setDownloadClassifer] = React.useState(false);
+	const [downloadTrainingSet, setDownloadTrainingSet] = React.useState(false);
 
+	const handleDownloadClassifer = (event) => {
+		setDownloadClassifer(!downloadClassifer);
+	};
 
-function DownloadButton(props){
-    const [open, setOpen] = React.useState(false);
-    const [downloadClassifer, setDownloadClassifer] = React.useState(false);
-    const [downloadTrainingSet, setDownloadTrainingSet] = React.useState(false);
+	const handleDownloadTrainingSet = (event) => {
+		setDownloadTrainingSet(!downloadTrainingSet);
+	};
 
-    const handleDownloadClassifer = (event) => {
-        setDownloadClassifer(true)
-    }
+	const handleClickOpen = () => {
+		setOpen(true);
+	};
 
-    const handleDownloadTrainingSet = (event) => {
-        setDownloadTrainingSet(true)
-    }
+	const handleClose = () => {
+		setOpen(false);
+		setDownloadClassifer(false);
+		setDownloadTrainingSet(false);
+	};
 
-    const handleClickOpen = () => {
-        setOpen(true);
-      };
-    
-      const handleClose = () => {
-        setOpen(false);
-        setDownloadClassifer(false)
-        setDownloadTrainingSet(false)
-      };
+	function download() {
+		console.log(downloadClassifer);
+		if (downloadClassifer && downloadTrainingSet) {
+			props.handleDownload('TrainingSetClassifierSpec');
+		} else if (downloadClassifer) {
+			props.handleDownload('ClassifierSpec');
+		} else if (downloadTrainingSet) {
+			props.handleDownload('TrainingSet');
+		}
+		return;
+	}
 
-   function download(){
-       console.log(downloadClassifer)
-       if (downloadClassifer && downloadTrainingSet == true ){
-        props.handleDownload('TrainingSetClassifierSpec')
-       }
-       if (downloadTrainingSet == false){
-        props.handleDownload('ClassifierSpec')
-       }
-       if (downloadClassifer == false) {
-        props.handleDownload('TrainingSet')
-       }
-       return
-   }
+	return (
+		<div>
+			<Tooltip title="Download" aria-label="download">
+				<Fab
+					//	size="medium"
+					aria-label="save"
+					color="primary"
+					component="label"
+					disabled={!props.downloadButtonEnabled}
+					onClick={handleClickOpen}
+					// style={{ height: '5vw', width: '5vw'}}
+					style={{ positive: 'relative' }}
+				>
+					{' '}
+					<SaveAltIcon
+					// style={{ height: '50%', width: '50%' }}
+					/>
+				</Fab>
+			</Tooltip>
+			<Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
+				<DialogContent>
+					<FormLabel component="legend">Download</FormLabel>
+					<FormControlLabel
+						control={<Checkbox onChange={handleDownloadClassifer} color="primary" />}
+						label="Classifer"
+					/>
+					<FormControlLabel
+						control={<Checkbox onChange={handleDownloadTrainingSet} color="primary" />}
+						label="Training Set"
+					/>
 
-
-    return(
-        <div>
-        <Tooltip title="Download" aria-label="download">
-							<Fab
-							//	size="medium"
-								aria-label="save"
-								color="primary"
-								component="label"
-								disabled={!props.downloadButtonEnabled}
-                                onClick={handleClickOpen}
-								// style={{ height: '5vw', width: '5vw'}}
-								style={{ positive: 'relative' }}
-							>
-								{' '}
-								<SaveAltIcon
-								// style={{ height: '50%', width: '50%' }}
-								/>
-							</Fab>
-						</Tooltip>
-                        <Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
-                        <DialogContent>
-                        <FormLabel component="legend">Download</FormLabel>
-                        <FormControlLabel
-                            control={
-                            <Checkbox
-                                onChange={handleDownloadClassifer}
-                                color="primary"
-                            />
-                            }
-                            label="Classifer"
-                        />
-                         <FormControlLabel
-                                control={
-                                <Checkbox
-                                    onChange={handleDownloadTrainingSet}
-                                    color="primary"
-                                />
-                                }
-                                label="Training Set"
-                            />
-                         
-                              <Button
-                                size="small"
-                                variant="contained"
-                                style={{bottom:10}}
-                                onClick={download}
-                            >
-                                Save
-                            </Button>
-                        
-                            </DialogContent>
-                        </Dialog>    
-        </div>
-    )
+					<Button size="small" variant="contained" style={{ bottom: 10 }} onClick={download}>
+						Save
+					</Button>
+				</DialogContent>
+			</Dialog>
+		</div>
+	);
 }
 
-export default DownloadButton; 
+export default DownloadButton;

@@ -31,9 +31,6 @@ export default function DialogForCanvas(props) {
 	const handleClose = () => {
 		setOpen(false);
 	};
-	console.log(props.scoreTableCsvString);
-	console.log(props.alphas);
-	// const downloadCSV = () => downloadFile(props.scoreTableCsvString);
 	return (
 		<div>
 			<Button variant="contained" onClick={() => handleClickOpen(props)}>
