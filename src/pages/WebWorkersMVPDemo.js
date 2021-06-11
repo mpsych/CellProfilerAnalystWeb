@@ -39,6 +39,7 @@ import '../dndstyles.css';
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
 import UploadButton from './UploadButton';
+import DownloadButton from './DownloadButton';
 
 
 
@@ -624,23 +625,10 @@ function TestUIMVP() {
 						></UploadButton>
 					</Col>
 					<Col style={{ left: '5%' }}>
-						<Tooltip title="Download" aria-label="download">
-							<Fab
-							//	size="medium"
-								aria-label="save"
-								color="primary"
-								component="label"
-								disabled={!downloadButtonEnabled}
-								onClick={handleDownload}
-								// style={{ height: '5vw', width: '5vw'}}
-								style={{ positive: 'relative' }}
-							>
-								{' '}
-								<SaveAltIcon
-								// style={{ height: '50%', width: '50%' }}
-								/>
-							</Fab>
-						</Tooltip>
+						<DownloadButton
+						downloadButtonEnabled={downloadButtonEnabled}
+						handleDownload={handleDownload}
+						></DownloadButton>
 					</Col>
 				</Row>
 				
@@ -650,9 +638,9 @@ function TestUIMVP() {
 				//color="primary"
 				//elevation={3} 
 				style = {{marginLeft: "30%", marginRight: "30%", height: 75, width: 550,
-				//outlineColor: "#6697CD" 
+						outlineColor: "#6697CD"
 				//boxShadow: "0px 3px 1px -2px #6697CD,0px 2px 2px 0px #6697CD ,0px 1px 5px 0px #6697CD"
-				//boxShadow: "blue"
+	
 			}}
 				 >
 					<Grid container justify="center" spacing={2} style={{ marginBottom: 10, marginTop: 10 }}>
