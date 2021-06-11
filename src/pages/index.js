@@ -715,6 +715,8 @@ function TestUIMVP() {
 					model.save(`downloads://${trainingObject.classifierType}`);
 				});
 			});
+		} else {
+			console.error('no valid downloadtype');
 		}
 
 		// const classifier = event.data.classifier;
