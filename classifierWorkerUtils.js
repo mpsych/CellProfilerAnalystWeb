@@ -6,13 +6,9 @@ self.importScripts('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs');
     @param {int} batchSize The number of data samples per training batch
 */
 self.createDatasetFromDataArrays = function (dataArrays, labels, featureIndices, batchSize) {
-	// console.log("create dataset from array")
 	const X = dataArrays.map((dataRowArray) => featureIndices.map((index) => dataRowArray[index]));
 	const normed_X = self.norm2DArray(X);
-	// const normed_X = X
-	// console.log(normed_X)
 	const Y = self.labelsToOneHot(labels);
-	// console.log(Y)
 	const tf_dataset = self.createTensorflowDataset(normed_X, Y);
 
 	return tf_dataset.batch(batchSize);
@@ -147,11 +143,6 @@ self.fitBetaDistribution = function (counts) {
 		.add(tf.scalar(0.1));
 	while (true) {
 		counter++;
-		// const sum1 = tensorCounts.mul(tf.log(tensorCounts.sub(1).add(alphas))).sum();
-
-		// const sum2 = N.mul(tf.log(N.sub(1).add(alphas.sum()))).sum();
-
-		// const log_liklihood = sum1.sub(sum2);
 
 		const numerator = tensorCounts.div(tensorCounts.sub(1).add(alphas)).sum((axis = 0));
 
@@ -159,10 +150,9 @@ self.fitBetaDistribution = function (counts) {
 
 		const new_alphas = alphas.mul(numerator).div(denominator);
 
-		const delta = tf.abs(new_alphas.sub(alphas).sum());
+		const delta = tf.abs(new_alphas.sub(alphas)).sum();
 
 		if (delta.arraySync() < 0.0001) {
-			// console.log(new_alphas.arraySync());
 			return new_alphas.arraySync();
 		}
 

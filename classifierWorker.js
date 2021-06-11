@@ -24,7 +24,6 @@ self.onmessage = async (event) => {
 			const learningRate = 0.001;
 			self.classifier = self.createLogisticRegressionModel(featureIndices.length, learningRate);
 			const numberEpochs = 100;
-			// console.log(trainingData);
 			const tf_dataset = self.createDatasetFromDataArrays(
 				trainingData,
 				trainingLabels,
@@ -34,11 +33,9 @@ self.onmessage = async (event) => {
 			// mutates model to be trained
 			await self.basicTrainPromise(self.classifier, tf_dataset, numberEpochs);
 
-			// console.log('finished training, start predicting');
 			const testDataTensor = self.createTestset(trainingData, featureIndices);
 
 			const predictions = self.predict(self.classifier, testDataTensor);
-			// console.log(predictions);
 			self.confusionMatrix = self.createConfusionMatrix(predictions, trainingLabels);
 
 			self.postMessage({ uuid: event.data.uuid });
@@ -56,61 +53,76 @@ self.onmessage = async (event) => {
 				self.postMessage({ filteredCellPairs: [], uuid: UUID });
 				return;
 			}
-			// console.log(cellPairs, classType);
 			self.workerActionPromise(dataWorkerPort, 'get', {
 				getType: 'objectRowsFromCellpairs',
 				getArgs: { cellPairs },
 			}).then((event) => {
 				const objectRows = event.data.getResult;
-				// const objectRows = self.trainingData
-				// console.log(objectRows, self.trainingLabels);
 				const testDataTensor = self.createTestset(objectRows, self.featureIndices);
 
 				const predictions = self.predict(self.classifier, testDataTensor);
 
 				const labelsToLookFor = classType === 'Positive' ? 1 : 0;
-				// console.log(
-				// 	predictions,
-				// 	predictions.map((e) => e === labelsToLookFor)
-				// );
 				const includeCellPairs = predictions.map((e) => e === labelsToLookFor);
-				// console.log(labelsToLookFor);
-				// console.log(cellPairs);
 				const filteredCellPairs = cellPairs.filter((element, idx) => includeCellPairs[idx]);
-				// console.log(filteredCellPairs);
 				self.postMessage({ filteredCellPairs, uuid: UUID });
 			});
 			break;
 		}
-		case 'confusingFilterCellPairs': {
+		case 'confusingSortCellPairs': {
 			const { cellPairs } = event.data;
-			// const {classType} = event.data
-			const UUID = event.data.uuid;
-			// console.log(cellPairs);
+			const { uuid: UUID } = event.data;
+			const cellPairIndices = cellPairs.map((e, idx) => idx);
+
 			self.workerActionPromise(dataWorkerPort, 'get', {
 				getType: 'objectRowsFromCellpairs',
 				getArgs: { cellPairs },
 			}).then((event) => {
 				const objectRows = event.data.getResult;
-				// const objectRows = self.trainingData
-				// console.log(objectRows, self.trainingLabels);
+
 				const testDataTensor = self.createTestset(objectRows, self.featureIndices);
 
-				// const predictions = self.predict(self.classifier, testDataTensor)
 				const confuseFactors = self.predictConfusing(self.classifier, testDataTensor);
-				// console.log(confuseFactors);
-				const cellPairIndices = cellPairs.map((e, idx) => idx);
-				// const labelsToLookFor = (classType === "Positive")? 1 : 0
-				// console.log(predictions, predictions.map(e=>e===labelsToLookFor))
-				// const includeCellPairs = predictions.map(e=>e===labelsToLookFor)
-				// console.log(labelsToLookFor)
-				// console.log(cellPairs)
+
 				const sortedCellPairs = [...cellPairIndices]
 					.sort((i1, i2) => confuseFactors[i1] - confuseFactors[i2])
 					.map((index) => cellPairs[index]);
-				// console.log(sortedCellPairs);
-				// const filteredCellPairs = cellPairs.filter((element, idx)=>includeCellPairs[idx])
-				// console.log(filteredCellPairs)
+
+				self.postMessage({ sortedCellPairs, uuid: UUID });
+			});
+			break;
+		}
+		case 'moreClassSortCellPairs': {
+			const { cellPairs } = event.data;
+			const { classType } = event.data;
+			const { uuid: UUID } = event.data;
+			const cellPairIndices = cellPairs.map((e, idx) => idx);
+
+			let sortingFactor = 0;
+			if (classType === 'Positive') {
+				// 1 is ascending
+				sortingFactor = 1;
+			} else if (classType === 'Negative') {
+				// -1 is descending
+				sortingFactor = -1;
+			} else {
+				throw new Error(
+					`Incorrect classType: ${classType} passed to mostClassFilterCellPairs in classifierWorker`
+				);
+			}
+			self.workerActionPromise(dataWorkerPort, 'get', {
+				getType: 'objectRowsFromCellpairs',
+				getArgs: { cellPairs },
+			}).then((event) => {
+				const objectRows = event.data.getResult;
+
+				const testDataTensor = self.createTestset(objectRows, self.featureIndices);
+
+				const classFactors = self.predictClass(self.classifier, testDataTensor);
+				const sortedCellPairs = [...cellPairIndices]
+					.sort((i1, i2) => sortingFactor * (classFactors[i1] - classFactors[i2]))
+					.map((index) => cellPairs[index]);
+
 				self.postMessage({ sortedCellPairs, uuid: UUID });
 			});
 			break;
@@ -124,12 +136,10 @@ self.onmessage = async (event) => {
 			break;
 		case 'startTrainingGraphsConnection':
 			self.canvasUUID = event.data.uuid;
-			// console.log(self.canvasUUID);
 			self.postMessage({ uuid: event.data.uuid });
 			break;
 		case 'endTrainingGraphsConnection':
 			self.canvasUUID = null;
-			// console.log('ended');
 			self.postMessage({ uuid: event.data.uuid });
 			break;
 		case 'printObjectDataRow':
@@ -143,7 +153,6 @@ self.onmessage = async (event) => {
 				const objectData = event.data.getResult;
 				const testDataTensor = self.createTestset(objectData, self.featureIndices);
 				const objectPredictions = self.predict(self.classifier, testDataTensor);
-				// console.log(objectPredictions);
 				const imageToCountsMap = {};
 				for (var i = 0; i < objectPredictions.length; i++) {
 					const imageNumber = objectData[i][0];
@@ -152,12 +161,10 @@ self.onmessage = async (event) => {
 					}
 					imageToCountsMap[imageNumber][objectPredictions[i]]++;
 				}
-				// console.log(imageToCountsMap);
 				const imageNumbers = Object.keys(imageToCountsMap);
 				const counts = imageNumbers.map((imageNumber) => imageToCountsMap[imageNumber]);
 
 				const alphas = self.fitBetaDistribution(counts);
-				// console.log(alphas);
 
 				var ratios = {};
 				for (var i = 0; i < imageNumbers.length; i++) {
@@ -174,9 +181,9 @@ self.onmessage = async (event) => {
 					const negativeCount = imageToCountsMap[imageNumber][0];
 					const positiveCount = imageToCountsMap[imageNumber][1];
 					const totalCount = positiveCount + negativeCount;
-					adjustedRatios[imageNumber] = (positiveCount + alphas[0]) / (totalCount + alphas[0] + alphas[1]);
+					// choose the alpha corresponding to the 1-index positive
+					adjustedRatios[imageNumber] = (positiveCount + alphas[1]) / (totalCount + alphas[1] + alphas[0]);
 				}
-				// console.log(adjustedRatios);
 
 				const scoreTableObject = {
 					imageToCountsMap,
@@ -189,7 +196,6 @@ self.onmessage = async (event) => {
 			});
 			break;
 		case 'getClassifier':
-			// console.log('save to indexeddb');
 			self.classifier.save(`indexeddb://${self.classifierType}`).then(() => {
 				self.postMessage({ uuid: event.data.uuid });
 			});
@@ -200,7 +206,6 @@ self.onmessage = async (event) => {
 			console.log('initial entry train and predict classifierworker send to dataworker for object data');
 
 			self.dataWorkerActionPromise('getObjectData', async (event) => {
-				// console.log('start training after getting back from dataworker');
 				const featureIndices = [30, 31];
 				const batchSize = 32;
 				const objectDataSubset = event.data.objectData.slice(0, 100);
@@ -216,9 +221,7 @@ self.onmessage = async (event) => {
 				// mutates model to be trained
 				await self.basicTrainPromise(model, tf_dataset, numberEpochs);
 
-				// console.log('finished training, start predicting');
 				const testDataTensor = self.createTestset(event.data.objectData, featureIndices);
-				// console.log(self.predict(model, testDataTensor));
 				self.classifier = model;
 			});
 			break;
@@ -230,8 +233,6 @@ self.onmessage = async (event) => {
 };
 
 self.workerActionPromise = function (worker, action, data) {
-	// console.log(worker, action, data);
-
 	const { v4: uuidv4 } = uuid;
 	const UUID = uuidv4();
 
@@ -251,7 +252,6 @@ self.workerActionPromise = function (worker, action, data) {
 self.dataWorkerActionPromise = function (action, callback) {
 	const { v4: uuidv4 } = uuid;
 	const UUID = uuidv4();
-	// console.log('DataWorkerActionPromise: ' + UUID, 'started call: ' + action);
 
 	return new Promise((resolve) => {
 		self.dataWorkerPort.addEventListener(
@@ -270,15 +270,10 @@ self.dataWorkerActionPromise = function (action, callback) {
 };
 
 self.handleDataWorkerMessage = function (event) {
-	// console.log('classifier worker received data worker data normal way');
-	// console.log(event.data);
 	switch (event.data.action) {
 		case 'printObjectDataRow':
-			// console.log(event.data.objectData[0]);
-
 			break;
 		case 'trainAndPredict':
-			// console.log('start training after getting back from dataworker');
 			const featureIndices = [30, 31];
 			const batchSize = 32;
 			const objectDataSubset = event.data.objectData.slice(0, 100);
@@ -288,15 +283,12 @@ self.handleDataWorkerMessage = function (event) {
 			const tf_dataset = self.createDatasetFromDataArrays(objectDataSubset, labels, featureIndices, batchSize);
 			// mutates model to be trained
 			self.basicTrainPromise(model, tf_dataset, numberEpochs).then(() => {
-				// console.log('finished training, start predicting');
 				const testDataTensor = self.createTestset(event.data.objectData, featureIndices);
-				// console.log(self.predict(model, testDataTensor));
 			});
 			break;
 		default:
 			break;
 	}
-	// console.log(event.data)
 };
 
 /*
@@ -346,6 +338,17 @@ self.predictConfusing = function (model, testDataTensor) {
 	return confuseFactors;
 };
 
+/**
+ *
+ * @return {number[]} classFactors The Array of numbers between 0 and 1 where closer to 0 is more
+ * 						negative for the phenotype and closer to 1 is more positive
+ */
+self.predictClass = function (model, testDataTensor) {
+	const tf_predictions = model.predict(testDataTensor);
+	const classFactors = tf_predictions.arraySync().map((e) => e[0]);
+	return classFactors;
+};
+
 self.basicTrainPromise = function (model, training_dataset, number_epochs) {
 	const trainLogs = [];
 	return new Promise((resolve, reject) => {
@@ -354,7 +357,7 @@ self.basicTrainPromise = function (model, training_dataset, number_epochs) {
 			callbacks: {
 				onEpochEnd: (epoch, logs) => {
 					trainLogs.push(logs);
-					if (self.canvasUUID) {
+					if (self.canvasUUID && epoch % 5 === 0) {
 						self.postMessage({
 							uuid: self.canvasUUID,
 							action: 'updateTrainingCanvases',

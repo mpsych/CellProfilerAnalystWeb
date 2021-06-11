@@ -1,0 +1,2 @@
+(self.webpackChunkgatsby_test=self.webpackChunkgatsby_test||[]).push([[6414],{6610:function(n,t,s){"use strict";function a(n,t){if(!(n instanceof t))throw new TypeError("Cannot call a class as a function")}s.d(t,{Z:function(){return a}})}}]);
+//# sourceMappingURL=component---src-pages-score-all-table-js-5ac1e79103432b0f3b29.js.map

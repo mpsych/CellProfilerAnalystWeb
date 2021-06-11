@@ -29,9 +29,7 @@ self.onmessage = async (event) => {
 			const featureIsUsed = (feature) =>
 				!feature.includes('Location') && feature !== 'ObjectNumber' && feature !== 'ImageNumber';
 			const tempIndices = totalFeatures.map((feature, idx) => (featureIsUsed(feature) ? idx : -1));
-			// console.log(tempIndices, featureIsUsed('a'), featureIsUsed('Location'));
 			const featureIndicesToUse = tempIndices.filter((index) => !(index === -1));
-			// console.log(featureIndicesToUse);
 			self.initialTrainingObject = {
 				classifierType: 'LogisticRegression',
 				trainingData: initialTrainingData,
@@ -50,6 +48,29 @@ self.onmessage = async (event) => {
 			self.canvasWorkerPort = event.ports[0];
 			self.canvasWorkerPort.onmessage = handleCanvasWorkerMessage;
 			break;
+		case 'testSendToClassifierWorker':
+			self.classifierWorkerPort.postMessage({ test: 'test' });
+			break;
+		case 'printObjectDataRow':
+			console.log(self.dataProvider.getObjectLines()[event.data.index]);
+			break;
+		// case "trainAndPredict":
+		//     self.postMessage({action: "trainAndPredict", objectData:self.objectData})
+		//     break;
+		case 'sendObjectData':
+			self.postMessage({ action: 'sendObjectData', objectData: self.dataProvider.getDataLines('object_data') });
+			break;
+		case 'getObjectRow':
+			const searchObject = { ObjectNumber: event.data.ObjectNumber, ImageNumber: event.data.ImageNumber };
+			self.postMessage({
+				action: 'sendObjectData',
+				objectData: self.dataProvider.getRow('object_data', searchObject),
+				uuid: event.data.uuid,
+			});
+			break;
+		case 'getTrainingObject':
+			self.postMessage({ trainingObject: self.initialTrainingObject });
+			break;
 		case 'get':
 			const result = self.fulfillAction(event);
 			self.postMessage({ getResult: result, uuid: event.data.uuid });
@@ -60,8 +81,6 @@ self.onmessage = async (event) => {
 };
 
 self.fulfillAction = function (event) {
-	// console.log("fulfillAction enter")
-	// console.log(event.data)
 	switch (event.data.action) {
 		case 'getObjectData':
 			return self.dataProvider.getDataLines('object_data');
@@ -100,27 +119,18 @@ self.fulfillAction = function (event) {
 					return self.dataProvider.getDataLines('object_data');
 				case 'cellPairsFromImage': {
 					const ImageNumber = parseInt(event.data.getArgs.ImageNumber);
-					// console.log(ImageNumber);
 					const objectData = self.dataProvider.getDataLines('object_data');
-					// console.log(objectData);
-					console.log(objectData[200][0], ImageNumber, objectData[200][0] === ImageNumber);
-					console.log(typeof (objectData[200][0], typeof ImageNumber));
 					const filteredObjectData = objectData.filter((row) => row[0] === ImageNumber);
-					console.log(filteredObjectData);
 					const filteredCellPairs = filteredObjectData.map((row) => ({ ImageNumber, ObjectNumber: row[1] }));
-					console.log(filteredCellPairs);
 					return filteredCellPairs;
 				}
 				case 'cellPairData': {
-					console.log('cellPairData');
 					const cellPair = {
 						ImageNumber: parseInt(event.data.getArgs.cellPair.ImageNumber),
 						ObjectNumber: parseInt(event.data.getArgs.cellPair.ObjectNumber),
 					};
-					console.log(cellPair);
 					const imageDataRow = this.dataProvider.getRow('image_data', { ImageNumber: cellPair.ImageNumber });
-					console.log(imageDataRow);
-
+					const coords = self.dataProvider.getCoordsforCellDisplay(cellPair);
 					const cellData = {
 						ImageNumber: cellPair.ImageNumber,
 						ObjectNumber: cellPair.ObjectNumber,
@@ -128,8 +138,9 @@ self.fulfillAction = function (event) {
 						Well: imageDataRow.well,
 						Gene: imageDataRow.gene,
 						Puro: imageDataRow.puro,
+						X: coords.x,
+						Y: coords.y,
 					};
-					console.log(cellData);
 					return cellData;
 				}
 			}
@@ -139,12 +150,8 @@ self.fulfillAction = function (event) {
 };
 
 const handleClassifierWorkerMessage = function (event) {
-	console.log('data worker received classifier worker data');
-	// console.log(event.data)
-
 	switch (event.data.action) {
 		case 'getObjectData':
-			console.log('dataworker to classifierworker: fulfill getObjectData');
 			self.classifierWorkerPort.postMessage({
 				action: event.data.action,
 				uuid: event.data.uuid,
@@ -161,8 +168,6 @@ const handleClassifierWorkerMessage = function (event) {
 
 const handleCanvasWorkerMessage = function (event) {
 	const postResult = self.fulfillAction(event);
-	// console.log("fulfillAction exit")
 	const { uuid } = event.data;
-	// console.log(postResult, uuid)
 	self.canvasWorkerPort.postMessage({ postResult, uuid });
 };
