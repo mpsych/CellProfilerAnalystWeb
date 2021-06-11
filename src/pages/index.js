@@ -695,20 +695,29 @@ function TestUIMVP() {
 		return result;
 	}
 
-	const handleDownload = async () => {
+	const handleDownload = async (downloadType) => {
 		console.log('Download!');
-
-		const trainingSetText = createTrainingSetTextFromTileState(tileState);
-		downloadFile('generatedTrainingSet', trainingSetText, '.txt');
-
-		return workerActionPromise(classifierWebWorker, 'getClassifier').then((event) => {
-			tf.loadLayersModel(`indexeddb://${trainingObject.classifierType}`).then((model) => {
-				model.save(`downloads://${trainingObject.classifierType}`);
+		if (downloadType === 'TrainingSet') {
+			const trainingSetText = createTrainingSetTextFromTileState(tileState);
+			downloadFile('generatedTrainingSet', trainingSetText, '.txt');
+			return;
+		} else if (downloadType === 'ClassifierSpec') {
+			return workerActionPromise(classifierWebWorker, 'getClassifier').then((event) => {
+				tf.loadLayersModel(`indexeddb://${trainingObject.classifierType}`).then((model) => {
+					model.save(`downloads://${trainingObject.classifierType}`);
+				});
 			});
+		} else if (downloadType === 'TrainingSetClassifierSpec') {
+			const trainingSetText = createTrainingSetTextFromTileState(tileState);
+			downloadFile('generatedTrainingSet', trainingSetText, '.txt');
+			return workerActionPromise(classifierWebWorker, 'getClassifier').then((event) => {
+				tf.loadLayersModel(`indexeddb://${trainingObject.classifierType}`).then((model) => {
+					model.save(`downloads://${trainingObject.classifierType}`);
+				});
+			});
+		}
 
-			// const classifier = event.data.classifier;
-			// classifier.save(`downloads://${trainingObject.classifierType}`);
-		});
+		// const classifier = event.data.classifier;
 	};
 
 	async function constructTileStatePromise(dataURLs, newCellPairs) {
