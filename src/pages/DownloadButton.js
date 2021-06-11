@@ -33,12 +33,20 @@ function DownloadButton(props){
     
       const handleClose = () => {
         setOpen(false);
+        setDownloadClassifer(false)
+        setDownloadTrainingSet(false)
       };
 
    function download(){
        console.log(downloadClassifer)
-       if (downloadClassifer == true){
-        props.handleDownload()
+       if (downloadClassifer && downloadTrainingSet == true ){
+        props.handleDownload('TrainingSetClassifierSpec')
+       }
+       if (downloadTrainingSet == false){
+        props.handleDownload('ClassifierSpec')
+       }
+       if (downloadClassifer == false) {
+        props.handleDownload('TrainingSet')
        }
        return
    }
