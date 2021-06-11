@@ -5,9 +5,13 @@ import logo from '../cpa_logo(blue).png';
 import { Image, Dropdown, DropdownButton } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
+import clsx from 'clsx';
+import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import { green } from '@material-ui/core/colors';
 import Fab from '@material-ui/core/Fab';
-
+import CheckIcon from '@material-ui/icons/Check';
+import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
@@ -19,13 +23,14 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import InputLabel from '@material-ui/core/InputLabel';
 import Select from '@material-ui/core/Select';
 import Tooltip from '@material-ui/core/Tooltip';
-import UploadButton from './UploadButton'
 import Paper from '@material-ui/core/Paper';
+
 
 import Evaluate from './AbbyUIButtons/UIEvaluateButton';
 import ScoreAll from './UIScoreAllButton';
 import { v4 as uuidv4 } from 'uuid';
 import Help from './Help';
+
 import jones from '../jones.jpg';
 
 import { GridContextProvider, GridDropZone, GridItem, swap, move } from 'react-grid-dnd';
@@ -33,7 +38,7 @@ import { GridContextProvider, GridDropZone, GridItem, swap, move } from 'react-g
 import '../dndstyles.css';
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
-
+import UploadButton from './UploadButton';
 
 
 
@@ -73,6 +78,8 @@ function TestUIMVP() {
 	const [scoreTableObject, setScoreTableObject] = React.useState(null);
 	const [scoreTable, setScoreTable] = React.useState([]);
 	const [histogramData, setHistogramData] = React.useState([]);
+	const [alpha, setAlpha] = React.useState(null);
+	const [beta, setBeta] = React.useState(null);
 
 	const trainingLossCanvasParentRef = React.useRef();
 	const trainingAccuracyCanvasParentRef = React.useRef();
@@ -116,10 +123,6 @@ function TestUIMVP() {
 		return worker;
 	};
 
-	// const classes = useStyles();
-	// const buttonClassname = clsx({
-	// 	[classes.buttonSuccess]: success,
-	// });
 
 	const N = 20;
 
@@ -478,14 +481,22 @@ function TestUIMVP() {
 					positive: newScoreTableObject.imageToCountsMap[key][1],
 					negative: newScoreTableObject.imageToCountsMap[key][0],
 					ratio: newScoreTableObject.ratios[key],
-					adjustratio: newScoreTableObject.adjustedRatios[key],
+					adjustratio: newScoreTableObject.adjustedRatios[key],			
 				}));
+			
+				const alphaValue = newScoreTableObject.alphas[1]
+				const betaValue = newScoreTableObject.alphas[0]
+				
+				console.log(alphaValue)
+
 				const adjustedRatiosData = Object.values(newScoreTableObject.adjustedRatios).map((ratio) => ({
 					x: ratio,
 				}));
 				setHistogramData(adjustedRatiosData);
 				setScoreTable(scoreDataRows);
 				setCurrentlyScoring(false);
+				setAlpha(alphaValue)
+				setBeta(betaValue)
 				// setScoreTableObject(newScoreTableObject);
 
 				const headers = [
@@ -636,10 +647,11 @@ function TestUIMVP() {
 				<Row>
 				<Paper 
 				 variant="outlined"
-				color="primary"
+				//color="primary"
 				//elevation={3} 
 				style = {{marginLeft: "30%", marginRight: "30%", height: 75, width: 550,
-				boxShadow: "0px 3px 1px -2px #6697CD,0px 2px 2px 0px #6697CD ,0px 1px 5px 0px #6697CD"
+				//outlineColor: "#6697CD" 
+				//boxShadow: "0px 3px 1px -2px #6697CD,0px 2px 2px 0px #6697CD ,0px 1px 5px 0px #6697CD"
 				//boxShadow: "blue"
 			}}
 				 >
@@ -758,6 +770,8 @@ function TestUIMVP() {
 									scoreTableIsUpToDate={scoreTableIsUpToDate}
 									// downloadScoreTableFunction={downloadScoreTableFunction}
 									scoreTableCsvString={scoreTableCsvString}
+									alpha={alpha}
+									beta= {beta}
 								></ScoreAll>
 							)}
 						</Grid>

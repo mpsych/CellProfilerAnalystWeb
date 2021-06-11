@@ -32,7 +32,8 @@ export default function DialogForCanvas(props) {
 		setOpen(false);
 	};
 	console.log(props.scoreTableCsvString);
-	console.log(props);
+	console.log(props.alpha);
+	console.log(props.beta);
 	// const downloadCSV = () => downloadFile(props.scoreTableCsvString);
 	return (
 		<div>
@@ -59,10 +60,16 @@ export default function DialogForCanvas(props) {
 								<CloseIcon style={{ color: 'black' }} />
 							</IconButton>
 						</Row>
+						<h6 style={{ marginLeft: 30, bottom: 0 }}>
+							Alpha: {props.alphas[1]} Beta: {props.alphas[0]}{' '}
+						</h6>
+
 						<ScoreAllHistagram
+							style={{ top: 0 }}
 							alphas={props.alphas}
 							histogramData={props.histogramData}
 						></ScoreAllHistagram>
+
 						<ScoreAllTable scoreTable={props.scoreTable}></ScoreAllTable>
 					</div>
 				)}

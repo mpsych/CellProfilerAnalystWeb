@@ -44,6 +44,7 @@ function ScoreAllGraph(props) {
 					ref={histRef}
 					style={{
 						data: { fill: 'rgb(84,136,187)' },
+						top: 0,
 					}}
 					data={props.histogramData ? props.histogramData : undefined}
 					bins={30}

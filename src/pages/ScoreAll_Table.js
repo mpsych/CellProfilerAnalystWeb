@@ -61,11 +61,11 @@ function EnhancedTableHead(props) {
         {headCells.map((headCell) => (
           <TableCell
             key={headCell.id}
-          //  sortDirection={orderBy === headCell.id ? order : false}
+            sortDirection={orderBy === headCell.id ? order : false}
             padding={headCell.disablePadding ? 'none' : 'default'}
           >
             <TableSortLabel
-              //active={orderBy === headCell.id}
+              active={orderBy === headCell.id}
               direction={orderBy === headCell.id ? order : 'asc'}
               onClick={createSortHandler(headCell.id)}
             >
@@ -121,7 +121,7 @@ const useStyles = makeStyles((theme) => ({
 export default function EnhancedTable(props) {
   const classes = useStyles();
   const [order, setOrder] = React.useState('asc');
-  const [orderBy, setOrderBy] = React.useState(null);
+  const [orderBy, setOrderBy] = React.useState('adjustratio');
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
