@@ -28,10 +28,8 @@ self.onmessage = async (event) => {
 		case 'get':
 			switch (event.data.getType) {
 				case 'blobUrlsFromCellPairs':
-					console.log(event);
 					const { cellPairs } = event.data.getArgs;
 					const blobUrls = await self.getObjsToURLs(cellPairs);
-					console.log(blobUrls);
 					self.postMessage({ blobUrls, uuid: event.data.uuid });
 
 					break;
@@ -109,6 +107,7 @@ self.getObjsToURLs = async function (cellPairs) {
 		});
 		var coords = event.data.postResult;
 		// console.log(coords)
+		console.log(`Obj: ${cellPairs[i].ObjectNumber} Img: ${cellPairs[i].ImageNumber}`);
 		var ip = new ImageProvider2(image_info, coords);
 		var url = await ip.getDataURLPromise();
 		urls.push(url);

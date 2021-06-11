@@ -82,35 +82,61 @@ self.onmessage = async (event) => {
 			});
 			break;
 		}
-		case 'confusingFilterCellPairs': {
+		case 'confusingSortCellPairs': {
 			const { cellPairs } = event.data;
-			// const {classType} = event.data
-			const UUID = event.data.uuid;
-			// console.log(cellPairs);
+			const { uuid: UUID } = event.data;
+			const cellPairIndices = cellPairs.map((e, idx) => idx);
+
 			self.workerActionPromise(dataWorkerPort, 'get', {
 				getType: 'objectRowsFromCellpairs',
 				getArgs: { cellPairs },
 			}).then((event) => {
 				const objectRows = event.data.getResult;
-				// const objectRows = self.trainingData
-				// console.log(objectRows, self.trainingLabels);
+
 				const testDataTensor = self.createTestset(objectRows, self.featureIndices);
 
-				// const predictions = self.predict(self.classifier, testDataTensor)
 				const confuseFactors = self.predictConfusing(self.classifier, testDataTensor);
-				// console.log(confuseFactors);
-				const cellPairIndices = cellPairs.map((e, idx) => idx);
-				// const labelsToLookFor = (classType === "Positive")? 1 : 0
-				// console.log(predictions, predictions.map(e=>e===labelsToLookFor))
-				// const includeCellPairs = predictions.map(e=>e===labelsToLookFor)
-				// console.log(labelsToLookFor)
-				// console.log(cellPairs)
+
 				const sortedCellPairs = [...cellPairIndices]
 					.sort((i1, i2) => confuseFactors[i1] - confuseFactors[i2])
 					.map((index) => cellPairs[index]);
-				// console.log(sortedCellPairs);
-				// const filteredCellPairs = cellPairs.filter((element, idx)=>includeCellPairs[idx])
-				// console.log(filteredCellPairs)
+
+				self.postMessage({ sortedCellPairs, uuid: UUID });
+			});
+			break;
+		}
+		case 'moreClassSortCellPairs': {
+			const { cellPairs } = event.data;
+			const { classType } = event.data;
+			const { uuid: UUID } = event.data;
+			console.log(cellPairs, classType, UUID);
+			const cellPairIndices = cellPairs.map((e, idx) => idx);
+
+			let sortingFactor = 0;
+			if (classType === 'Positive') {
+				// 1 is ascending
+				sortingFactor = 1;
+			} else if (classType === 'Negative') {
+				// -1 is descending
+				sortingFactor = -1;
+			} else {
+				throw new Error(
+					`Incorrect classType: ${classType} passed to mostClassFilterCellPairs in classifierWorker`
+				);
+			}
+			self.workerActionPromise(dataWorkerPort, 'get', {
+				getType: 'objectRowsFromCellpairs',
+				getArgs: { cellPairs },
+			}).then((event) => {
+				const objectRows = event.data.getResult;
+
+				const testDataTensor = self.createTestset(objectRows, self.featureIndices);
+
+				const classFactors = self.predictClass(self.classifier, testDataTensor);
+				const sortedCellPairs = [...cellPairIndices]
+					.sort((i1, i2) => sortingFactor * (classFactors[i1] - classFactors[i2]))
+					.map((index) => cellPairs[index]);
+
 				self.postMessage({ sortedCellPairs, uuid: UUID });
 			});
 			break;
@@ -174,7 +200,8 @@ self.onmessage = async (event) => {
 					const negativeCount = imageToCountsMap[imageNumber][0];
 					const positiveCount = imageToCountsMap[imageNumber][1];
 					const totalCount = positiveCount + negativeCount;
-					adjustedRatios[imageNumber] = (positiveCount + alphas[0]) / (totalCount + alphas[0] + alphas[1]);
+					// choose the alpha corresponding to the 1-index positive
+					adjustedRatios[imageNumber] = (positiveCount + alphas[1]) / (totalCount + alphas[1] + alphas[0]);
 				}
 				// console.log(adjustedRatios);
 
@@ -346,6 +373,17 @@ self.predictConfusing = function (model, testDataTensor) {
 	return confuseFactors;
 };
 
+/**
+ *
+ * @return {number[]} classFactors The Array of numbers between 0 and 1 where closer to 0 is more
+ * 						negative for the phenotype and closer to 1 is more positive
+ */
+self.predictClass = function (model, testDataTensor) {
+	const tf_predictions = model.predict(testDataTensor);
+	const classFactors = tf_predictions.arraySync().map((e) => e[0]);
+	return classFactors;
+};
+
 self.basicTrainPromise = function (model, training_dataset, number_epochs) {
 	const trainLogs = [];
 	return new Promise((resolve, reject) => {
@@ -354,7 +392,7 @@ self.basicTrainPromise = function (model, training_dataset, number_epochs) {
 			callbacks: {
 				onEpochEnd: (epoch, logs) => {
 					trainLogs.push(logs);
-					if (self.canvasUUID) {
+					if (self.canvasUUID && epoch % 5 === 0) {
 						self.postMessage({
 							uuid: self.canvasUUID,
 							action: 'updateTrainingCanvases',

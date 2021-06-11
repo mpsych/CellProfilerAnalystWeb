@@ -159,7 +159,7 @@ self.fitBetaDistribution = function (counts) {
 
 		const new_alphas = alphas.mul(numerator).div(denominator);
 
-		const delta = tf.abs(new_alphas.sub(alphas).sum());
+		const delta = tf.abs(new_alphas.sub(alphas)).sum();
 
 		if (delta.arraySync() < 0.0001) {
 			// console.log(new_alphas.arraySync());

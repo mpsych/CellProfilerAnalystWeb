@@ -136,15 +136,12 @@ self.fulfillAction = function (event) {
 					return filteredCellPairs;
 				}
 				case 'cellPairData': {
-					console.log('cellPairData');
 					const cellPair = {
 						ImageNumber: parseInt(event.data.getArgs.cellPair.ImageNumber),
 						ObjectNumber: parseInt(event.data.getArgs.cellPair.ObjectNumber),
 					};
-					console.log(cellPair);
 					const imageDataRow = this.dataProvider.getRow('image_data', { ImageNumber: cellPair.ImageNumber });
-					console.log(imageDataRow);
-
+					const coords = self.dataProvider.getCoordsforCellDisplay(cellPair);
 					const cellData = {
 						ImageNumber: cellPair.ImageNumber,
 						ObjectNumber: cellPair.ObjectNumber,
@@ -152,8 +149,9 @@ self.fulfillAction = function (event) {
 						Well: imageDataRow.well,
 						Gene: imageDataRow.gene,
 						Puro: imageDataRow.puro,
+						X: coords.x,
+						Y: coords.y,
 					};
-					console.log(cellData);
 					return cellData;
 				}
 			}

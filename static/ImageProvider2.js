@@ -21,7 +21,6 @@ class ImageProvider2 {
 
 	async getBigPictureDataURLPromise() {
 		this.setDimensionsofImg('image');
-		console.log(this.dimensions);
 		var main_canvas = new OffscreenCanvas(this.dimensions.x, this.dimensions.y);
 
 		var ctx = main_canvas.getContext('2d');
@@ -47,14 +46,9 @@ class ImageProvider2 {
 
 		// restore to default
 		ctx.globalCompositeOperation = 'source-over';
-
+		this.normalizeBrightness(main_canvas);
 		// ensquare the cell in question
-		console.log(
-			this.coords.x - this.box_dim.x / 2,
-			this.coords.y - this.box_dim.y / 2,
-			this.box_dim.x,
-			this.box_dim.y
-		);
+
 		ctx.beginPath();
 		ctx.strokeStyle = 'red';
 		ctx.rect(
@@ -114,7 +108,6 @@ class ImageProvider2 {
 		canvas.height = height;
 		const ctx = canvas.getContext('2d');
 		ctx.globalCompositeOperation = 'source-over';
-		// console.log(image)
 		// only grab for ex 40x40 image at center coordinates on image and draw totally in new canvas
 		const topLeftCoordx = coords.x - width / 2;
 		const topLeftCoordy = coords.y - width / 2;
@@ -128,7 +121,6 @@ class ImageProvider2 {
 		const durationx = width - startx - offEndx;
 		const durationy = height - starty - offEndy;
 
-		// console.log(startx, starty, offEndx, offEndy, durationx, durationy)
 		ctx.globalCompositeOperation = 'multiply';
 		ctx.fillStyle = color;
 		ctx.fillRect(startx, starty, durationx, durationy);
@@ -155,11 +147,35 @@ class ImageProvider2 {
 				maxValue = possibleMaxValue;
 			}
 		}
-
 		for (var i = 0; i < data.length; i += 4) {
 			data[i] = (data[i] / maxValue) * 255;
 			data[i + 1] = (data[i + 1] / maxValue) * 255;
 			data[i + 2] = (data[i + 2] / maxValue) * 255;
+			data[i + 3] = 255;
+		}
+
+		var maxRed = 0;
+		var maxGreen = 0;
+		var maxBlue = 0;
+
+		for (let i = 0; i < data.length; i += 4) {
+			if (data[i] > maxRed) {
+				maxRed = data[i];
+			}
+			if (data[i + 1] > maxGreen) {
+				maxGreen = data[i + 1];
+			}
+			if (data[i + 2] > maxBlue) {
+				maxBlue = data[i + 2];
+			}
+		}
+
+		console.log(maxRed, maxGreen, maxBlue);
+
+		for (let i = 0; i < data.length; i += 4) {
+			if (maxRed > 25) data[i] = (data[i] / maxRed) * 170;
+			if (maxGreen > 25) data[i + 1] = (data[i + 1] / maxGreen) * 210;
+			if (maxBlue > 25) data[i + 2] = (data[i + 2] / maxBlue) * 230;
 			data[i + 3] = 255;
 		}
 

@@ -4,14 +4,13 @@ import Dialog from '@material-ui/core/Dialog';
 import Slide from '@material-ui/core/Slide';
 import CloseIcon from '@material-ui/icons/Close';
 import SaveIcon from '@material-ui/icons/Save';
-import ScoreAllHistagram from './ScoreAllGraph'
+import ScoreAllHistagram from './ScoreAllGraph';
 import { Row } from 'reactstrap';
 import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import { downloadFile } from '../downloadFile';
-import ScoreAllTable from './ScoreAll_Table'
-
+import ScoreAllTable from './ScoreAll_Table';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
 	return <Slide direction="up" ref={ref} {...props} />;
@@ -60,7 +59,10 @@ export default function DialogForCanvas(props) {
 								<CloseIcon style={{ color: 'black' }} />
 							</IconButton>
 						</Row>
-						<ScoreAllHistagram histogramData={props.histogramData}></ScoreAllHistagram>
+						<ScoreAllHistagram
+							alphas={props.alphas}
+							histogramData={props.histogramData}
+						></ScoreAllHistagram>
 						<ScoreAllTable scoreTable={props.scoreTable}></ScoreAllTable>
 					</div>
 				)}
