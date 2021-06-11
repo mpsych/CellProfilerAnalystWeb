@@ -93,9 +93,9 @@ function TestUIMVP() {
 	const [bigPictureTitle, setBigPictureTitle] = React.useState('');
 	const [currentlyScoring, setCurrentlyScoring] = React.useState(false);
 
-	React.useEffect(() => {
-		console.log(tileState);
-	}, [tileState]);
+	// React.useEffect(() => {
+	// 	console.log(tileState);
+	// }, [tileState]);
 
 	// const [downloadScoreTableFunction, setDownloadScoreTableFunction] = React.useState(() => {});
 	const [scoreTableCsvString, setScoreTableCsvString] = React.useState('');
@@ -155,8 +155,8 @@ function TestUIMVP() {
 	};
 
 	const handleOpenCellBigPicture = async function (cellPair) {
-		console.log('open big picture');
-		console.log(cellPair);
+		// console.log('open big picture');
+		// console.log(cellPair);
 		setCellBigPictureDialogOpen(true);
 		setBigPictureTitle(`Image: ${cellPair.ImageNumber}, Object: ${cellPair.ObjectNumber}`);
 		return workerActionPromise(canvasWebWorker, 'get', {
@@ -170,8 +170,8 @@ function TestUIMVP() {
 		if (!imageNumber) {
 			return;
 		}
-		console.log('open big picture');
-		console.log(imageNumber);
+		// console.log('open big picture');
+		// console.log(imageNumber);
 		setCellBigPictureDialogOpen(true);
 		setBigPictureTitle(`Image: ${imageNumber}`);
 		return workerActionPromise(canvasWebWorker, 'get', {
@@ -182,12 +182,12 @@ function TestUIMVP() {
 		});
 	};
 	const handleCloseCellBigPicture = function () {
-		console.log('close big picture');
+		// console.log('close big picture');
 		setCellBigPictureDialogOpen(false);
 	};
 
 	const handleFetch = async (fetchType) => {
-		console.log('Fetch!');
+		// console.log('Fetch!');
 		if ((fetchType === undefined) | (fetchType == null)) {
 			return;
 		}
@@ -210,7 +210,7 @@ function TestUIMVP() {
 
 				const { blobUrls } = event.data;
 				const newTileState = await replaceUnclassifiedTileStatePromise(tileState, blobUrls, cellPairs);
-				console.log(newTileState);
+				// console.log(newTileState);
 				setTileState(newTileState);
 				setFetching(false);
 				break;
@@ -251,7 +251,7 @@ function TestUIMVP() {
 							accumCellPairs.push(sampledCellPair);
 						}
 					}
-					console.log(accumCellPairs);
+					// console.log(accumCellPairs);
 					// accumCellPairs = accumCellPairs.concat(filteredCellPairs);
 
 					totalIterationCount++;
@@ -270,7 +270,7 @@ function TestUIMVP() {
 						}
 					}
 				}
-				console.log(`Fetched ${fetchType} Cells in ${totalIterationCount} iterations`);
+				// console.log(`Fetched ${fetchType} Cells in ${totalIterationCount} iterations`);
 
 				const slicedCellPairs = accumCellPairs.slice(0, 16);
 				let event = await workerActionPromise(canvasWebWorker, 'get', {
@@ -312,7 +312,7 @@ function TestUIMVP() {
 			}
 			case 'MorePositive':
 			case 'MoreNegative': {
-				console.log(fetchType);
+				// console.log(fetchType);
 
 				const classType = fetchType === 'MorePositive' ? 'Positive' : 'Negative';
 
@@ -350,7 +350,7 @@ function TestUIMVP() {
 							accumCellPairs.push(sampledCellPair);
 						}
 					}
-					console.log(accumCellPairs);
+					// console.log(accumCellPairs);
 					// accumCellPairs = accumCellPairs.concat(filteredCellPairs);
 
 					totalIterationCount++;
@@ -392,7 +392,7 @@ function TestUIMVP() {
 					getArgs: { ImageNumber: selectedFetchImageNumber },
 				});
 				const { getResult: cellPairs } = event.data;
-				console.log(cellPairs);
+				// console.log(cellPairs);
 				if (cellPairs.length === 0) {
 					alert(`No Cells Found With Image Number: ${selectedFetchImageNumber}`);
 					setFetching(false);
@@ -452,7 +452,7 @@ function TestUIMVP() {
 		console.log('Train!');
 		const positiveCellPairs = tileState.positive.map((element) => element.cellPair);
 		const negativeCellPairs = tileState.negative.map((element) => element.cellPair);
-		console.log('p', positiveCellPairs, 'n', negativeCellPairs);
+		// console.log('p', positiveCellPairs, 'n', negativeCellPairs);
 
 		const totalCellPairs = [...negativeCellPairs, ...positiveCellPairs];
 		const newLabels = [
@@ -471,7 +471,7 @@ function TestUIMVP() {
 		});
 
 		const { getResult: dataRows } = event.data;
-		console.log(dataRows);
+		// console.log(dataRows);
 		const newTrainingObject = {
 			classifierType: 'LogisticRegression',
 			trainingData: dataRows,
@@ -606,10 +606,10 @@ function TestUIMVP() {
 		console.log('Score All!');
 		if (!scoreTableIsUpToDate && !currentlyScoring) {
 			setCurrentlyScoring(true);
-			console.log('Score All!');
+			// console.log('Score All!');
 			return workerActionPromise(classifierWebWorker, 'scoreObjectData').then((event) => {
 				const newScoreTableObject = event.data.scoreTableObject;
-				console.log(newScoreTableObject);
+				// console.log(newScoreTableObject);
 				const scoreDataRows = Object.keys(newScoreTableObject.imageToCountsMap).map((key) => ({
 					imageNumber: parseInt(key),
 					total: newScoreTableObject.imageToCountsMap[key][0] + newScoreTableObject.imageToCountsMap[key][1],
@@ -622,7 +622,7 @@ function TestUIMVP() {
 				const alphaValue = newScoreTableObject.alphas[1];
 				const betaValue = newScoreTableObject.alphas[0];
 
-				console.log(alphaValue);
+				// console.log(alphaValue);
 
 				const adjustedRatiosData = Object.values(newScoreTableObject.adjustedRatios).map((ratio) => ({
 					x: ratio,
@@ -634,7 +634,7 @@ function TestUIMVP() {
 				setBeta(betaValue);
 				// setScoreTableObject(newScoreTableObject);
 				setScoreAlphas(newScoreTableObject.alphas);
-				console.log(newScoreTableObject);
+				// console.log(newScoreTableObject);
 				const headers = [
 					'ImageNumber',
 					'PositiveCount',
@@ -740,7 +740,7 @@ function TestUIMVP() {
 
 				// We: ${cellData.Well}
 				// Pl: ${cellData.Plate}`;
-				console.log(label);
+				// console.log(label);
 				return {
 					id: idx,
 					address: dataURL,
@@ -776,7 +776,7 @@ function TestUIMVP() {
 			const label = `Ob: ${cellData.ObjectNumber} Im: ${cellData.ImageNumber}`;
 			// We: ${cellData.Well}
 			// Pl: ${cellData.Plate}`;
-			console.log(label);
+			// console.log(label);
 			return {
 				id: lastTileState.positive.length + lastTileState.negative.length + idx,
 				address: dataURL,
@@ -786,13 +786,13 @@ function TestUIMVP() {
 			};
 		});
 
-		console.log(unclassifiedTileState, lastTileState);
+		// console.log(unclassifiedTileState, lastTileState);
 		const newTileState = {
 			negative: lastTileState.negative,
 			positive: lastTileState.positive,
 			unclassified: unclassifiedTileState,
 		};
-		console.log(newTileState);
+		// console.log(newTileState);
 		return newTileState;
 	}
 
@@ -826,7 +826,7 @@ function TestUIMVP() {
 			positive: cellStates.filter((e, idx) => classes[idx] === 1),
 			unclassified: cellStates.filter((e, idx) => classes[idx] === -1),
 		};
-		console.log(newTileState);
+		// console.log(newTileState);
 		return newTileState;
 	}
 
@@ -839,8 +839,8 @@ function TestUIMVP() {
 				[targetId]: result[1],
 			});
 		}
-		console.log(tileState, sourceId, tileState[sourceId]);
-		console.log('s', sourceIndex, 't', targetIndex);
+		// console.log(tileState, sourceId, tileState[sourceId]);
+		// console.log('s', sourceIndex, 't', targetIndex);
 
 		const result = swap(tileState[sourceId], sourceIndex, targetIndex);
 		return setTileState({
@@ -1101,7 +1101,7 @@ function TestUIMVP() {
 										<div className="grid-item">
 											<div
 												onDoubleClick={() => {
-													console.log('double click: ' + item.info);
+													// console.log('double click: ' + item.info);
 													handleOpenCellBigPicture(item.cellPair);
 												}}
 												className="grid-item-content"
@@ -1213,7 +1213,7 @@ function TestUIMVP() {
 												<div className="grid-item">
 													<div
 														onDoubleClick={() => {
-															console.log('double click: ' + item.info);
+															// console.log('double click: ' + item.info);
 															handleOpenCellBigPicture(item.cellPair);
 														}}
 														className="grid-item-content"
@@ -1282,7 +1282,7 @@ function TestUIMVP() {
 												<div className="grid-item">
 													<div
 														onDoubleClick={() => {
-															console.log('double click: ' + item.info);
+															// console.log('double click: ' + item.info);
 															handleOpenCellBigPicture(item.cellPair);
 														}}
 														className="grid-item-content"

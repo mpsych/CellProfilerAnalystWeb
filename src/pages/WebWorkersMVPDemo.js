@@ -25,7 +25,6 @@ import Select from '@material-ui/core/Select';
 import Tooltip from '@material-ui/core/Tooltip';
 import Paper from '@material-ui/core/Paper';
 
-
 import Evaluate from './AbbyUIButtons/UIEvaluateButton';
 import ScoreAll from './UIScoreAllButton';
 import { v4 as uuidv4 } from 'uuid';
@@ -38,10 +37,9 @@ import { GridContextProvider, GridDropZone, GridItem, swap, move } from 'react-g
 import '../dndstyles.css';
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
+import { downloadFile } from '../downloadFile';
 import UploadButton from './UploadButton';
 import DownloadButton from './DownloadButton';
-
-
 
 function TestUIMVP() {
 	const [anchorEl, setAnchorEl] = React.useState(null);
@@ -61,6 +59,7 @@ function TestUIMVP() {
 	const [uploading, setUploading] = React.useState(false);
 	const [success, setSuccess] = React.useState(false);
 	const [fetching, setFetching] = React.useState(false);
+	const [initialFetchingPositiveNegative, setInitialFetchingPositiveNegative] = React.useState(false);
 	const [openFetchDropdown, setOpenFetchDropdown] = React.useState(false);
 	const [openTrainDropdown, setOpenTrainDropdown] = React.useState(false);
 
@@ -72,12 +71,12 @@ function TestUIMVP() {
 		[0, 0],
 	]);
 	const [trainingObject, setTrainingObject] = React.useState(null);
-	const [activeCellPairs, setActiveCellPairs] = React.useState([]);
 	const [trainingCellPairs, setTrainingCellPairs] = React.useState([]);
 
 	const [scoreTableIsUpToDate, setScoreTableIsUpToDate] = React.useState(false);
 	const [scoreTableObject, setScoreTableObject] = React.useState(null);
 	const [scoreTable, setScoreTable] = React.useState([]);
+	const [scoreAlphas, setScoreAlphas] = React.useState();
 	const [histogramData, setHistogramData] = React.useState([]);
 	const [alpha, setAlpha] = React.useState(null);
 	const [beta, setBeta] = React.useState(null);
@@ -85,7 +84,7 @@ function TestUIMVP() {
 	const trainingLossCanvasParentRef = React.useRef();
 	const trainingAccuracyCanvasParentRef = React.useRef();
 
-	const [selectedFetchImageNumber, setSelectedFetchImageNumber] = React.useState(0);
+	const [selectedFetchImageNumber, setSelectedFetchImageNumber] = React.useState(1);
 	const [fetchImageNumberButtonEnabled, setFetchImageNumberButtonEnabled] = React.useState(false);
 	const DEBUG = true;
 
@@ -93,6 +92,10 @@ function TestUIMVP() {
 	const [bigPictureSource, setBigPictureSource] = React.useState(jones);
 	const [bigPictureTitle, setBigPictureTitle] = React.useState('');
 	const [currentlyScoring, setCurrentlyScoring] = React.useState(false);
+
+	// React.useEffect(() => {
+	// 	console.log(tileState);
+	// }, [tileState]);
 
 	// const [downloadScoreTableFunction, setDownloadScoreTableFunction] = React.useState(() => {});
 	const [scoreTableCsvString, setScoreTableCsvString] = React.useState('');
@@ -124,8 +127,8 @@ function TestUIMVP() {
 		return worker;
 	};
 
-
 	const N = 20;
+	const MAX_ITERATION_COUNT = 1000;
 
 	const handleClickFetchDropDown = (event) => {
 		setAnchorEl(event.currentTarget);
@@ -152,8 +155,8 @@ function TestUIMVP() {
 	};
 
 	const handleOpenCellBigPicture = async function (cellPair) {
-		console.log('open big picture');
-		console.log(cellPair);
+		// console.log('open big picture');
+		// console.log(cellPair);
 		setCellBigPictureDialogOpen(true);
 		setBigPictureTitle(`Image: ${cellPair.ImageNumber}, Object: ${cellPair.ObjectNumber}`);
 		return workerActionPromise(canvasWebWorker, 'get', {
@@ -163,167 +166,283 @@ function TestUIMVP() {
 			setBigPictureSource(event.data.blobUrl);
 		});
 	};
+	const handleOpenBigPicture = async function (imageNumber) {
+		if (!imageNumber) {
+			return;
+		}
+		// console.log('open big picture');
+		// console.log(imageNumber);
+		setCellBigPictureDialogOpen(true);
+		setBigPictureTitle(`Image: ${imageNumber}`);
+		return workerActionPromise(canvasWebWorker, 'get', {
+			getType: 'blobUrlBigPictureByImageNumber',
+			getArgs: { imageNumber },
+		}).then((event) => {
+			setBigPictureSource(event.data.blobUrl);
+		});
+	};
 	const handleCloseCellBigPicture = function () {
-		console.log('close big picture');
+		// console.log('close big picture');
 		setCellBigPictureDialogOpen(false);
 	};
 
 	const handleFetch = async (fetchType) => {
-		console.log('Fetch!');
+		// console.log('Fetch!');
 		if ((fetchType === undefined) | (fetchType == null)) {
 			return;
 		}
 		setFetching(true);
-		const emptyTileState = { unclassified: [], positive: [], negative: [] };
-		setTileState(emptyTileState);
-		var newCellPairs = [];
+		const clearedUnclassifiedTileState = { ...tileState, unclassified: [] };
+		setTileState(clearedUnclassifiedTileState);
 		switch (fetchType) {
-			case 'Random':
-				workerActionPromise(dataWebWorker, 'get', { getType: 'cellPairs', getArgs: { amount: 16 } })
-					.then((event) => {
-						const cellPairs = event.data.getResult;
-						newCellPairs = cellPairs;
-						setActiveCellPairs(cellPairs);
-						console.log(cellPairs);
-						return workerActionPromise(canvasWebWorker, 'get', {
-							getType: 'blobUrlsFromCellPairs',
-							getArgs: { cellPairs },
-						});
-					})
-					.then((event) => {
-						console.log('tile state time');
-						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
-					})
-					.then((newTileState) => {
-						setTileState(newTileState);
-						setFetching(false);
-					});
+			case 'Random': {
+				let event = await workerActionPromise(dataWebWorker, 'get', {
+					getType: 'cellPairs',
+					getArgs: { amount: 16 },
+				});
+
+				const { getResult: cellPairs } = event.data;
+
+				event = await workerActionPromise(canvasWebWorker, 'get', {
+					getType: 'blobUrlsFromCellPairs',
+					getArgs: { cellPairs },
+				});
+
+				const { blobUrls } = event.data;
+				const newTileState = await replaceUnclassifiedTileStatePromise(tileState, blobUrls, cellPairs);
+				// console.log(newTileState);
+				setTileState(newTileState);
+				setFetching(false);
 				break;
+			}
 			case 'Positive':
 			case 'Negative': {
-				var newCellPairs = null;
-				workerActionPromise(dataWebWorker, 'get', { getType: 'cellPairs', getArgs: { amount: 100 } })
-					.then((event) => {
-						const cellPairs = event.data.getResult;
+				let accumCellPairs = [];
+				let iterationCount = 0;
+				let totalIterationCount = 0;
 
-						return workerActionPromise(classifierWebWorker, 'predictFilterCellPairs', {
-							cellPairs,
-							classType: fetchType,
-						});
-					})
-					.then((event) => {
-						const { filteredCellPairs } = event.data;
-						const slicedCellPairs = filteredCellPairs.slice(0, 16);
-						newCellPairs = filteredCellPairs;
-						setActiveCellPairs(filteredCellPairs);
-						return workerActionPromise(canvasWebWorker, 'get', {
-							getType: 'blobUrlsFromCellPairs',
-							getArgs: { cellPairs: slicedCellPairs },
-						});
-					})
-					.then((event) => {
-						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
-					})
-					.then((newTileState) => {
-						setTileState(newTileState);
-						setFetching(false);
+				while (accumCellPairs.length < 16) {
+					let event = await workerActionPromise(dataWebWorker, 'get', {
+						getType: 'cellPairs',
+						getArgs: { amount: 100 },
 					});
+					const { getResult: cellPairs } = event.data;
+					event = await workerActionPromise(classifierWebWorker, 'predictFilterCellPairs', {
+						cellPairs,
+						classType: fetchType,
+					});
+					const { filteredCellPairs } = event.data;
+
+					// get rid of duplicates
+					for (let i = 0; i < filteredCellPairs.length; i++) {
+						const sampledCellPair = filteredCellPairs[i];
+						let notYetSampled = true;
+						for (let j = 0; j < accumCellPairs.length; j++) {
+							if (
+								sampledCellPair.ImageNumber === accumCellPairs[j].ImageNumber &&
+								sampledCellPair.ObjectNumber === accumCellPairs[j].ObjectNumber
+							) {
+								notYetSampled = false;
+								break;
+							}
+						}
+
+						if (notYetSampled) {
+							accumCellPairs.push(sampledCellPair);
+						}
+					}
+					// console.log(accumCellPairs);
+					// accumCellPairs = accumCellPairs.concat(filteredCellPairs);
+
+					totalIterationCount++;
+					if (iterationCount++ >= MAX_ITERATION_COUNT) {
+						if (
+							window.confirm(
+								`CPAW Has Found ${accumCellPairs.length} Unique ${fetchType} Cells After Testing ${
+									100 * totalIterationCount
+								} Cells With Replacement, Would You Like To Continue?`
+							)
+						) {
+							iterationCount = 0;
+							continue;
+						} else {
+							break;
+						}
+					}
+				}
+				// console.log(`Fetched ${fetchType} Cells in ${totalIterationCount} iterations`);
+
+				const slicedCellPairs = accumCellPairs.slice(0, 16);
+				let event = await workerActionPromise(canvasWebWorker, 'get', {
+					getType: 'blobUrlsFromCellPairs',
+					getArgs: { cellPairs: slicedCellPairs },
+				});
+				const { blobUrls } = event.data;
+				const newTileState = await replaceUnclassifiedTileStatePromise(tileState, blobUrls, slicedCellPairs);
+				setTileState(newTileState);
+				setFetching(false);
 				break;
 			}
 			case 'Confusing': {
-				var newCellPairs = null;
-				workerActionPromise(dataWebWorker, 'get', { getType: 'cellPairs', getArgs: { amount: 100 } })
-					.then((event) => {
-						const cellPairs = event.data.getResult;
+				let event = await workerActionPromise(dataWebWorker, 'get', {
+					getType: 'cellPairs',
+					getArgs: { amount: 100 },
+				});
+				const { getResult: cellPairs } = event.data;
 
-						return workerActionPromise(classifierWebWorker, 'confusingFilterCellPairs', {
-							cellPairs: cellPairs,
-						});
-					})
-					.then((event) => {
-						const { sortedCellPairs } = event.data;
-						const slicedSortedCellPairs = sortedCellPairs.slice(0, 16);
-						setActiveCellPairs(slicedSortedCellPairs);
-						newCellPairs = slicedSortedCellPairs;
-						return workerActionPromise(canvasWebWorker, 'get', {
-							getType: 'blobUrlsFromCellPairs',
-							getArgs: { cellPairs: slicedSortedCellPairs },
-						});
-					})
-					.then((event) => {
-						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
-					})
-					.then((newTileState) => {
-						setTileState(newTileState);
-						setFetching(false);
+				event = await workerActionPromise(classifierWebWorker, 'confusingSortCellPairs', {
+					cellPairs: cellPairs,
+				});
+				const { sortedCellPairs } = event.data;
+				const slicedSortedCellPairs = sortedCellPairs.slice(0, 16);
+				event = await workerActionPromise(canvasWebWorker, 'get', {
+					getType: 'blobUrlsFromCellPairs',
+					getArgs: { cellPairs: slicedSortedCellPairs },
+				});
+				const { blobUrls } = event.data;
+				const newTileState = await replaceUnclassifiedTileStatePromise(
+					tileState,
+					blobUrls,
+					slicedSortedCellPairs
+				);
+
+				setTileState(newTileState);
+				setFetching(false);
+				break;
+			}
+			case 'MorePositive':
+			case 'MoreNegative': {
+				// console.log(fetchType);
+
+				const classType = fetchType === 'MorePositive' ? 'Positive' : 'Negative';
+
+				let accumCellPairs = [];
+				let iterationCount = 0;
+				let totalIterationCount = 0;
+
+				while (accumCellPairs.length < 16) {
+					let event = await workerActionPromise(dataWebWorker, 'get', {
+						getType: 'cellPairs',
+						getArgs: { amount: 1000 },
 					});
+					const { getResult: cellPairs } = event.data;
+					event = await workerActionPromise(classifierWebWorker, 'moreClassSortCellPairs', {
+						cellPairs,
+						classType,
+					});
+					const { sortedCellPairs } = event.data;
+
+					// get rid of duplicates
+					for (let i = 0; i < sortedCellPairs.length; i++) {
+						const sampledCellPair = sortedCellPairs[i];
+						let notYetSampled = true;
+						for (let j = 0; j < accumCellPairs.length; j++) {
+							if (
+								sampledCellPair.ImageNumber === accumCellPairs[j].ImageNumber &&
+								sampledCellPair.ObjectNumber === accumCellPairs[j].ObjectNumber
+							) {
+								notYetSampled = false;
+								break;
+							}
+						}
+
+						if (notYetSampled) {
+							accumCellPairs.push(sampledCellPair);
+						}
+					}
+					// console.log(accumCellPairs);
+					// accumCellPairs = accumCellPairs.concat(filteredCellPairs);
+
+					totalIterationCount++;
+					if (iterationCount++ >= MAX_ITERATION_COUNT) {
+						if (
+							window.confirm(
+								`CPAW Has Found ${accumCellPairs.length} Unique ${fetchType} Cells After Testing ${
+									100 * totalIterationCount
+								} Cells With Replacement, Would You Like To Continue?`
+							)
+						) {
+							iterationCount = 0;
+							continue;
+						} else {
+							break;
+						}
+					}
+				}
+
+				const slicedSortedCellPairs = accumCellPairs.slice(0, 16);
+				let event = await workerActionPromise(canvasWebWorker, 'get', {
+					getType: 'blobUrlsFromCellPairs',
+					getArgs: { cellPairs: slicedSortedCellPairs },
+				});
+				const { blobUrls } = event.data;
+				const newTileState = await replaceUnclassifiedTileStatePromise(
+					tileState,
+					blobUrls,
+					slicedSortedCellPairs
+				);
+
+				setTileState(newTileState);
+				setFetching(false);
 				break;
 			}
 			case 'ImageNumber': {
-				var newCellPairs = null;
-				console.log('fetch by image number: ' + selectedFetchImageNumber);
-				workerActionPromise(dataWebWorker, 'get', {
+				let event = await workerActionPromise(dataWebWorker, 'get', {
 					getType: 'cellPairsFromImage',
 					getArgs: { ImageNumber: selectedFetchImageNumber },
-				})
-					.then((event) => {
-						const cellPairs = event.data.getResult;
-						console.log(cellPairs);
-						return workerActionPromise(classifierWebWorker, 'predictFilterCellPairs', {
-							cellPairs,
-							classType: fetchType,
-						});
-					})
-					.then((event) => {
-						const { filteredCellPairs } = event.data;
-						const slicedCellPairs = filteredCellPairs.slice(0, 16);
-						setActiveCellPairs(filteredCellPairs);
-						newCellPairs = filteredCellPairs;
-						return workerActionPromise(canvasWebWorker, 'get', {
-							getType: 'blobUrlsFromCellPairs',
-							getArgs: { cellPairs: slicedCellPairs },
-						});
-					})
-					.then((event) => {
-						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
-					})
-					.then((newTileState) => {
-						setTileState(newTileState);
-						setFetching(false);
-					});
+				});
+				const { getResult: cellPairs } = event.data;
+				// console.log(cellPairs);
+				if (cellPairs.length === 0) {
+					alert(`No Cells Found With Image Number: ${selectedFetchImageNumber}`);
+					setFetching(false);
+					return;
+				}
+
+				let shuffledSliceCellPairs = cellPairs;
+
+				if (cellPairs.length > 16) {
+					const cellPairIndicesLeft = new Array(cellPairs.length).fill(0).map((e, i) => i);
+					shuffledSliceCellPairs = [];
+					while (shuffledSliceCellPairs.length < 16) {
+						const randomIndexIndex = Math.floor(Math.random() * cellPairIndicesLeft.length);
+						const randomIndex = cellPairIndicesLeft[randomIndexIndex];
+						shuffledSliceCellPairs.push(cellPairs[randomIndex]);
+						cellPairIndicesLeft.splice(randomIndexIndex, 1);
+					}
+				}
+
+				const slicedCellPairs = shuffledSliceCellPairs.slice(0, 16);
+				event = await workerActionPromise(canvasWebWorker, 'get', {
+					getType: 'blobUrlsFromCellPairs',
+					getArgs: { cellPairs: slicedCellPairs },
+				});
+				const { blobUrls } = event.data;
+				const newTileState = await replaceUnclassifiedTileStatePromise(tileState, blobUrls, slicedCellPairs);
+				setTileState(newTileState);
+				setFetching(false);
 				break;
 			}
 			case 'TrainingPositive':
 			case 'TrainingNegative': {
-				var newCellPairs = null;
-				__ = DEBUG ? console.log(`Enter fetch: ${fetchType}`) : null;
 				const cellPairs = trainingObject.trainingData.map((dataRow) => ({
 					ImageNumber: dataRow[0],
 					ObjectNumber: dataRow[1],
 				}));
-				__ = DEBUG ? console.log(cellPairs) : null;
-				workerActionPromise(classifierWebWorker, 'predictFilterCellPairs', {
-					cellPairs,
-					classType: fetchType === 'TrainingPositive' ? 'Positive' : 'Negative',
-				})
-					.then((event) => {
-						__ = DEBUG ? console.log(`Return from predictFilterCellPairs `, event.data) : null;
-						const { filteredCellPairs } = event.data;
-						setActiveCellPairs(filteredCellPairs);
-						newCellPairs = filteredCellPairs;
-						return workerActionPromise(canvasWebWorker, 'get', {
-							getType: 'blobUrlsFromCellPairs',
-							getArgs: { cellPairs: filteredCellPairs },
-						});
-					})
-					.then((event) => {
-						__ = DEBUG ? console.log(`Return get blobUrlsFromCellPairs`, event.data) : null;
-						return constructTileStatePromise(event.data.blobUrls, newCellPairs);
-					})
-					.then((newTileState) => {
-						setTileState(newTileState);
-						setFetching(false);
-					});
+
+				const positiveCellPairs = cellPairs.filter((e, idx) => trainingObject.trainingLabels[idx] === 1);
+				const negativeCellPairs = cellPairs.filter((e, idx) => trainingObject.trainingLabels[idx] === 0);
+
+				const desiredCellPairs = fetchType === 'TrainingPositive' ? positiveCellPairs : negativeCellPairs;
+
+				let event = await workerActionPromise(canvasWebWorker, 'get', {
+					getType: 'blobUrlsFromCellPairs',
+					getArgs: { cellPairs: desiredCellPairs },
+				});
+				const { blobUrls } = event.data;
+				const newTileState = await replaceUnclassifiedTileStatePromise(tileState, blobUrls, desiredCellPairs);
+				setTileState(newTileState);
+				setFetching(false);
 				break;
 			}
 		}
@@ -331,36 +450,38 @@ function TestUIMVP() {
 
 	const handleTrain = async () => {
 		console.log('Train!');
-		const positiveCellPairs = tileState.positive.map((element) => activeCellPairs[element.id]);
-		const negativeCellPairs = tileState.negative.map((element) => activeCellPairs[element.id]);
+		const positiveCellPairs = tileState.positive.map((element) => element.cellPair);
+		const negativeCellPairs = tileState.negative.map((element) => element.cellPair);
+		// console.log('p', positiveCellPairs, 'n', negativeCellPairs);
 
-		const totalCellPairs = positiveCellPairs.concat(negativeCellPairs);
-		const newLabels = new Array(positiveCellPairs.length)
-			.fill(1)
-			.concat(new Array(negativeCellPairs.length).fill(0));
+		const totalCellPairs = [...negativeCellPairs, ...positiveCellPairs];
+		const newLabels = [
+			...new Array(negativeCellPairs.length).fill(0),
+			...new Array(positiveCellPairs.length).fill(1),
+		];
 
 		setScoreTableIsUpToDate(false);
-		const emptyTileState = { unclassified: [], positive: [], negative: [] };
-		setTileState(emptyTileState);
-		setActiveCellPairs([]);
 
-		workerActionPromise(dataWebWorker, 'get', {
+		const clearedUnclassifiedTileState = { ...tileState, unclassified: [] };
+		setTileState(clearedUnclassifiedTileState);
+
+		let event = await workerActionPromise(dataWebWorker, 'get', {
 			getType: 'objectRowsFromCellpairs',
 			getArgs: { cellPairs: totalCellPairs },
-		}).then((event) => {
-			const dataRows = event.data.getResult;
-
-			const newTrainingObject = {
-				classifierType: 'LogisticRegression',
-				trainingData: [...trainingObject.trainingData, ...dataRows],
-				trainingLabels: [...trainingObject.trainingLabels, ...newLabels],
-				featureIndicesToUse: trainingObject.featureIndicesToUse,
-			};
-			return trainSequencePromise(newTrainingObject);
 		});
+
+		const { getResult: dataRows } = event.data;
+		// console.log(dataRows);
+		const newTrainingObject = {
+			classifierType: 'LogisticRegression',
+			trainingData: dataRows,
+			trainingLabels: newLabels,
+			featureIndicesToUse: trainingObject.featureIndicesToUse,
+		};
+		trainSequencePromise(newTrainingObject);
 	};
 
-	const trainSequencePromise = function (currentTrainingObject) {
+	const trainSequencePromise = async function (currentTrainingObject) {
 		setOpenTrainDropdown(true);
 		var UUID = null;
 		let updateCanvasesListener = (event) => {
@@ -383,7 +504,7 @@ function TestUIMVP() {
 			}
 		};
 
-		workerActionPromise(classifierWebWorker, 'startTrainingGraphsConnection', {})
+		return workerActionPromise(classifierWebWorker, 'startTrainingGraphsConnection', {})
 			.then((event) => {
 				UUID = event.data.uuid;
 				classifierWebWorker.addEventListener('message', updateCanvasesListener);
@@ -423,28 +544,41 @@ function TestUIMVP() {
 	const handleUpload = async (eventObject) => {
 		console.log('Upload!');
 		setUploading(true);
-		workerActionPromise(dataWebWorker, 'init', { fileListObject: eventObject.target.files })
-			.then(() => {
-				console.log('done');
-				workerActionPromise(dataWebWorker, 'get', {
-					getType: 'cellPairData',
-					getArgs: { cellPair: { ImageNumber: 1, ObjectNumber: 1 } },
-				});
-			})
-			.then(() => {
-				console.log('next');
-				return workerActionPromise(dataWebWorker, 'get', { getType: 'trainingObject' });
-			})
-			.then((event) => {
-				const initialTrainingObject = event.data.getResult;
-				return trainSequencePromise(initialTrainingObject);
-			})
-			.then(() => {
-				setUploading(false);
-				setSuccess(true);
-				enableIterationButtons();
-				setUploadButtonEnabled(false);
-			});
+		await workerActionPromise(dataWebWorker, 'init', { fileListObject: eventObject.target.files });
+		let event = await workerActionPromise(dataWebWorker, 'get', { getType: 'trainingObject' });
+		const initialTrainingObject = event.data.getResult;
+
+		setUploading(false);
+		setSuccess(true);
+		setUploadButtonEnabled(false);
+
+		await trainSequencePromise(initialTrainingObject);
+		setInitialFetchingPositiveNegative(true);
+		const cellPairs = initialTrainingObject.trainingData.map((dataRow) => ({
+			ImageNumber: dataRow[0],
+			ObjectNumber: dataRow[1],
+		}));
+
+		const positiveCellPairs = cellPairs.filter((e, idx) => initialTrainingObject.trainingLabels[idx] === 1);
+		const negativeCellPairs = cellPairs.filter((e, idx) => initialTrainingObject.trainingLabels[idx] === 0);
+
+		const totalCellPairs = [...negativeCellPairs, ...positiveCellPairs];
+
+		event = await workerActionPromise(canvasWebWorker, 'get', {
+			getType: 'blobUrlsFromCellPairs',
+			getArgs: { cellPairs: totalCellPairs },
+		});
+		const { blobUrls } = event.data;
+
+		const zeros = new Array(negativeCellPairs.length).fill(0);
+		const ones = new Array(positiveCellPairs.length).fill(1);
+		const classes = [...zeros, ...ones];
+
+		const newTileState = await constructTileStatePromiseByClass(blobUrls, totalCellPairs, classes);
+		setTileState(newTileState);
+		setFetching(false);
+		setInitialFetchingPositiveNegative(false);
+		enableIterationButtons();
 	};
 
 	/*
@@ -472,23 +606,23 @@ function TestUIMVP() {
 		console.log('Score All!');
 		if (!scoreTableIsUpToDate && !currentlyScoring) {
 			setCurrentlyScoring(true);
-			console.log('Score All!');
+			// console.log('Score All!');
 			return workerActionPromise(classifierWebWorker, 'scoreObjectData').then((event) => {
 				const newScoreTableObject = event.data.scoreTableObject;
-				console.log(newScoreTableObject);
+				// console.log(newScoreTableObject);
 				const scoreDataRows = Object.keys(newScoreTableObject.imageToCountsMap).map((key) => ({
 					imageNumber: parseInt(key),
 					total: newScoreTableObject.imageToCountsMap[key][0] + newScoreTableObject.imageToCountsMap[key][1],
 					positive: newScoreTableObject.imageToCountsMap[key][1],
 					negative: newScoreTableObject.imageToCountsMap[key][0],
 					ratio: newScoreTableObject.ratios[key],
-					adjustratio: newScoreTableObject.adjustedRatios[key],			
+					adjustratio: newScoreTableObject.adjustedRatios[key],
 				}));
-			
-				const alphaValue = newScoreTableObject.alphas[1]
-				const betaValue = newScoreTableObject.alphas[0]
-				
-				console.log(alphaValue)
+
+				const alphaValue = newScoreTableObject.alphas[1];
+				const betaValue = newScoreTableObject.alphas[0];
+
+				// console.log(alphaValue);
 
 				const adjustedRatiosData = Object.values(newScoreTableObject.adjustedRatios).map((ratio) => ({
 					x: ratio,
@@ -496,10 +630,11 @@ function TestUIMVP() {
 				setHistogramData(adjustedRatiosData);
 				setScoreTable(scoreDataRows);
 				setCurrentlyScoring(false);
-				setAlpha(alphaValue)
-				setBeta(betaValue)
+				setAlpha(alphaValue);
+				setBeta(betaValue);
 				// setScoreTableObject(newScoreTableObject);
-
+				setScoreAlphas(newScoreTableObject.alphas);
+				// console.log(newScoreTableObject);
 				const headers = [
 					'ImageNumber',
 					'PositiveCount',
@@ -527,16 +662,64 @@ function TestUIMVP() {
 		}
 	};
 
-	const handleDownload = async () => {
-		console.log('Download!');
-		return workerActionPromise(classifierWebWorker, 'getClassifier').then((event) => {
-			tf.loadLayersModel(`indexeddb://${trainingObject.classifierType}`).then((model) => {
-				model.save(`downloads://${trainingObject.classifierType}`);
-			});
+	/**
+	 * @param {{positive: {data: {ImageNumber: cellPair.ImageNumber,ObjectNumber: number,Plate: numbere,Well: number,Gene: string,Puro: number,X: number,Y: number}}[],
+	 * 			negative: {data: {ImageNumber: cellPair.ImageNumber,ObjectNumber: number,Plate: numbere,Well: number,Gene: string,Puro: number,X: number,Y: number}}[],
+	 * 			unclassified: {data: {ImageNumber: cellPair.ImageNumber,ObjectNumber: number,Plate: numbere,Well: number,Gene: string,Puro: number,X: number,Y: number}}[]
+	 * 			}}
+	 * 			tileState The tile state of arrays of cell objects for each class, a data field for each cell object gives us
+	 * 			the information needed to make the trainingset text content
+	 * @return {string} tileStateString
+	 */
+	function createTrainingSetTextFromTileState(tileState) {
+		let result = '';
+		result = result.concat(
+			`# This training set was created at ${new Date().toLocaleString()} in CellProfiler Analyst Web\n`
+		);
+		result = result.concat('label positive negative\n');
 
-			// const classifier = event.data.classifier;
-			// classifier.save(`downloads://${trainingObject.classifierType}`);
-		});
+		for (let i = 0; i < tileState.positive.length; i++) {
+			const cellData = tileState.positive[i].data;
+			result = result.concat(
+				`positive ${cellData.ImageNumber} ${cellData.ObjectNumber} ${cellData.X} ${cellData.Y}\n`
+			);
+		}
+
+		for (let i = 0; i < tileState.negative.length; i++) {
+			const cellData = tileState.negative[i].data;
+			result = result.concat(
+				`negative ${cellData.ImageNumber} ${cellData.ObjectNumber} ${cellData.X} ${cellData.Y}\n`
+			);
+		}
+
+		return result;
+	}
+
+	const handleDownload = async (downloadType) => {
+		console.log('Download!');
+		if (downloadType === 'TrainingSet') {
+			const trainingSetText = createTrainingSetTextFromTileState(tileState);
+			downloadFile('generatedTrainingSet', trainingSetText, '.txt');
+			return;
+		} else if (downloadType === 'ClassifierSpec') {
+			return workerActionPromise(classifierWebWorker, 'getClassifier').then((event) => {
+				tf.loadLayersModel(`indexeddb://${trainingObject.classifierType}`).then((model) => {
+					model.save(`downloads://${trainingObject.classifierType}`);
+				});
+			});
+		} else if (downloadType === 'TrainingSetClassifierSpec') {
+			const trainingSetText = createTrainingSetTextFromTileState(tileState);
+			downloadFile('generatedTrainingSet', trainingSetText, '.txt');
+			return workerActionPromise(classifierWebWorker, 'getClassifier').then((event) => {
+				tf.loadLayersModel(`indexeddb://${trainingObject.classifierType}`).then((model) => {
+					model.save(`downloads://${trainingObject.classifierType}`);
+				});
+			});
+		} else {
+			console.error('no valid downloadtype');
+		}
+
+		// const classifier = event.data.classifier;
 	};
 
 	async function constructTileStatePromise(dataURLs, newCellPairs) {
@@ -553,13 +736,15 @@ function TestUIMVP() {
 			unclassified: dataURLs.map((dataURL, idx) => {
 				const cellData = cellDatas[idx];
 
-				const label = `Ob: ${cellData.ObjectNumber}\nIm: ${cellData.ImageNumber}`;
+				const label = `Ob: ${cellData.ObjectNumber}${'\u00A0'}Im: ${cellData.ImageNumber}${'\u000A'}something`;
+
 				// We: ${cellData.Well}
 				// Pl: ${cellData.Plate}`;
-				console.log(label);
+				// console.log(label);
 				return {
 					id: idx,
 					address: dataURL,
+					data: cellData,
 					info: label,
 					cellPair: { ImageNumber: cellData.ImageNumber, ObjectNumber: cellData.ObjectNumber },
 				};
@@ -567,6 +752,82 @@ function TestUIMVP() {
 			positive: [],
 			negative: [],
 		};
+	}
+
+	async function replaceUnclassifiedTileStatePromise(lastTileState, newDataURLs, newCellPairs) {
+		const cellDatas = await Promise.all(
+			newCellPairs.map((cellPair) =>
+				workerActionPromise(dataWebWorker, 'get', {
+					getType: 'cellPairData',
+					getArgs: { cellPair: cellPair },
+				}).then((event) => event.data.getResult)
+			)
+		);
+		for (let i = 0; i < lastTileState.negative.length; i++) {
+			lastTileState.negative[i].id = i;
+		}
+		for (let i = 0; i < lastTileState.positive.length; i++) {
+			lastTileState.positive[i].id = lastTileState.negative.length + i;
+		}
+
+		const unclassifiedTileState = newDataURLs.map((dataURL, idx) => {
+			const cellData = cellDatas[idx];
+
+			const label = `Ob: ${cellData.ObjectNumber} Im: ${cellData.ImageNumber}`;
+			// We: ${cellData.Well}
+			// Pl: ${cellData.Plate}`;
+			// console.log(label);
+			return {
+				id: lastTileState.positive.length + lastTileState.negative.length + idx,
+				address: dataURL,
+				info: label,
+				data: cellData,
+				cellPair: { ImageNumber: cellData.ImageNumber, ObjectNumber: cellData.ObjectNumber },
+			};
+		});
+
+		// console.log(unclassifiedTileState, lastTileState);
+		const newTileState = {
+			negative: lastTileState.negative,
+			positive: lastTileState.positive,
+			unclassified: unclassifiedTileState,
+		};
+		// console.log(newTileState);
+		return newTileState;
+	}
+
+	async function constructTileStatePromiseByClass(dataURLs, newCellPairs, classes) {
+		const cellDatas = await Promise.all(
+			newCellPairs.map((cellPair) =>
+				workerActionPromise(dataWebWorker, 'get', {
+					getType: 'cellPairData',
+					getArgs: { cellPair: cellPair },
+				}).then((event) => event.data.getResult)
+			)
+		);
+
+		const cellStates = dataURLs.map((dataURL, idx) => {
+			const cellData = cellDatas[idx];
+
+			const label = `Ob: ${cellData.ObjectNumber} Im: ${cellData.ImageNumber}`;
+			// We: ${cellData.Well}
+			// Pl: ${cellData.Plate}`;
+			return {
+				id: idx,
+				address: dataURL,
+				info: label,
+				data: cellData,
+				cellPair: { ImageNumber: cellData.ImageNumber, ObjectNumber: cellData.ObjectNumber },
+			};
+		});
+
+		const newTileState = {
+			negative: cellStates.filter((e, idx) => classes[idx] === 0),
+			positive: cellStates.filter((e, idx) => classes[idx] === 1),
+			unclassified: cellStates.filter((e, idx) => classes[idx] === -1),
+		};
+		// console.log(newTileState);
+		return newTileState;
 	}
 
 	function onChange(sourceId, sourceIndex, targetIndex, targetId) {
@@ -578,6 +839,8 @@ function TestUIMVP() {
 				[targetId]: result[1],
 			});
 		}
+		// console.log(tileState, sourceId, tileState[sourceId]);
+		// console.log('s', sourceIndex, 't', targetIndex);
 
 		const result = swap(tileState[sourceId], sourceIndex, targetIndex);
 		return setTileState({
@@ -595,7 +858,7 @@ function TestUIMVP() {
 		setOpenFetchDropdown(false);
 		handleCloseFetchDropDown('ImageNumber');
 	};
-
+	console.log('Load the App');
 	return (
 		<GridContextProvider onChange={onChange}>
 			{/* <Paper variant="outlined" style = {{height: '100%', width: '80%', margin:"3%"}}> */}
@@ -612,161 +875,186 @@ function TestUIMVP() {
 							marginBottom: '2%',
 						}}
 					></Image>
-					<Col style={{ left: '35%'}}>
-					<Help></Help>
+					<Col style={{ left: '35%' }}>
+						<Help></Help>
 					</Col>
 
 					<Col style={{ left: '20%', right: 5 }}>
 						<UploadButton
-						handleUpload = {handleUpload}
-						uploadButtonEnabled = {uploadButtonEnabled}
-						uploading = {uploading}
-						success = {success}
+							handleUpload={handleUpload}
+							uploadButtonEnabled={uploadButtonEnabled}
+							uploading={uploading}
+							success={success}
 						></UploadButton>
 					</Col>
 					<Col style={{ left: '5%' }}>
 						<DownloadButton
-						downloadButtonEnabled={downloadButtonEnabled}
-						handleDownload={handleDownload}
+							downloadButtonEnabled={downloadButtonEnabled}
+							handleDownload={handleDownload}
 						></DownloadButton>
 					</Col>
 				</Row>
-				
+
 				<Row>
-				<Paper 
-				 variant="outlined"
-				//color="primary"
-				//elevation={3} 
-				style = {{marginLeft: "30%", marginRight: "30%", height: 75, width: 550,
-						outlineColor: "#6697CD"
-				//boxShadow: "0px 3px 1px -2px #6697CD,0px 2px 2px 0px #6697CD ,0px 1px 5px 0px #6697CD"
-	
-			}}
-				 >
-					<Grid container justify="center" spacing={2} style={{ marginBottom: 10, marginTop: 10 }}>
-						<Grid key={0} item>
-							<Button
-								disabled={!fetchButtonEnabled}
-								variant="contained"
-								aria-controls="simple-menu"
-								aria-haspopup="true"
-								onClick={handleClickFetchDropDown}
-							>
-								Fetch
-							</Button>
-							<Menu
-								id="simple-menu"
-								anchorEl={anchorEl}
-								keepMounted
-								open={Boolean(anchorEl)}
-								onClose={() => handleCloseFetchDropDown(null)}
-							>
-								<MenuItem onClick={() => handleCloseFetchDropDown('Random')}>Random</MenuItem>
-								<MenuItem onClick={() => handleCloseFetchDropDown('Positive')}>Positive</MenuItem>
-								<MenuItem onClick={() => handleCloseFetchDropDown('Negative')}>Negative</MenuItem>
-								<MenuItem onClick={handleClickOpenImNumFetchDropdown}>By Image</MenuItem>
-								<MenuItem onClick={() => handleCloseFetchDropDown('TrainingPositive')}>
-									Training Set Positive
-								</MenuItem>
-								<MenuItem onClick={() => handleCloseFetchDropDown('TrainingNegative')}>
-									Training Set Negative
-								</MenuItem>
-								<MenuItem onClick={() => handleCloseFetchDropDown('Confusing')}>Confusing</MenuItem>
+					<Paper
+						variant="outlined"
+						//color="primary"
+						//elevation={3}
+						style={{
+							marginLeft: '30%',
+							marginRight: '30%',
+							height: 75,
+							width: 550,
+							outlineColor: '#6697CD',
+							//boxShadow: "0px 3px 1px -2px #6697CD,0px 2px 2px 0px #6697CD ,0px 1px 5px 0px #6697CD"
+						}}
+					>
+						<Grid container justify="center" spacing={2} style={{ marginBottom: 10, marginTop: 10 }}>
+							<Grid key={0} item>
+								<Button
+									disabled={!fetchButtonEnabled}
+									variant="contained"
+									aria-controls="simple-menu"
+									aria-haspopup="true"
+									onClick={handleClickFetchDropDown}
+								>
+									Fetch
+								</Button>
+								<Menu
+									id="simple-menu"
+									anchorEl={anchorEl}
+									keepMounted
+									open={Boolean(anchorEl)}
+									onClose={() => handleCloseFetchDropDown(null)}
+									onSubmit={(e) => {
+										e.preventDefault();
+										handleCloseFetchDropDown(null);
+									}}
+								>
+									<MenuItem onClick={() => handleCloseFetchDropDown('Random')}>Random</MenuItem>
+									<MenuItem onClick={() => handleCloseFetchDropDown('Positive')}>Positive</MenuItem>
+									<MenuItem onClick={() => handleCloseFetchDropDown('Negative')}>Negative</MenuItem>
+									<MenuItem onClick={handleClickOpenImNumFetchDropdown}>By Image</MenuItem>
+									<MenuItem onClick={() => handleCloseFetchDropDown('Confusing')}>Confusing</MenuItem>
+									<MenuItem onClick={() => handleCloseFetchDropDown('MorePositive')}>
+										More Positive
+									</MenuItem>
+									<MenuItem onClick={() => handleCloseFetchDropDown('MoreNegative')}>
+										More Negative
+									</MenuItem>
+									<MenuItem onClick={() => handleCloseFetchDropDown('TrainingPositive')}>
+										Training Set Positive
+									</MenuItem>
+									<MenuItem onClick={() => handleCloseFetchDropDown('TrainingNegative')}>
+										Training Set Negative
+									</MenuItem>
 
-								<Dialog open={openFetchDropdown} onClose={() => handleCloseFetchDropDown(null)}>
-									<DialogTitle>
-										{/* <Typography variant="h3" align="center"> */}
+									<Dialog open={openFetchDropdown} onClose={() => handleCloseFetchDropDown(null)}>
+										<DialogTitle>
+											{/* <Typography variant="h3" align="center"> */}
 											Fetch By Image
-										{/* </Typography> */}
-									</DialogTitle>
+											{/* </Typography> */}
+										</DialogTitle>
+										<DialogContent>
+											<DialogContentText>
+												Select the image number you would like to fetch from.
+											</DialogContentText>
+											<form
+												noValidate
+												onSubmit={(e) => {
+													e.preventDefault();
+													handleClickCloseImNumFetchDropdown();
+												}}
+											>
+												<FormControl>
+													<TextField
+														onChange={(event) => {
+															if (
+																event.target.value === null ||
+																event.target.value === undefined ||
+																event.target.value === ''
+															) {
+																return;
+															}
+															setSelectedFetchImageNumber(parseInt(event.target.value));
+															setFetchImageNumberButtonEnabled(true);
+														}}
+														type="number"
+														inputProps={{ step: 1, min: 1 }}
+														value={selectedFetchImageNumber}
+														label="Image Number"
+													></TextField>
+												</FormControl>
+											</form>
+										</DialogContent>
+										<DialogActions>
+											<Button
+												disabled={!fetchImageNumberButtonEnabled}
+												onClick={handleClickCloseImNumFetchDropdown}
+												color="primary"
+											>
+												Ok
+											</Button>
+										</DialogActions>
+									</Dialog>
+								</Menu>
+							</Grid>
+
+							<Grid key={1} item>
+								{/* style = {{height: "5vw", width:"10vw", minHeight:2, maxHeight: 35, maxwidth: 50, fontSize: "max(1.5vw, 20)"}}  */}
+								<Button disabled={!trainButtonEnabled} variant="contained" onClick={handleTrain}>
+									Train
+								</Button>
+								<Dialog fullWidth={500} open={openTrainDropdown}>
+									<DialogTitle>Training the Classifier</DialogTitle>
 									<DialogContent>
-										<DialogContentText>
-											Select the image number you would like to fetch from.
-										</DialogContentText>
-										<form noValidate>
-											<FormControl>
-												<TextField
-													onChange={(event) => {
-														if (
-															event.target.value === null ||
-															event.target.value === undefined ||
-															event.target.value === ''
-														) {
-															return;
-														}
-														setSelectedFetchImageNumber(event.target.value);
-														setFetchImageNumberButtonEnabled(true);
-													}}
-													type="number"
-													label="Image Number"
-												></TextField>
-											</FormControl>
-										</form>
+										<div width={300} ref={trainingAccuracyCanvasParentRef}></div>
+										<div width={300} ref={trainingLossCanvasParentRef}></div>
 									</DialogContent>
-									<DialogActions>
-										<Button
-											disabled={!fetchImageNumberButtonEnabled}
-											onClick={handleClickCloseImNumFetchDropdown}
-											color="primary"
-										>
-											Ok
-										</Button>
-									</DialogActions>
 								</Dialog>
-							</Menu>
-						</Grid>
+							</Grid>
 
-						<Grid key={1} item>
-							{/* style = {{height: "5vw", width:"10vw", minHeight:2, maxHeight: 35, maxwidth: 50, fontSize: "max(1.5vw, 20)"}}  */}
-							<Button disabled={!trainButtonEnabled} variant="contained" onClick={handleTrain}>
-								Train
-							</Button>
-							<Dialog fullWidth={500} open={openTrainDropdown}>
-								<DialogTitle>Training the Classifier</DialogTitle>
-								<DialogContent>
-									<div width={300} ref={trainingAccuracyCanvasParentRef}></div>
-									<div width={300} ref={trainingLossCanvasParentRef}></div>
-								</DialogContent>
-							</Dialog>
-						</Grid>
+							<Grid key={2} item>
+								{/* <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button>  */}
+								{/* TODO: need to fix button disabled DONE*/}
+								{!evaluateButtonEnabled ? (
+									<Button disabled={!evaluateButtonEnabled} variant="contained" onClick={() => {}}>
+										Evaluate
+									</Button>
+								) : (
+									<Evaluate confusionMatrix={confusionMatrix}></Evaluate>
+								)}
+							</Grid>
 
-						<Grid key={2} item>
-							{/* <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button>  */}
-							{/* TODO: need to fix button disabled DONE*/}
-							{!evaluateButtonEnabled ? (
-								<Button disabled={!evaluateButtonEnabled} variant="contained" onClick={() => {}}>
-									Evaluate
-								</Button>
-							) : (
-								<Evaluate confusionMatrix={confusionMatrix}></Evaluate>
-							)}
-						</Grid>
+							<Grid key={3} item>
+								{/* <Button  disabled={!scoreAllButtonEnabled} variant="contained" onClick={()=>{}}>Score All</Button> */}
+								{/* TODO: need to fix button disabled DONE*/}
 
-						<Grid key={3} item>
-							{/* <Button  disabled={!scoreAllButtonEnabled} variant="contained" onClick={()=>{}}>Score All</Button> */}
-							{/* TODO: need to fix button disabled DONE*/}
-
-							{!evaluateButtonEnabled ? (
-								<Button disabled={!evaluateButtonEnabled} variant="contained" onClick={handleScoreAll}>
-									Score All
-								</Button>
-							) : (
-								<ScoreAll
-									histogramData={histogramData}
-									scoreTable={scoreTable}
-									handleScoreAll={handleScoreAll}
-									scoreTableIsUpToDate={scoreTableIsUpToDate}
-									// downloadScoreTableFunction={downloadScoreTableFunction}
-									scoreTableCsvString={scoreTableCsvString}
-									alpha={alpha}
-									beta= {beta}
-								></ScoreAll>
-							)}
+								{!evaluateButtonEnabled ? (
+									<Button
+										disabled={!evaluateButtonEnabled}
+										variant="contained"
+										onClick={handleScoreAll}
+									>
+										Score All
+									</Button>
+								) : (
+									<ScoreAll
+										histogramData={histogramData}
+										scoreTable={scoreTable}
+										handleScoreAll={handleScoreAll}
+										scoreTableIsUpToDate={scoreTableIsUpToDate}
+										// downloadScoreTableFunction={downloadScoreTableFunction}
+										scoreTableCsvString={scoreTableCsvString}
+										alphas={scoreAlphas}
+										handleOpenBigPicture={handleOpenBigPicture}
+									></ScoreAll>
+								)}
+							</Grid>
 						</Grid>
-					</Grid>
 					</Paper>
 				</Row>
-				
+
 				<div>
 					<label
 						style={{
@@ -813,7 +1101,7 @@ function TestUIMVP() {
 										<div className="grid-item">
 											<div
 												onDoubleClick={() => {
-													console.log('double click: ' + item.info);
+													// console.log('double click: ' + item.info);
 													handleOpenCellBigPicture(item.cellPair);
 												}}
 												className="grid-item-content"
@@ -879,87 +1167,144 @@ function TestUIMVP() {
 					</Row>
 
 					<Row>
-						<GridDropZone
-							className="dropzone positive"
-							id="positive"
-							boxesPerRow={4}
-							rowHeight={80}
-							style={{ height: '20vw', maxHeight: 200, minHeight: 150 }}
-						>
-							{tileState.positive.map((item) => (
-								<GridItem
-									className="hoverTest"
-									style={{
-										height: '15vw',
-										width: '15vw',
-										minHeight: 80,
-										minWidth: 80,
-										maxHeight: 105,
-										maxWidth: 105,
-										padding: 10,
-									}}
-									key={item.id}
-								>
-									<div className="grid-item">
-										<div
-											onDoubleClick={() => {
-												console.log('double click: ' + item.info);
-												handleOpenCellBigPicture(item.cellPair);
-											}}
-											className="grid-item-content"
-											style={{
-												backgroundImage: `url(${item.address})`,
-												height: '5vw',
-												width: '5vw',
-											}}
-										>
-											<span className="hoverText">{item.info}</span>
-										</div>
-									</div>
-								</GridItem>
-							))}
-						</GridDropZone>
+						<div style={{ width: '39%', marginLeft: '11%' }}>
+							<div
+								style={{
+									height: '200px',
+									width: '100%',
+									overflowY: 'scroll',
+									overflowX: 'hidden',
+									// msOverflowY: 'scroll',
+									// msOverflowStyle: 'none',
 
-						<GridDropZone
-							className="dropzone negative"
-							id="negative"
-							boxesPerRow={4}
-							rowHeight={80}
-							style={{ height: '20vw', maxHeight: 200, minHeight: 150 }}
-						>
-							{tileState.negative.map((item) => (
-								<GridItem
-									className="hoverTest"
+									// scrollbarWidth: 'none',
+								}}
+							>
+								<GridDropZone
+									className="dropzone positive"
+									id="positive"
+									boxesPerRow={4}
+									rowHeight={80}
 									style={{
-										height: '15vw',
-										width: '15vw',
-										minHeight: 80,
-										minWidth: 80,
-										maxHeight: 105,
-										maxWidth: 105,
-										padding: 10,
+										height: 80 * Math.floor(tileState.positive.length / 4 + 1),
+										minHeight: 240,
+										width: '100%',
+										overflowY: 'hidden',
+										// marginLeft: '22%',
+										alignSelf: 'flex-end',
+										// marginRight: '11%',
 									}}
-									key={item.address}
 								>
-									<div className="grid-item">
-										<div
-											onDoubleClick={() => {
-												console.log('double click: ' + item.info);
-												handleOpenCellBigPicture(item.cellPair);
-											}}
-											className="grid-item-content"
-											style={{
-												backgroundImage: `url(${item.address})`,
-												height: '5vw',
-												width: '5vw',
-											}}
-										>
-											<span className="hoverText">{item.info}</span>
-										</div>
-									</div>
-								</GridItem>
-							))}
-						</GridDropZone>
+									{!initialFetchingPositiveNegative ? (
+										tileState.positive.map((item) => (
+											<GridItem
+												className="hoverTest"
+												style={{
+													height: '15vw',
+													width: '15vw',
+													minHeight: 80,
+													minWidth: 80,
+													maxHeight: 105,
+													maxWidth: 105,
+													padding: 10,
+												}}
+												key={item.id}
+											>
+												<div className="grid-item">
+													<div
+														onDoubleClick={() => {
+															// console.log('double click: ' + item.info);
+															handleOpenCellBigPicture(item.cellPair);
+														}}
+														className="grid-item-content"
+														style={{
+															backgroundImage: `url(${item.address})`,
+															height: '5vw',
+															width: '5vw',
+														}}
+													>
+														<span className="hoverText">{item.info}</span>
+													</div>
+												</div>
+											</GridItem>
+										))
+									) : (
+										<CircularProgress
+											style={{ height: '6vw', width: '6vw', marginTop: '15%', marginLeft: '43%' }}
+										/>
+									)}
+								</GridDropZone>
+							</div>
+						</div>
+						<div style={{ width: '39%', marginRight: '11%' }}>
+							<div
+								style={{
+									height: '200px',
+									width: '100%',
+									overflowY: 'scroll',
+									overflowX: 'hidden',
+
+									// msOverflowY: 'scroll',
+									// msOverflowStyle: 'none',
+
+									// scrollbarWidth: 'none',
+								}}
+							>
+								<GridDropZone
+									className="dropzone negative"
+									id="negative"
+									boxesPerRow={4}
+									rowHeight={80}
+									style={{
+										height: 80 * Math.floor(tileState.negative.length / 4 + 1),
+										minHeight: 240,
+										marginRight: '22%',
+										width: '100%',
+										overflowY: 'hidden',
+										alignSelf: 'flex-start',
+									}}
+								>
+									{!initialFetchingPositiveNegative ? (
+										tileState.negative.map((item) => (
+											<GridItem
+												className="hoverTest"
+												style={{
+													height: '15vw',
+													width: '15vw',
+													minHeight: 80,
+													minWidth: 80,
+													maxHeight: 105,
+													maxWidth: 105,
+													padding: 10,
+												}}
+												key={item.address}
+											>
+												<div className="grid-item">
+													<div
+														onDoubleClick={() => {
+															// console.log('double click: ' + item.info);
+															handleOpenCellBigPicture(item.cellPair);
+														}}
+														className="grid-item-content"
+														style={{
+															backgroundImage: `url(${item.address})`,
+															height: '5vw',
+															width: '5vw',
+														}}
+													>
+														<span className="hoverText">{item.info}</span>
+													</div>
+												</div>
+											</GridItem>
+										))
+									) : (
+										<CircularProgress
+											style={{ height: '6vw', width: '6vw', marginTop: '15%', marginLeft: '43%' }}
+										/>
+									)}
+								</GridDropZone>
+							</div>
+						</div>
 					</Row>
 				</div>
 			</div>

@@ -19,7 +19,6 @@ function ScoreAllGraph(props) {
 		setBinWidth(datum.x1 - datum.x0);
 	}, [histRef]);
 	useEffect(() => {
-		console.log('alphas:', props.alphas);
 		if (props.alphas) {
 			setAlphaValue(props.alphas[1]);
 			setBetaValue(props.alphas[0]);
@@ -27,14 +26,16 @@ function ScoreAllGraph(props) {
 	}, [props.alphas]);
 
 	useEffect(() => {
-		let newMax = 0;
-		for (let i = 0; i < props.histogramData.length; i++) {
-			if (newMax < props.histogramData[i].x) {
-				newMax = props.histogramData[i].x;
+		if (props.histogramData) {
+			let newMax = 0;
+			for (let i = 0; i < props.histogramData.length; i++) {
+				if (newMax < props.histogramData[i].x) {
+					newMax = props.histogramData[i].x;
+				}
 			}
+			console.log(newMax);
+			setMaximum(newMax);
 		}
-		console.log(newMax);
-		setMaximum(newMax);
 	}, [props.histogramData]);
 
 	return (
@@ -63,11 +64,13 @@ function ScoreAllGraph(props) {
 							: undefined
 					}
 				/>
-				<VictoryLine
-					style={{ data: { stroke: 'purple' } }}
-					y={(datum) => beta_pdf(datum.x, alphaValue, betaValue) * binWidth * props.histogramData.length}
-					samples={150}
-				/>
+				{props.histogramData ? (
+					<VictoryLine
+						style={{ data: { stroke: 'purple' } }}
+						y={(datum) => beta_pdf(datum.x, alphaValue, betaValue) * binWidth * props.histogramData.length}
+						samples={150}
+					/>
+				) : null}
 			</VictoryChart>
 		</div>
 	);

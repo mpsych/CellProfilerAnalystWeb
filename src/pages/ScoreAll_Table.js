@@ -137,7 +137,9 @@ export default function EnhancedTable(props) {
 		setPage(0);
 	};
 
-	const emptyRows = rowsPerPage - Math.min(rowsPerPage, props.scoreTable.length - page * rowsPerPage);
+	const emptyRows = props.scoreTable
+		? rowsPerPage - Math.min(rowsPerPage, props.scoreTable.length - page * rowsPerPage)
+		: 0;
 
 	return (
 		<div className={classes.root}>
@@ -154,35 +156,37 @@ export default function EnhancedTable(props) {
 							order={order}
 							orderBy={orderBy}
 							onRequestSort={handleRequestSort}
-							rowCount={props.scoreTable.length}
+							rowCount={props.scoreTable ? props.scoreTable.length : 0}
 						/>
 						<TableBody>
-							{stableSort(props.scoreTable, getComparator(order, orderBy))
-								.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-								.map((row, index) => {
-									return (
-										<TableRow hover>
-											<TableCell>
-												<a
-													onClick={() => {
-														console.log(props.handleOpenBigPicture);
-														props.handleOpenBigPicture(row.imageNumber);
-														console.log('clicked cell');
-														console.log(row.imageNumber);
-													}}
-													href="#"
-												>
-													{row.imageNumber}
-												</a>
-											</TableCell>
-											<TableCell padding="none">{row.total}</TableCell>
-											<TableCell padding="none">{row.positive}</TableCell>
-											<TableCell padding="none">{row.negative}</TableCell>
-											<TableCell padding="none">{row.ratio.toFixed(3)}</TableCell>
-											<TableCell padding="none">{row.adjustratio.toFixed(3)}</TableCell>
-										</TableRow>
-									);
-								})}
+							{props.scoreTable
+								? stableSort(props.scoreTable, getComparator(order, orderBy))
+										.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+										.map((row, index) => {
+											return (
+												<TableRow hover>
+													<TableCell>
+														<a
+															onClick={() => {
+																console.log(props.handleOpenBigPicture);
+																props.handleOpenBigPicture(row.imageNumber);
+																console.log('clicked cell');
+																console.log(row.imageNumber);
+															}}
+															href="#"
+														>
+															{row.imageNumber}
+														</a>
+													</TableCell>
+													<TableCell padding="none">{row.total}</TableCell>
+													<TableCell padding="none">{row.positive}</TableCell>
+													<TableCell padding="none">{row.negative}</TableCell>
+													<TableCell padding="none">{row.ratio.toFixed(3)}</TableCell>
+													<TableCell padding="none">{row.adjustratio.toFixed(3)}</TableCell>
+												</TableRow>
+											);
+										})
+								: null}
 							{emptyRows > 0 && (
 								<TableRow style={{ height: (dense ? 33 : 53) * emptyRows }}>
 									<TableCell colSpan={6} />
@@ -194,7 +198,7 @@ export default function EnhancedTable(props) {
 				<TablePagination
 					rowsPerPageOptions={[5, 10, 25]}
 					component="div"
-					count={props.scoreTable.length}
+					count={props.scoreTable ? props.scoreTable.length : 0}
 					rowsPerPage={rowsPerPage}
 					page={page}
 					onChangePage={handleChangePage}

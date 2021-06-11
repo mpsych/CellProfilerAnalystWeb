@@ -24,7 +24,6 @@ self.onmessage = async (event) => {
 			const learningRate = 0.001;
 			self.classifier = self.createLogisticRegressionModel(featureIndices.length, learningRate);
 			const numberEpochs = 100;
-			// console.log(trainingData);
 			const tf_dataset = self.createDatasetFromDataArrays(
 				trainingData,
 				trainingLabels,
@@ -34,11 +33,9 @@ self.onmessage = async (event) => {
 			// mutates model to be trained
 			await self.basicTrainPromise(self.classifier, tf_dataset, numberEpochs);
 
-			// console.log('finished training, start predicting');
 			const testDataTensor = self.createTestset(trainingData, featureIndices);
 
 			const predictions = self.predict(self.classifier, testDataTensor);
-			// console.log(predictions);
 			self.confusionMatrix = self.createConfusionMatrix(predictions, trainingLabels);
 
 			self.postMessage({ uuid: event.data.uuid });
@@ -56,28 +53,18 @@ self.onmessage = async (event) => {
 				self.postMessage({ filteredCellPairs: [], uuid: UUID });
 				return;
 			}
-			// console.log(cellPairs, classType);
 			self.workerActionPromise(dataWorkerPort, 'get', {
 				getType: 'objectRowsFromCellpairs',
 				getArgs: { cellPairs },
 			}).then((event) => {
 				const objectRows = event.data.getResult;
-				// const objectRows = self.trainingData
-				// console.log(objectRows, self.trainingLabels);
 				const testDataTensor = self.createTestset(objectRows, self.featureIndices);
 
 				const predictions = self.predict(self.classifier, testDataTensor);
 
 				const labelsToLookFor = classType === 'Positive' ? 1 : 0;
-				// console.log(
-				// 	predictions,
-				// 	predictions.map((e) => e === labelsToLookFor)
-				// );
 				const includeCellPairs = predictions.map((e) => e === labelsToLookFor);
-				// console.log(labelsToLookFor);
-				// console.log(cellPairs);
 				const filteredCellPairs = cellPairs.filter((element, idx) => includeCellPairs[idx]);
-				// console.log(filteredCellPairs);
 				self.postMessage({ filteredCellPairs, uuid: UUID });
 			});
 			break;
@@ -109,7 +96,6 @@ self.onmessage = async (event) => {
 			const { cellPairs } = event.data;
 			const { classType } = event.data;
 			const { uuid: UUID } = event.data;
-			console.log(cellPairs, classType, UUID);
 			const cellPairIndices = cellPairs.map((e, idx) => idx);
 
 			let sortingFactor = 0;
@@ -150,12 +136,10 @@ self.onmessage = async (event) => {
 			break;
 		case 'startTrainingGraphsConnection':
 			self.canvasUUID = event.data.uuid;
-			// console.log(self.canvasUUID);
 			self.postMessage({ uuid: event.data.uuid });
 			break;
 		case 'endTrainingGraphsConnection':
 			self.canvasUUID = null;
-			// console.log('ended');
 			self.postMessage({ uuid: event.data.uuid });
 			break;
 		case 'printObjectDataRow':
@@ -169,7 +153,6 @@ self.onmessage = async (event) => {
 				const objectData = event.data.getResult;
 				const testDataTensor = self.createTestset(objectData, self.featureIndices);
 				const objectPredictions = self.predict(self.classifier, testDataTensor);
-				// console.log(objectPredictions);
 				const imageToCountsMap = {};
 				for (var i = 0; i < objectPredictions.length; i++) {
 					const imageNumber = objectData[i][0];
@@ -178,12 +161,10 @@ self.onmessage = async (event) => {
 					}
 					imageToCountsMap[imageNumber][objectPredictions[i]]++;
 				}
-				// console.log(imageToCountsMap);
 				const imageNumbers = Object.keys(imageToCountsMap);
 				const counts = imageNumbers.map((imageNumber) => imageToCountsMap[imageNumber]);
 
 				const alphas = self.fitBetaDistribution(counts);
-				// console.log(alphas);
 
 				var ratios = {};
 				for (var i = 0; i < imageNumbers.length; i++) {
@@ -203,7 +184,6 @@ self.onmessage = async (event) => {
 					// choose the alpha corresponding to the 1-index positive
 					adjustedRatios[imageNumber] = (positiveCount + alphas[1]) / (totalCount + alphas[1] + alphas[0]);
 				}
-				// console.log(adjustedRatios);
 
 				const scoreTableObject = {
 					imageToCountsMap,
@@ -216,7 +196,6 @@ self.onmessage = async (event) => {
 			});
 			break;
 		case 'getClassifier':
-			// console.log('save to indexeddb');
 			self.classifier.save(`indexeddb://${self.classifierType}`).then(() => {
 				self.postMessage({ uuid: event.data.uuid });
 			});
@@ -227,7 +206,6 @@ self.onmessage = async (event) => {
 			console.log('initial entry train and predict classifierworker send to dataworker for object data');
 
 			self.dataWorkerActionPromise('getObjectData', async (event) => {
-				// console.log('start training after getting back from dataworker');
 				const featureIndices = [30, 31];
 				const batchSize = 32;
 				const objectDataSubset = event.data.objectData.slice(0, 100);
@@ -243,9 +221,7 @@ self.onmessage = async (event) => {
 				// mutates model to be trained
 				await self.basicTrainPromise(model, tf_dataset, numberEpochs);
 
-				// console.log('finished training, start predicting');
 				const testDataTensor = self.createTestset(event.data.objectData, featureIndices);
-				// console.log(self.predict(model, testDataTensor));
 				self.classifier = model;
 			});
 			break;
@@ -257,8 +233,6 @@ self.onmessage = async (event) => {
 };
 
 self.workerActionPromise = function (worker, action, data) {
-	// console.log(worker, action, data);
-
 	const { v4: uuidv4 } = uuid;
 	const UUID = uuidv4();
 
@@ -278,7 +252,6 @@ self.workerActionPromise = function (worker, action, data) {
 self.dataWorkerActionPromise = function (action, callback) {
 	const { v4: uuidv4 } = uuid;
 	const UUID = uuidv4();
-	// console.log('DataWorkerActionPromise: ' + UUID, 'started call: ' + action);
 
 	return new Promise((resolve) => {
 		self.dataWorkerPort.addEventListener(
@@ -297,15 +270,10 @@ self.dataWorkerActionPromise = function (action, callback) {
 };
 
 self.handleDataWorkerMessage = function (event) {
-	// console.log('classifier worker received data worker data normal way');
-	// console.log(event.data);
 	switch (event.data.action) {
 		case 'printObjectDataRow':
-			// console.log(event.data.objectData[0]);
-
 			break;
 		case 'trainAndPredict':
-			// console.log('start training after getting back from dataworker');
 			const featureIndices = [30, 31];
 			const batchSize = 32;
 			const objectDataSubset = event.data.objectData.slice(0, 100);
@@ -315,15 +283,12 @@ self.handleDataWorkerMessage = function (event) {
 			const tf_dataset = self.createDatasetFromDataArrays(objectDataSubset, labels, featureIndices, batchSize);
 			// mutates model to be trained
 			self.basicTrainPromise(model, tf_dataset, numberEpochs).then(() => {
-				// console.log('finished training, start predicting');
 				const testDataTensor = self.createTestset(event.data.objectData, featureIndices);
-				// console.log(self.predict(model, testDataTensor));
 			});
 			break;
 		default:
 			break;
 	}
-	// console.log(event.data)
 };
 
 /*
