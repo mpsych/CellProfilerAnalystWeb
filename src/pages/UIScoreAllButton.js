@@ -32,8 +32,7 @@ export default function DialogForCanvas(props) {
 		setOpen(false);
 	};
 	console.log(props.scoreTableCsvString);
-	console.log(props.alpha);
-	console.log(props.beta);
+	console.log(props.alphas);
 	// const downloadCSV = () => downloadFile(props.scoreTableCsvString);
 	return (
 		<div>

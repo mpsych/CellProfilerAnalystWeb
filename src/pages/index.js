@@ -5,8 +5,13 @@ import logo from '../cpa_logo(blue).png';
 import { Image, Dropdown, DropdownButton } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.css';
 import SaveAltIcon from '@material-ui/icons/SaveAlt';
+import clsx from 'clsx';
+import { makeStyles } from '@material-ui/core/styles';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import { green } from '@material-ui/core/colors';
 import Fab from '@material-ui/core/Fab';
+import CheckIcon from '@material-ui/icons/Check';
+import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
@@ -18,13 +23,13 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import InputLabel from '@material-ui/core/InputLabel';
 import Select from '@material-ui/core/Select';
 import Tooltip from '@material-ui/core/Tooltip';
-import UploadButton from './UploadButton';
 import Paper from '@material-ui/core/Paper';
 
 import Evaluate from './AbbyUIButtons/UIEvaluateButton';
 import ScoreAll from './UIScoreAllButton';
 import { v4 as uuidv4 } from 'uuid';
 import Help from './Help';
+
 import jones from '../jones.jpg';
 
 import { GridContextProvider, GridDropZone, GridItem, swap, move } from 'react-grid-dnd';
@@ -33,6 +38,8 @@ import '../dndstyles.css';
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
 import { downloadFile } from '../downloadFile';
+import UploadButton from './UploadButton';
+import DownloadButton from './DownloadButton';
 
 function TestUIMVP() {
 	const [anchorEl, setAnchorEl] = React.useState(null);
@@ -71,6 +78,8 @@ function TestUIMVP() {
 	const [scoreTable, setScoreTable] = React.useState([]);
 	const [scoreAlphas, setScoreAlphas] = React.useState();
 	const [histogramData, setHistogramData] = React.useState([]);
+	const [alpha, setAlpha] = React.useState(null);
+	const [beta, setBeta] = React.useState(null);
 
 	const trainingLossCanvasParentRef = React.useRef();
 	const trainingAccuracyCanvasParentRef = React.useRef();
@@ -117,11 +126,6 @@ function TestUIMVP() {
 		});
 		return worker;
 	};
-
-	// const classes = useStyles();
-	// const buttonClassname = clsx({
-	// 	[classes.buttonSuccess]: success,
-	// });
 
 	const N = 20;
 	const MAX_ITERATION_COUNT = 1000;
@@ -614,12 +618,20 @@ function TestUIMVP() {
 					ratio: newScoreTableObject.ratios[key],
 					adjustratio: newScoreTableObject.adjustedRatios[key],
 				}));
+
+				const alphaValue = newScoreTableObject.alphas[1];
+				const betaValue = newScoreTableObject.alphas[0];
+
+				console.log(alphaValue);
+
 				const adjustedRatiosData = Object.values(newScoreTableObject.adjustedRatios).map((ratio) => ({
 					x: ratio,
 				}));
 				setHistogramData(adjustedRatiosData);
 				setScoreTable(scoreDataRows);
 				setCurrentlyScoring(false);
+				setAlpha(alphaValue);
+				setBeta(betaValue);
 				// setScoreTableObject(newScoreTableObject);
 				setScoreAlphas(newScoreTableObject.alphas);
 				console.log(newScoreTableObject);
@@ -865,38 +877,25 @@ function TestUIMVP() {
 						></UploadButton>
 					</Col>
 					<Col style={{ left: '5%' }}>
-						<Tooltip title="Download" aria-label="download">
-							<Fab
-								//	size="medium"
-								aria-label="save"
-								color="primary"
-								component="label"
-								disabled={!downloadButtonEnabled}
-								onClick={handleDownload}
-								// style={{ height: '5vw', width: '5vw'}}
-								style={{ positive: 'relative' }}
-							>
-								{' '}
-								<SaveAltIcon
-								// style={{ height: '50%', width: '50%' }}
-								/>
-							</Fab>
-						</Tooltip>
+						<DownloadButton
+							downloadButtonEnabled={downloadButtonEnabled}
+							handleDownload={handleDownload}
+						></DownloadButton>
 					</Col>
 				</Row>
 
 				<Row>
 					<Paper
 						variant="outlined"
-						color="primary"
+						//color="primary"
 						//elevation={3}
 						style={{
 							marginLeft: '30%',
 							marginRight: '30%',
 							height: 75,
 							width: 550,
-							boxShadow: '0px 3px 1px -2px #6697CD,0px 2px 2px 0px #6697CD ,0px 1px 5px 0px #6697CD',
-							//boxShadow: "blue"
+							outlineColor: '#6697CD',
+							//boxShadow: "0px 3px 1px -2px #6697CD,0px 2px 2px 0px #6697CD ,0px 1px 5px 0px #6697CD"
 						}}
 					>
 						<Grid container justify="center" spacing={2} style={{ marginBottom: 10, marginTop: 10 }}>
@@ -950,32 +949,31 @@ function TestUIMVP() {
 												Select the image number you would like to fetch from.
 											</DialogContentText>
 											<form
+												noValidate
 												onSubmit={(e) => {
 													e.preventDefault();
 													handleClickCloseImNumFetchDropdown();
 												}}
-												noValidate
-												autoComplete="off"
 											>
-												{/* <FormCo ntrol > */}
-												<TextField
-													onChange={(event) => {
-														if (
-															event.target.value === null ||
-															event.target.value === undefined ||
-															event.target.value === ''
-														) {
-															return;
-														}
-														setSelectedFetchImageNumber(parseInt(event.target.value));
-														setFetchImageNumberButtonEnabled(true);
-													}}
-													type="number"
-													inputProps={{ step: 1, min: 1 }}
-													value={selectedFetchImageNumber}
-													label="Image Number"
-												></TextField>
-												{/* </FormControl> */}
+												<FormControl>
+													<TextField
+														onChange={(event) => {
+															if (
+																event.target.value === null ||
+																event.target.value === undefined ||
+																event.target.value === ''
+															) {
+																return;
+															}
+															setSelectedFetchImageNumber(parseInt(event.target.value));
+															setFetchImageNumberButtonEnabled(true);
+														}}
+														type="number"
+														inputProps={{ step: 1, min: 1 }}
+														value={selectedFetchImageNumber}
+														label="Image Number"
+													></TextField>
+												</FormControl>
 											</form>
 										</DialogContent>
 										<DialogActions>
@@ -1035,9 +1033,9 @@ function TestUIMVP() {
 										scoreTable={scoreTable}
 										handleScoreAll={handleScoreAll}
 										scoreTableIsUpToDate={scoreTableIsUpToDate}
-										alphas={scoreAlphas}
 										// downloadScoreTableFunction={downloadScoreTableFunction}
 										scoreTableCsvString={scoreTableCsvString}
+										alphas={scoreAlphas}
 										handleOpenBigPicture={handleOpenBigPicture}
 									></ScoreAll>
 								)}

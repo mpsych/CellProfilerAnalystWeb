@@ -20,8 +20,10 @@ function ScoreAllGraph(props) {
 	}, [histRef]);
 	useEffect(() => {
 		console.log('alphas:', props.alphas);
-		setAlphaValue(props.alphas[1]);
-		setBetaValue(props.alphas[0]);
+		if (props.alphas) {
+			setAlphaValue(props.alphas[1]);
+			setBetaValue(props.alphas[0]);
+		}
 	}, [props.alphas]);
 
 	useEffect(() => {
