@@ -937,10 +937,10 @@ function TestUIMVP() {
 									<MenuItem onClick={handleClickOpenImNumFetchDropdown}>By Image</MenuItem>
 									<MenuItem onClick={() => handleCloseFetchDropDown('Confusing')}>Confusing</MenuItem>
 									<MenuItem onClick={() => handleCloseFetchDropDown('MorePositive')}>
-										More Positive
+										Most Positive
 									</MenuItem>
 									<MenuItem onClick={() => handleCloseFetchDropDown('MoreNegative')}>
-										More Negative
+										Most Negative
 									</MenuItem>
 									<MenuItem onClick={() => handleCloseFetchDropDown('TrainingPositive')}>
 										Training Set Positive
