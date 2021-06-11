@@ -62,7 +62,7 @@ export default function DialogForCanvas(props) {
 							</IconButton>
 						</Row>
 					
-						<h6 style={{marginLeft: 30, bottom: 0 }}>Alpha: {props.alpha}   Beta: {props.beta} </h6>
+						{/* <h6 style={{marginLeft: 30, bottom: 0 }}>Alpha: {props.alpha}   Beta: {props.beta} </h6> */}
 			
 						
 						<ScoreAllHistagram style={{top: 0}} histogramData={props.histogramData}></ScoreAllHistagram>

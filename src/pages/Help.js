@@ -75,12 +75,12 @@ function Help(){
           <a href="https://cellprofiler.org/">https://cellprofiler.org/</a>
           <br></br>
           <br></br>
-          If you are just looking to give CPA Web a try, download the example data below: 
+          If you are just looking to give CPA Web a try, download the example data at the link below: 
           <br></br>
-          ***downloadable data***
+          <a href="https://cellprofileranalyst.org/examples">https://cellprofileranalyst.org/examples</a>
           <br></br>
           <br></br>
-          You will know your data is uploaded when you see the green check in place of the load data button. 
+          You will know your data is loaded when the green circle stops spinning. 
           <hr></hr>
           </DialogContentText>
           
@@ -124,7 +124,7 @@ function Help(){
           To evaluate the state of the machine learning model you can press the evaluate button to see the confusion matrix. 
           <br></br>
           <br></br>
-          To gain more  insight on the cell images, you can click on the score all button.
+          To gain more insight on the cell images scorings, you can click on the score all button.
           This displays a histogram of the data distribution and a table containing information about all the cell images, their total, positive, negative, ratio, and adjusted ratio values. 
           You can sort the values in the table from biggest to smallest by hovering over the column label and selecting the direction of the arrow. 
           You can download the CSV of the score all table by pressing the save icon in the right corner of the score all window. 
@@ -134,7 +134,7 @@ function Help(){
           <h5>Saving Your Work</h5>
           <DialogContentText>
           When you are satisfied with your model, simply click the download button in the
-          top right corner of the main screen to download your classification model. 
+          top right corner of the main screen to download your classification model and training set. 
           <hr></hr>
           </DialogContentText>
 
