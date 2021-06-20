@@ -99,6 +99,33 @@ class ImageProvider2 {
 		});
 	}
 
+	getImageDataNoScaling() {
+		this.setDimensionsofImg('object');
+		var main_canvas = new OffscreenCanvas(this.dimensions.x, this.dimensions.y);
+		var ctx = main_canvas.getContext('2d');
+		ctx.fillStyle = 'black';
+		ctx.fillRect(0, 0, main_canvas.width, main_canvas.height);
+
+		for (var i = 0; i < this.img_info.length; i++) {
+			var colorName = this.img_info[i].color.toString();
+
+			this.canvases[colorName] = this.createColorCanvas(
+				this.img_info[i].image,
+				colorName,
+				this.coords,
+				this.dimensions
+			);
+		}
+
+		ctx.globalCompositeOperation = 'lighter';
+		for (var i = 0; i < this.img_info.length; i++) {
+			var colorName = this.img_info[i].color;
+			ctx.drawImage(this.canvases[colorName], 0, 0);
+		}
+
+		return main_canvas.transferToImageBitmap();
+	}
+
 	async getDataURLPromise() {
 		this.setDimensionsofImg('object');
 		var main_canvas = new OffscreenCanvas(this.dimensions.x, this.dimensions.y);
@@ -204,8 +231,6 @@ class ImageProvider2 {
 				maxBlue = data[i + 2];
 			}
 		}
-
-		console.log(maxRed, maxGreen, maxBlue);
 
 		for (let i = 0; i < data.length; i += 4) {
 			if (maxRed > 25) data[i] = (data[i] / maxRed) * 170;
