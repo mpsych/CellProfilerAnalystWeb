@@ -102,6 +102,14 @@ function TestUIMVP() {
 	var __ = null;
 
 	React.useEffect(() => {
+		window.addEventListener('beforeunload', function (e) {
+			e.preventDefault();
+			e.returnValue = 'Sure?';
+			return 'Sure?';
+		});
+	}, []);
+
+	React.useEffect(() => {
 		const dataToCanvasWorkerChannel = new MessageChannel();
 		const dataToClassifierWorkerChannel = new MessageChannel();
 
@@ -286,7 +294,7 @@ function TestUIMVP() {
 			case 'Confusing': {
 				let event = await workerActionPromise(dataWebWorker, 'get', {
 					getType: 'cellPairs',
-					getArgs: { amount: 100 },
+					getArgs: { amount: 1000 },
 				});
 				const { getResult: cellPairs } = event.data;
 

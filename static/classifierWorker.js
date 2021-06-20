@@ -1,6 +1,8 @@
 // import tensorflow
 self.importScripts('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs');
 self.importScripts('classifierWorkerUtils.js');
+self.importScripts('https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet');
+self.importScripts('https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier');
 // self.importScripts("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis")
 console.log(typeof tf !== 'undefined' ? 'TensorFlow Loaded In WebWorker' : 'TensorFlow Failed To Load In WebWorker');
 // console.log(typeof tfvis !== "undefined"? "TensorFlow-Visor Loaded In WebWorker" : "TensorFlow-Visor Failed To Load In WebWorker")
@@ -15,28 +17,151 @@ self.onmessage = async (event) => {
 		case 'train':
 			const { trainingObject } = event.data;
 			// const featureIndices = [30,31]
-			const featureIndices = trainingObject.featureIndicesToUse;
+
 			self.classifierType = trainingObject.classifierType;
-			self.featureIndices = featureIndices;
 			const batchSize = 32;
-			self.trainingData = trainingObject.trainingData;
-			self.trainingLabels = trainingObject.trainingLabels;
+
 			const learningRate = 0.001;
-			self.classifier = self.createLogisticRegressionModel(featureIndices.length, learningRate);
 			const numberEpochs = 100;
-			const tf_dataset = self.createDatasetFromDataArrays(
-				trainingData,
-				trainingLabels,
-				featureIndices,
-				batchSize
-			);
-			// mutates model to be trained
-			await self.basicTrainPromise(self.classifier, tf_dataset, numberEpochs);
 
-			const testDataTensor = self.createTestset(trainingData, featureIndices);
+			switch (self.classifierType) {
+				case 'LogisticRegression': {
+					const trainingData = trainingObject.trainingData;
+					const trainingLabels = trainingObject.trainingLabels;
+					self.featureIndices = trainingObject.featureIndicesToUse;
 
-			const predictions = self.predict(self.classifier, testDataTensor);
-			self.confusionMatrix = self.createConfusionMatrix(predictions, trainingLabels);
+					self.classifier = self.createLogisticRegressionModel(self.featureIndices.length, learningRate);
+
+					const tf_dataset = self.createDatasetFromDataArrays(
+						trainingData,
+						trainingLabels,
+						featureIndices,
+						batchSize
+					);
+
+					// mutates model to be trained
+					await self.basicTrainPromise(self.classifier, tf_dataset, numberEpochs);
+
+					const testDataTensor = self.createTestset(trainingData, self.featureIndices);
+
+					const predictions = self.predict(self.classifier, testDataTensor);
+					self.confusionMatrix = self.createConfusionMatrix(predictions, trainingLabels);
+					break;
+				}
+				case 'HeadlessMobileNet+KNN': {
+					console.time('trainingCellPairs');
+					const trainingData = trainingObject.trainingData;
+					const trainingLabels = trainingObject.trainingLabels;
+					const trainingCellPairs = trainingData.map((row) => ({
+						ImageNumber: row[0],
+						ObjectNumber: row[1],
+					}));
+					console.timeEnd('trainingCellPairs');
+					console.time('get bitmaps');
+					let event = await self.workerActionPromise(self.canvasWorkerPort, 'get', {
+						getType: 'imageBitmapsUnscaledByCellPairs',
+						getArgs: { cellPairs: trainingCellPairs, transferable: true },
+					});
+					const imageBitmaps = event.data.getResult;
+					console.timeEnd('get bitmaps');
+					console.log(imageBitmaps);
+					console.time('load mobile');
+					const net = await mobilenet.load();
+					const classifier = knnClassifier.create();
+					console.timeEnd('load mobile');
+
+					// const result = await net.classify(imageBitmaps[0]);
+					// console.log(result);
+					const activations = [];
+					const predictions = [];
+					console.time('get activations and train knn');
+					for (let i = 0; i < imageBitmaps.length; i++) {
+						const activation = net.infer(imageBitmaps[i], true);
+						classifier.addExample(activation, trainingLabels[i]);
+						imageBitmaps[i].close();
+						activations.push(activation);
+					}
+					console.timeEnd('get activations and train knn');
+					console.time('predict with knn');
+					for (let i = 0; i < activations.length; i++) {
+						const result = await classifier.predictClass(activations[i], 7);
+						predictions.push(parseInt(result.label));
+					}
+					console.timeEnd('predict with knn');
+					self.confusionMatrix = self.createConfusionMatrix(predictions, trainingLabels);
+					console.log(self.confusionMatrix);
+					break;
+				}
+				case 'HeadlessMobileNet+LogisticRegression': {
+					console.time('trainingCellPairs');
+					const trainingData = trainingObject.trainingData;
+					const trainingLabels = trainingObject.trainingLabels;
+					const trainingCellPairs = trainingData.map((row) => ({
+						ImageNumber: row[0],
+						ObjectNumber: row[1],
+					}));
+					console.timeEnd('trainingCellPairs');
+					console.time('get bitmaps');
+					let event = await self.workerActionPromise(self.canvasWorkerPort, 'get', {
+						getType: 'imageBitmapsUnscaledByCellPairs',
+						getArgs: { cellPairs: trainingCellPairs, transferable: true },
+					});
+					const imageBitmaps = event.data.getResult;
+					console.timeEnd('get bitmaps');
+					console.log(imageBitmaps);
+					console.time('load mobile');
+					const net = await mobilenet.load();
+					// const classifier = knnClassifier.create();
+					console.timeEnd('load mobile');
+
+					// const result = await net.classify(imageBitmaps[0]);
+					// console.log(result);
+					const activations = [];
+					// const predictions = [];
+					console.time('get activations and train knn');
+					for (let i = 0; i < imageBitmaps.length; i++) {
+						const activation = net.infer(imageBitmaps[i], true);
+						// classifier.addExample(activation, trainingLabels[i]);
+						imageBitmaps[i].close();
+						activations.push(activation.squeeze());
+					}
+
+					self.classifier = self.createLogisticRegressionModel(activations[0].shape[0], learningRate);
+
+					const tf_activation_stack = tf.stack(activations);
+
+					const labels = self.labelsToOneHot(trainingLabels);
+					const tf_labels = tf.tensor(labels);
+					tf_activation_stack.print();
+					console.log(tf_activation_stack);
+					console.log(activations);
+					console.log(tf_labels);
+					tf_labels.print();
+					const tf_dataset = tf.data
+						.zip({ xs: tf.data.array(activations), ys: tf.data.array(labels) })
+						// .shuffle(5, Date.now() % 100000)
+						.batch(32);
+					// mutates model to be trained
+					await self.basicTrainPromise(self.classifier, tf_dataset, numberEpochs);
+
+					const testDataTensor = tf_activation_stack;
+
+					// const predictions = self.predict(self.classifier, testDataTensor);
+					// console.log(predictions);
+					// self.confusionMatrix = self.createConfusionMatrix(predictions, trainingLabels);
+					const value = await self.classifier.evaluateDataset(tf_dataset);
+					console.log(value);
+					value[0].print();
+					value[1].print();
+
+					break;
+				}
+				default: {
+					console.error('Invalid Model passed into ClassifierWorker.train');
+					self.postMessage({ uuid: event.data.uuid });
+					return;
+				}
+			}
 
 			self.postMessage({ uuid: event.data.uuid });
 			break;
@@ -110,7 +235,7 @@ self.onmessage = async (event) => {
 					`Incorrect classType: ${classType} passed to mostClassFilterCellPairs in classifierWorker`
 				);
 			}
-			self.workerActionPromise(dataWorkerPort, 'get', {
+			self.workerActionPromise(self.dataWorkerPort, 'get', {
 				getType: 'objectRowsFromCellpairs',
 				getArgs: { cellPairs },
 			}).then((event) => {
@@ -131,6 +256,10 @@ self.onmessage = async (event) => {
 			self.dataWorkerPort = event.ports[0];
 			self.dataWorkerPort.onmessage = handleDataWorkerMessage;
 			break;
+		case 'connectToCanvasWorker':
+			self.canvasWorkerPort = event.ports[0];
+			self.canvasWorkerPort.onmessage = () => {};
+			break;
 		case 'testSendToDataWorker':
 			self.dataWorkerPort.postMessage({ test: 'test' });
 			break;
@@ -147,7 +276,7 @@ self.onmessage = async (event) => {
 			break;
 		case 'scoreObjectData':
 			const UUID = event.data.uuid;
-			self.workerActionPromise(dataWorkerPort, 'get', {
+			self.workerActionPromise(self.dataWorkerPort, 'get', {
 				getType: 'objectData',
 			}).then((event) => {
 				const objectData = event.data.getResult;

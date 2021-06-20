@@ -1,6 +1,5 @@
-//import UploadHandler
-self.importScripts('UploadHandler.js');
-// self.importScripts('UserUploadFileHandler.js')
+self.importScripts('PropertiesDrivenUploadHandler.js');
+self.importScripts('UserUploadFileHandler.js');
 self.initialized = false;
 
 self.onmessage = async (event) => {
@@ -8,35 +7,14 @@ self.onmessage = async (event) => {
 		case 'init':
 			console.time('init');
 			const { fileListObject } = event.data;
-			if (fileListObject === undefined || fileListObject === null) {
+			if (!fileListObject) {
 				throw new Error('[dataWebWorker] fileListObject not defined');
 			}
 			self.fileHandler = new UserUploadFileHandler(fileListObject);
-			const uploadHandler = new UploadHandler(event.data.fileListObject);
-			const uploadReturnObject = await uploadHandler.getDataHandlerandStartingTrainingSet();
-			self.dataProvider = uploadReturnObject.data_provider;
+			const uploadHandler = await PropertiesDrivenUploadHandler.create(self.fileHandler);
+			self.dataProvider = await uploadHandler.getDataProvider();
 
-			const trainingTable = uploadReturnObject.training_data.training_table;
-			const trainingDataTable = trainingTable.getDataColumnsPaired();
-			const trainingLabels = trainingTable.getTrainingLabels();
-			const initialTrainingData = trainingDataTable.map((row_object) => {
-				const ObjectNumber = row_object['objectnum'];
-				const ImageNumber = row_object['imagenum'];
-				return dataProvider.getRowArray('object_data', { ObjectNumber, ImageNumber });
-			});
-			const totalFeatures = uploadReturnObject.training_data.features;
-
-			const featureIsUsed = (feature) =>
-				!feature.includes('Location') && feature !== 'ObjectNumber' && feature !== 'ImageNumber';
-			const tempIndices = totalFeatures.map((feature, idx) => (featureIsUsed(feature) ? idx : -1));
-			const featureIndicesToUse = tempIndices.filter((index) => !(index === -1));
-			self.initialTrainingObject = {
-				classifierType: 'LogisticRegression',
-				trainingData: initialTrainingData,
-				trainingLabels,
-				featureIndicesToUse,
-			};
-
+			self.initialTrainingObject = await uploadHandler.getInitialTrainingObject(self.dataProvider);
 			self.postMessage(event.data);
 			console.timeEnd('init');
 			break;
@@ -129,19 +107,13 @@ self.fulfillAction = function (event) {
 						ImageNumber: parseInt(event.data.getArgs.cellPair.ImageNumber),
 						ObjectNumber: parseInt(event.data.getArgs.cellPair.ObjectNumber),
 					};
-					const imageDataRow = this.dataProvider.getRow('image_data', { ImageNumber: cellPair.ImageNumber });
-					const coords = self.dataProvider.getCoordsforCellDisplay(cellPair);
-					const cellData = {
-						ImageNumber: cellPair.ImageNumber,
-						ObjectNumber: cellPair.ObjectNumber,
-						Plate: imageDataRow.plate,
-						Well: imageDataRow.well,
-						Gene: imageDataRow.gene,
-						Puro: imageDataRow.puro,
-						X: coords.x,
-						Y: coords.y,
-					};
+					const cellData = self.dataProvider.getCellData(cellPair);
+
 					return cellData;
+				}
+				case 'cellSize': {
+					const cellSize = self.dataProvider.getProperty('image_tile_size');
+					return cellSize;
 				}
 			}
 		case 'test':

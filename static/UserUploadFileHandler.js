@@ -14,14 +14,18 @@ class UserUploadFileHandler {
 		});
 		return this.fileListObject[fileIndex];
 	};
-	fileReaderPromiseText = function (file_result) {
-		return new Promise((resolve, reject) => {
-			var fr = new FileReader();
-			fr.onload = () => {
-				resolve(fr.result);
-			};
-			fr.readAsText(file_result);
-		});
+	findFileWithExtension = (file_extension) => {
+		for (let i = 0; i < this.fileListObject.length; i++) {
+			const file = this.fileListObject[i];
+			const fileName = file.name;
+			if (fileName.endsWith(file_extension)) {
+				return file;
+			}
+		}
+		return null;
+	};
+	fileReaderPromiseText = async function (file_result) {
+		return file_result.text();
 	};
 	fileReaderPromiseImage(file_result) {
 		return new Promise((resolve, reject) => {

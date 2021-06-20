@@ -29,8 +29,8 @@ self.createTestset = function (dataArrays, featureIndices) {
 };
 
 /*
-    @param  {Tensor<number>} X The training inputs for the dataset
-    @param  {Tensor<Tensor<number>>} Y The training desired outputs for the dataset
+    @param  {Array<Array<number>>} X The training inputs for the dataset
+    @param  {Array<int>} Y The training desired outputs for the dataset
     @return {tf.data.Dataset} tf_dataset The dataset object TensorFlow uses for training
 */
 self.createTensorflowDataset = function (X, Y) {

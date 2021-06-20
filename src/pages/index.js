@@ -102,25 +102,34 @@ function TestUIMVP() {
 	var __ = null;
 
 	React.useEffect(() => {
+		window.addEventListener('beforeunload', function (e) {
+			e.preventDefault();
+			e.returnValue = 'Sure?';
+			return 'Sure?';
+		});
+	}, []);
+
+	React.useEffect(() => {
 		const dataToCanvasWorkerChannel = new MessageChannel();
 		const dataToClassifierWorkerChannel = new MessageChannel();
+		const canvasToClassifierWorkerChannel = new MessageChannel();
 
-		// github has it directly part of the folder???
 		const dataWebWorker = constructWebWorker('dataWorker.js', 'dataWebWorker');
 		// const dataWebWorker = constructWebWorker('../dataWorker.js', 'dataWebWorker');
-		dataWebWorker.postMessage({ action: 'connectToCanvasWorker' }, [dataToCanvasWorkerChannel.port1]);
+
 		dataWebWorker.postMessage({ action: 'connectToClassifierWorker' }, [dataToClassifierWorkerChannel.port1]);
+		dataWebWorker.postMessage({ action: 'connectToCanvasWorker' }, [dataToCanvasWorkerChannel.port1]);
 		setDataWebWorker(dataWebWorker);
 
-		// const canvasWebWorker = constructWebWorker('../canvasWorker.js', 'CanvasWebWorker');
+		const classifierWebWorker = constructWebWorker('classifierWorker.js', 'classifierWebWorker');
+		classifierWebWorker.postMessage({ action: 'connectToDataWorker' }, [dataToClassifierWorkerChannel.port2]);
+		classifierWebWorker.postMessage({ action: 'connectToCanvasWorker' }, [canvasToClassifierWorkerChannel.port1]);
+		setClassifierWebWorker(classifierWebWorker);
+
 		const canvasWebWorker = constructWebWorker('canvasWorker.js', 'CanvasWebWorker');
 		canvasWebWorker.postMessage({ action: 'connectToDataWorker' }, [dataToCanvasWorkerChannel.port2]);
+		canvasWebWorker.postMessage({ action: 'connectToClassifierWorker' }, [canvasToClassifierWorkerChannel.port2]);
 		setCanvasWebWorker(canvasWebWorker);
-
-		const classifierWebWorker = constructWebWorker('classifierWorker.js', 'classifierWebWorker');
-		// const classifierWebWorker = constructWebWorker('../classifierWorker.js', 'classifierWebWorker');
-		classifierWebWorker.postMessage({ action: 'connectToDataWorker' }, [dataToClassifierWorkerChannel.port2]);
-		setClassifierWebWorker(classifierWebWorker);
 	}, []);
 
 	const constructWebWorker = function (sourcePath, name) {
@@ -167,7 +176,8 @@ function TestUIMVP() {
 			getType: 'blobUrlBigPictureFromCellPair',
 			getArgs: { cellPair },
 		}).then((event) => {
-			setBigPictureSource(event.data.blobUrl);
+			const blobUrl = event.data.getResult;
+			setBigPictureSource(blobUrl);
 		});
 	};
 	const handleOpenBigPicture = async function (imageNumber) {
@@ -182,7 +192,8 @@ function TestUIMVP() {
 			getType: 'blobUrlBigPictureByImageNumber',
 			getArgs: { imageNumber },
 		}).then((event) => {
-			setBigPictureSource(event.data.blobUrl);
+			const blobUrl = event.data.getResult;
+			setBigPictureSource(blobUrl);
 		});
 	};
 	const handleCloseCellBigPicture = function () {
@@ -211,8 +222,7 @@ function TestUIMVP() {
 					getType: 'blobUrlsFromCellPairs',
 					getArgs: { cellPairs },
 				});
-
-				const { blobUrls } = event.data;
+				const blobUrls = event.data.getResult;
 				const newTileState = await replaceUnclassifiedTileStatePromise(tileState, blobUrls, cellPairs);
 				// console.log(newTileState);
 				setTileState(newTileState);
@@ -281,7 +291,7 @@ function TestUIMVP() {
 					getType: 'blobUrlsFromCellPairs',
 					getArgs: { cellPairs: slicedCellPairs },
 				});
-				const { blobUrls } = event.data;
+				const blobUrls = event.data.getResult;
 				const newTileState = await replaceUnclassifiedTileStatePromise(tileState, blobUrls, slicedCellPairs);
 				setTileState(newTileState);
 				setFetching(false);
@@ -290,7 +300,7 @@ function TestUIMVP() {
 			case 'Confusing': {
 				let event = await workerActionPromise(dataWebWorker, 'get', {
 					getType: 'cellPairs',
-					getArgs: { amount: 100 },
+					getArgs: { amount: 1000 },
 				});
 				const { getResult: cellPairs } = event.data;
 
@@ -303,7 +313,7 @@ function TestUIMVP() {
 					getType: 'blobUrlsFromCellPairs',
 					getArgs: { cellPairs: slicedSortedCellPairs },
 				});
-				const { blobUrls } = event.data;
+				const blobUrls = event.data.getResult;
 				const newTileState = await replaceUnclassifiedTileStatePromise(
 					tileState,
 					blobUrls,
@@ -379,7 +389,7 @@ function TestUIMVP() {
 					getType: 'blobUrlsFromCellPairs',
 					getArgs: { cellPairs: slicedSortedCellPairs },
 				});
-				const { blobUrls } = event.data;
+				const blobUrls = event.data.getResult;
 				const newTileState = await replaceUnclassifiedTileStatePromise(
 					tileState,
 					blobUrls,
@@ -421,7 +431,7 @@ function TestUIMVP() {
 					getType: 'blobUrlsFromCellPairs',
 					getArgs: { cellPairs: slicedCellPairs },
 				});
-				const { blobUrls } = event.data;
+				const blobUrls = event.data.getResult;
 				const newTileState = await replaceUnclassifiedTileStatePromise(tileState, blobUrls, slicedCellPairs);
 				setTileState(newTileState);
 				setFetching(false);
@@ -443,7 +453,7 @@ function TestUIMVP() {
 					getType: 'blobUrlsFromCellPairs',
 					getArgs: { cellPairs: desiredCellPairs },
 				});
-				const { blobUrls } = event.data;
+				const blobUrls = event.data.getResult;
 				const newTileState = await replaceUnclassifiedTileStatePromise(tileState, blobUrls, desiredCellPairs);
 				setTileState(newTileState);
 				setFetching(false);
@@ -512,6 +522,7 @@ function TestUIMVP() {
 			.then((event) => {
 				UUID = event.data.uuid;
 				classifierWebWorker.addEventListener('message', updateCanvasesListener);
+				// currentTrainingObject.classifierType = 'HeadlessMobileNet+LogisticRegression';
 				return workerActionPromise(classifierWebWorker, 'train', { trainingObject: currentTrainingObject });
 			})
 			.then(() => {
@@ -572,7 +583,7 @@ function TestUIMVP() {
 			getType: 'blobUrlsFromCellPairs',
 			getArgs: { cellPairs: totalCellPairs },
 		});
-		const { blobUrls } = event.data;
+		const blobUrls = event.data.getResult;
 
 		const zeros = new Array(negativeCellPairs.length).fill(0);
 		const ones = new Array(positiveCellPairs.length).fill(1);
