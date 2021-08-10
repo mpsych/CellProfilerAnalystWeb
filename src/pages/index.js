@@ -1,44 +1,15 @@
 import React from "react";
-import { Row, Col, Container } from "reactstrap";
-import {
-  Box,
-  Button,
-  Grid,
-  IconButton,
-  Menu,
-  MenuItem,
-  Card,
-  TextField,
-  Typography,
-} from "@material-ui/core";
+import { Row, Col } from "reactstrap";
+import { Button, Grid, Menu, MenuItem } from "@material-ui/core";
 import logo from "../cpa_logo(blue).png";
-import { Image, Dropdown, DropdownButton } from "react-bootstrap";
+import { Image } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.css";
-import SaveAltIcon from "@material-ui/icons/SaveAlt";
-import clsx from "clsx";
-import { makeStyles } from "@material-ui/core/styles";
 import CircularProgress from "@material-ui/core/CircularProgress";
-import { green } from "@material-ui/core/colors";
-import Fab from "@material-ui/core/Fab";
-import CheckIcon from "@material-ui/icons/Check";
-import CloudUploadIcon from "@material-ui/icons/CloudUpload";
-
-import Dialog from "@material-ui/core/Dialog";
-import DialogActions from "@material-ui/core/DialogActions";
-import DialogContent from "@material-ui/core/DialogContent";
-import DialogContentText from "@material-ui/core/DialogContentText";
-import DialogTitle from "@material-ui/core/DialogTitle";
-import FormControl from "@material-ui/core/FormControl";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import InputLabel from "@material-ui/core/InputLabel";
-import Select from "@material-ui/core/Select";
-import Tooltip from "@material-ui/core/Tooltip";
 import Paper from "@material-ui/core/Paper";
-
-import Evaluate from "./AbbyUIButtons/UIEvaluateButton";
-import ScoreAll from "./UIScoreAllButton";
-import { v4 as uuidv4 } from "uuid";
-import Help from "./Help";
+import EvaluateButton from "./AbbyUIButtons/UIEvaluateButton";
+import ScoreAllButton from "./UIScoreAllButton";
+import { v4 as getUUID } from "uuid";
+import HelpButton from "./Help";
 
 import jones from "../jones.jpg";
 
@@ -57,15 +28,13 @@ import { downloadFile } from "../downloadFile";
 import UploadButton from "./UploadButton";
 import DownloadButton from "./DownloadButton";
 
-import CompatibilityCheck from "./components/compatibilityCheckDialog";
+import CompatibilityCheckDialog from "./components/compatibilityCheckDialog";
+import ImageFetchDialog from "./components/ImageFetchDialog";
+import TrainingGraphsDialog from "./components/TrainingGraphsDialog";
+import CellBigPictureDialog from "./components/CellBigPictureDialog";
 
-function TestUIMVP() {
+function Index() {
   const [anchorEl, setAnchorEl] = React.useState(null);
-  const [dataProvider, setDataProvider] = React.useState(null);
-
-  // var classifierManager = null;
-  // const [classifierManager, setClassifierManager] = React.useState(null)
-  const [fileListObject, setFileListObject] = React.useState(null);
   const [tileState, setTileState] = React.useState({
     unclassified: [],
     positive: [],
@@ -81,9 +50,7 @@ function TestUIMVP() {
     false
   );
   const [uploadButtonEnabled, setUploadButtonEnabled] = React.useState(true);
-  const [scoreAllButtonEnabled, setscoreAllButtonEnabled] = React.useState(
-    false
-  );
+
   const [uploading, setUploading] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
   const [fetching, setFetching] = React.useState(false);
@@ -91,8 +58,13 @@ function TestUIMVP() {
     initialFetchingPositiveNegative,
     setInitialFetchingPositiveNegative,
   ] = React.useState(false);
-  const [openFetchDropdown, setOpenFetchDropdown] = React.useState(false);
-  const [openTrainDropdown, setOpenTrainDropdown] = React.useState(false);
+  const [openImageFetchDropdown, setOpenImageFetchDropdown] = React.useState(
+    false
+  );
+  const [
+    openTrainingGraphsDialog,
+    setOpenTrainingGraphsDialog,
+  ] = React.useState(false);
 
   const [canvasWebWorker, setCanvasWebWorker] = React.useState(null);
   const [dataWebWorker, setDataWebWorker] = React.useState(null);
@@ -102,15 +74,11 @@ function TestUIMVP() {
     [0, 0],
   ]);
   const [trainingObject, setTrainingObject] = React.useState(null);
-  const [trainingCellPairs, setTrainingCellPairs] = React.useState([]);
 
   const [scoreTableIsUpToDate, setScoreTableIsUpToDate] = React.useState(false);
-  const [scoreTableObject, setScoreTableObject] = React.useState(null);
   const [scoreTable, setScoreTable] = React.useState([]);
   const [scoreAlphas, setScoreAlphas] = React.useState();
   const [histogramData, setHistogramData] = React.useState([]);
-  const [alpha, setAlpha] = React.useState(null);
-  const [beta, setBeta] = React.useState(null);
 
   const trainingLossCanvasParentRef = React.useRef();
   const trainingAccuracyCanvasParentRef = React.useRef();
@@ -119,11 +87,6 @@ function TestUIMVP() {
     selectedFetchImageNumber,
     setSelectedFetchImageNumber,
   ] = React.useState(1);
-  const [
-    fetchImageNumberButtonEnabled,
-    setFetchImageNumberButtonEnabled,
-  ] = React.useState(false);
-  const DEBUG = true;
 
   const [
     cellBigPictureDialogOpen,
@@ -133,7 +96,6 @@ function TestUIMVP() {
   const [bigPictureTitle, setBigPictureTitle] = React.useState("");
   const [currentlyScoring, setCurrentlyScoring] = React.useState(false);
   const [scoreTableCsvString, setScoreTableCsvString] = React.useState("");
-  var __ = null;
 
   React.useEffect(() => {
     window.addEventListener("beforeunload", function (e) {
@@ -193,22 +155,10 @@ function TestUIMVP() {
   const N = 20;
   const MAX_ITERATION_COUNT = 1000;
 
-  const handleClickFetchDropDown = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleCloseFetchDropDown = (fetchType) => {
-    setAnchorEl(null);
-    if (fetchType !== undefined && fetchType !== null) {
-      handleFetch(fetchType);
-    }
-  };
-
   const disableIterationButtons = () => {
     setFetchButtonEnabled(false);
     setTrainButtonEnabled(false);
     setDownloadButtonEnabled(false);
-    //   setEvaluateButtonEnabled(false)
   };
   const enableIterationButtons = () => {
     setFetchButtonEnabled(true);
@@ -218,8 +168,6 @@ function TestUIMVP() {
   };
 
   const handleOpenCellBigPicture = async function (cellPair) {
-    // console.log('open big picture');
-    // console.log(cellPair);
     setCellBigPictureDialogOpen(true);
     setBigPictureTitle(
       `Image: ${cellPair.ImageNumber}, Object: ${cellPair.ObjectNumber}`
@@ -236,8 +184,7 @@ function TestUIMVP() {
     if (!imageNumber) {
       return;
     }
-    // console.log('open big picture');
-    // console.log(imageNumber);
+
     setCellBigPictureDialogOpen(true);
     setBigPictureTitle(`Image: ${imageNumber}`);
     return workerActionPromise(canvasWebWorker, "get", {
@@ -248,13 +195,9 @@ function TestUIMVP() {
       setBigPictureSource(blobUrl);
     });
   };
-  const handleCloseCellBigPicture = function () {
-    // console.log('close big picture');
-    setCellBigPictureDialogOpen(false);
-  };
 
   const handleFetch = async (fetchType) => {
-    // console.log('Fetch!');
+    setAnchorEl(null);
     if ((fetchType === undefined) | (fetchType == null)) {
       return;
     }
@@ -280,7 +223,6 @@ function TestUIMVP() {
           blobUrls,
           cellPairs
         );
-        // console.log(newTileState);
         setTileState(newTileState);
         setFetching(false);
         break;
@@ -325,8 +267,6 @@ function TestUIMVP() {
               accumCellPairs.push(sampledCellPair);
             }
           }
-          // console.log(accumCellPairs);
-          // accumCellPairs = accumCellPairs.concat(filteredCellPairs);
 
           totalIterationCount++;
           if (iterationCount++ >= MAX_ITERATION_COUNT) {
@@ -346,7 +286,6 @@ function TestUIMVP() {
             }
           }
         }
-        // console.log(`Fetched ${fetchType} Cells in ${totalIterationCount} iterations`);
 
         const slicedCellPairs = accumCellPairs.slice(0, 16);
         let event = await workerActionPromise(canvasWebWorker, "get", {
@@ -396,8 +335,6 @@ function TestUIMVP() {
       }
       case "MorePositive":
       case "MoreNegative": {
-        // console.log(fetchType);
-
         const classType =
           fetchType === "MorePositive" ? "Positive" : "Negative";
 
@@ -421,7 +358,6 @@ function TestUIMVP() {
           );
           const { sortedCellPairs } = event.data;
 
-          // get rid of duplicates
           for (let i = 0; i < sortedCellPairs.length; i++) {
             const sampledCellPair = sortedCellPairs[i];
             let notYetSampled = true;
@@ -481,7 +417,6 @@ function TestUIMVP() {
           getArgs: { ImageNumber: selectedFetchImageNumber },
         });
         const { getResult: cellPairs } = event.data;
-        // console.log(cellPairs);
         if (cellPairs.length === 0) {
           alert(
             `No Cells Found With Image Number: ${selectedFetchImageNumber}`
@@ -566,7 +501,6 @@ function TestUIMVP() {
     const negativeCellPairs = tileState.negative.map(
       (element) => element.cellPair
     );
-    // console.log('p', positiveCellPairs, 'n', negativeCellPairs);
 
     const totalCellPairs = [...negativeCellPairs, ...positiveCellPairs];
     const newLabels = [
@@ -585,7 +519,6 @@ function TestUIMVP() {
     });
 
     const { getResult: dataRows } = event.data;
-    // console.log(dataRows);
     const newTrainingObject = {
       classifierType: "LogisticRegression",
       trainingData: dataRows,
@@ -596,7 +529,7 @@ function TestUIMVP() {
   };
 
   const trainSequencePromise = async function (currentTrainingObject) {
-    setOpenTrainDropdown(true);
+    setOpenTrainingGraphsDialog(true);
     var UUID = null;
     let updateCanvasesListener = (event) => {
       if (UUID == event.data.uuid) {
@@ -649,12 +582,12 @@ function TestUIMVP() {
       })
       .then(() => {
         setTrainingObject(currentTrainingObject);
-        setOpenTrainDropdown(false);
+        setOpenTrainingGraphsDialog(false);
       });
   };
 
   const workerActionPromise = function (worker, action, data) {
-    const UUID = uuidv4();
+    const UUID = getUUID();
 
     return new Promise((resolve) => {
       let selfDestructingEventHandler = (event) => {
@@ -736,21 +669,13 @@ function TestUIMVP() {
     return csvContent;
   };
 
-  const rows = [
-    ["name1", "city1", "some other info"],
-    ["name2", "city2", "more info"],
-  ];
-  const headers = ["a", "b", "c"];
-
   const handleScoreAll = async () => {
     console.log("Score All!");
     if (!scoreTableIsUpToDate && !currentlyScoring) {
       setCurrentlyScoring(true);
-      // console.log('Score All!');
       return workerActionPromise(classifierWebWorker, "scoreObjectData").then(
         (event) => {
           const newScoreTableObject = event.data.scoreTableObject;
-          // console.log(newScoreTableObject);
           const scoreDataRows = Object.keys(
             newScoreTableObject.imageToCountsMap
           ).map((key) => ({
@@ -767,8 +692,6 @@ function TestUIMVP() {
           const alphaValue = newScoreTableObject.alphas[1];
           const betaValue = newScoreTableObject.alphas[0];
 
-          // console.log(alphaValue);
-
           const adjustedRatiosData = Object.values(
             newScoreTableObject.adjustedRatios
           ).map((ratio) => ({
@@ -777,11 +700,8 @@ function TestUIMVP() {
           setHistogramData(adjustedRatiosData);
           setScoreTable(scoreDataRows);
           setCurrentlyScoring(false);
-          setAlpha(alphaValue);
-          setBeta(betaValue);
-          // setScoreTableObject(newScoreTableObject);
+
           setScoreAlphas(newScoreTableObject.alphas);
-          // console.log(newScoreTableObject);
           const headers = [
             "ImageNumber",
             "PositiveCount",
@@ -798,12 +718,9 @@ function TestUIMVP() {
             dataRow.ratio,
             dataRow.adjustratio,
           ]);
-          // const onDownload = () => {
-          // 	downloadDataAsCSV(csvdata, headers);
-          // };
+
           const csvContent = dataToCsvString(csvdata, headers);
           setScoreTableCsvString(csvContent);
-          // setDownloadScoreTableFunction(onDownload);
           setScoreTableIsUpToDate(true);
         }
       );
@@ -1027,17 +944,13 @@ function TestUIMVP() {
 
   const handleClickOpenImNumFetchDropdown = () => {
     setAnchorEl(null);
-    setOpenFetchDropdown(true);
+    setOpenImageFetchDropdown(true);
   };
 
-  const handleClickCloseImNumFetchDropdown = () => {
-    setOpenFetchDropdown(false);
-    handleCloseFetchDropDown("ImageNumber");
-  };
   console.log("Load the App");
   return (
     <GridContextProvider onChange={onChange}>
-      <CompatibilityCheck></CompatibilityCheck>
+      <CompatibilityCheckDialog />
       <div style={{ overflowX: "hidden", height: "100%", width: "100%" }}>
         <Row style={{ marginTop: "2%" }}>
           <Image
@@ -1052,7 +965,7 @@ function TestUIMVP() {
             }}
           ></Image>
           <Col style={{ left: "35%" }}>
-            <Help></Help>
+            <HelpButton></HelpButton>
           </Col>
 
           <Col style={{ left: "20%", right: 5 }}>
@@ -1097,7 +1010,7 @@ function TestUIMVP() {
                   variant="contained"
                   aria-controls="simple-menu"
                   aria-haspopup="true"
-                  onClick={handleClickFetchDropDown}
+                  onClick={(event) => setAnchorEl(event.currentTarget)}
                 >
                   Fetch
                 </Button>
@@ -1106,112 +1019,58 @@ function TestUIMVP() {
                   anchorEl={anchorEl}
                   keepMounted
                   open={Boolean(anchorEl)}
-                  onClose={() => handleCloseFetchDropDown(null)}
+                  onClose={handleFetch}
                   onSubmit={(e) => {
                     e.preventDefault();
-                    handleCloseFetchDropDown(null);
+                    handleFetch();
                   }}
                 >
-                  <MenuItem onClick={() => handleCloseFetchDropDown("Random")}>
+                  <MenuItem onClick={() => handleFetch("Random")}>
                     Random
                   </MenuItem>
-                  <MenuItem
-                    onClick={() => handleCloseFetchDropDown("Positive")}
-                  >
+                  <MenuItem onClick={() => handleFetch("Positive")}>
                     Positive
                   </MenuItem>
-                  <MenuItem
-                    onClick={() => handleCloseFetchDropDown("Negative")}
-                  >
+                  <MenuItem onClick={() => handleFetch("Negative")}>
                     Negative
                   </MenuItem>
                   <MenuItem onClick={handleClickOpenImNumFetchDropdown}>
                     By Image
                   </MenuItem>
-                  <MenuItem
-                    onClick={() => handleCloseFetchDropDown("Confusing")}
-                  >
+                  <MenuItem onClick={() => handleFetch("Confusing")}>
                     Confusing
                   </MenuItem>
-                  <MenuItem
-                    onClick={() => handleCloseFetchDropDown("MorePositive")}
-                  >
+                  <MenuItem onClick={() => handleFetch("MorePositive")}>
                     Most Positive
                   </MenuItem>
-                  <MenuItem
-                    onClick={() => handleCloseFetchDropDown("MoreNegative")}
-                  >
+                  <MenuItem onClick={() => handleFetch("MoreNegative")}>
                     Most Negative
                   </MenuItem>
-                  <MenuItem
-                    onClick={() => handleCloseFetchDropDown("TrainingPositive")}
-                  >
+                  <MenuItem onClick={() => handleFetch("TrainingPositive")}>
                     Training Set Positive
                   </MenuItem>
-                  <MenuItem
-                    onClick={() => handleCloseFetchDropDown("TrainingNegative")}
-                  >
+                  <MenuItem onClick={() => handleFetch("TrainingNegative")}>
                     Training Set Negative
                   </MenuItem>
-
-                  <Dialog
-                    open={openFetchDropdown}
-                    onClose={() => handleCloseFetchDropDown(null)}
-                  >
-                    <DialogTitle>
-                      {/* <Typography variant="h3" align="center"> */}
-                      Fetch By Image
-                      {/* </Typography> */}
-                    </DialogTitle>
-                    <DialogContent>
-                      <DialogContentText>
-                        Select the image number you would like to fetch from.
-                      </DialogContentText>
-                      <form
-                        noValidate
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          handleClickCloseImNumFetchDropdown();
-                        }}
-                      >
-                        <FormControl>
-                          <TextField
-                            onChange={(event) => {
-                              if (
-                                event.target.value === null ||
-                                event.target.value === undefined ||
-                                event.target.value === ""
-                              ) {
-                                return;
-                              }
-                              setSelectedFetchImageNumber(
-                                parseInt(event.target.value)
-                              );
-                              setFetchImageNumberButtonEnabled(true);
-                            }}
-                            type="number"
-                            inputProps={{ step: 1, min: 1 }}
-                            value={selectedFetchImageNumber}
-                            label="Image Number"
-                          ></TextField>
-                        </FormControl>
-                      </form>
-                    </DialogContent>
-                    <DialogActions>
-                      <Button
-                        disabled={!fetchImageNumberButtonEnabled}
-                        onClick={handleClickCloseImNumFetchDropdown}
-                        color="primary"
-                      >
-                        Ok
-                      </Button>
-                    </DialogActions>
-                  </Dialog>
+                  <ImageFetchDialog
+                    open={openImageFetchDropdown}
+                    onCancel={() => {
+                      setOpenImageFetchDropdown(false);
+                      handleFetch(undefined);
+                    }}
+                    onSubmit={() => {
+                      setOpenImageFetchDropdown(false);
+                      handleFetch("ImageNumber");
+                    }}
+                    onChangeValue={(value) => {
+                      console.log(parseInt(value));
+                      setSelectedFetchImageNumber(parseInt(value));
+                    }}
+                  />
                 </Menu>
               </Grid>
 
               <Grid key={1} item>
-                {/* style = {{height: "5vw", width:"10vw", minHeight:2, maxHeight: 35, maxwidth: 50, fontSize: "max(1.5vw, 20)"}}  */}
                 <Button
                   disabled={!trainButtonEnabled}
                   variant="contained"
@@ -1219,21 +1078,14 @@ function TestUIMVP() {
                 >
                   Train
                 </Button>
-                <Dialog fullWidth={500} open={openTrainDropdown}>
-                  <DialogTitle>Training the Classifier</DialogTitle>
-                  <DialogContent>
-                    <div
-                      width={300}
-                      ref={trainingAccuracyCanvasParentRef}
-                    ></div>
-                    <div width={300} ref={trainingLossCanvasParentRef}></div>
-                  </DialogContent>
-                </Dialog>
+                <TrainingGraphsDialog
+                  open={openTrainingGraphsDialog}
+                  graph1DivRef={trainingAccuracyCanvasParentRef}
+                  graph2DivRef={trainingLossCanvasParentRef}
+                />
               </Grid>
 
               <Grid key={2} item>
-                {/* <Button disabled={!evaluateButtonEnabled} variant="contained" onClick={()=>{}}>Evaluate</Button>  */}
-                {/* TODO: need to fix button disabled DONE*/}
                 {!evaluateButtonEnabled ? (
                   <Button
                     disabled={!evaluateButtonEnabled}
@@ -1243,14 +1095,13 @@ function TestUIMVP() {
                     Evaluate
                   </Button>
                 ) : (
-                  <Evaluate confusionMatrix={confusionMatrix}></Evaluate>
+                  <EvaluateButton
+                    confusionMatrix={confusionMatrix}
+                  ></EvaluateButton>
                 )}
               </Grid>
 
               <Grid key={3} item>
-                {/* <Button  disabled={!scoreAllButtonEnabled} variant="contained" onClick={()=>{}}>Score All</Button> */}
-                {/* TODO: need to fix button disabled DONE*/}
-
                 {!evaluateButtonEnabled ? (
                   <Button
                     disabled={!evaluateButtonEnabled}
@@ -1260,16 +1111,17 @@ function TestUIMVP() {
                     Score All
                   </Button>
                 ) : (
-                  <ScoreAll
+                  <ScoreAllButton
                     histogramData={histogramData}
                     scoreTable={scoreTable}
                     handleScoreAll={handleScoreAll}
                     scoreTableIsUpToDate={scoreTableIsUpToDate}
-                    // downloadScoreTableFunction={downloadScoreTableFunction}
                     scoreTableCsvString={scoreTableCsvString}
                     alphas={scoreAlphas}
-                    handleOpenBigPicture={handleOpenBigPicture}
-                  ></ScoreAll>
+                    handleOpenBigPicture={(imageNumber) =>
+                      handleOpenBigPicture(imageNumber)
+                    }
+                  ></ScoreAllButton>
                 )}
               </Grid>
             </Grid>
@@ -1322,7 +1174,6 @@ function TestUIMVP() {
                     <div className="grid-item">
                       <div
                         onDoubleClick={() => {
-                          // console.log('double click: ' + item.info);
                           handleOpenCellBigPicture(item.cellPair);
                         }}
                         className="grid-item-content"
@@ -1348,21 +1199,14 @@ function TestUIMVP() {
                 />
               )}
             </GridDropZone>
-            <Dialog
-              style={{ alignItems: "center" }}
-              onClose={handleCloseCellBigPicture}
-              // fullWidth={480}
-              // maxWidth={480}
+            <CellBigPictureDialog
               open={cellBigPictureDialogOpen}
-            >
-              <DialogTitle>{bigPictureTitle}</DialogTitle>
-              {/* <DialogTitle>Loss and Accuracy</DialogTitle> */}
-              <DialogContent
-                style={{ alignItems: "center", justifyContent: "center" }}
-              >
-                <img width={430} height={430} src={bigPictureSource}></img>
-              </DialogContent>
-            </Dialog>
+              onClose={() => {
+                setCellBigPictureDialogOpen(false);
+              }}
+              src={bigPictureSource}
+              title={bigPictureTitle}
+            />
           </div>
 
           <Row>
@@ -1402,10 +1246,6 @@ function TestUIMVP() {
                   width: "100%",
                   overflowY: "scroll",
                   overflowX: "hidden",
-                  // msOverflowY: 'scroll',
-                  // msOverflowStyle: 'none',
-
-                  // scrollbarWidth: 'none',
                 }}
               >
                 <GridDropZone
@@ -1418,9 +1258,7 @@ function TestUIMVP() {
                     minHeight: 240,
                     width: "100%",
                     overflowY: "hidden",
-                    // marginLeft: '22%',
                     alignSelf: "flex-end",
-                    // marginRight: '11%',
                   }}
                 >
                   {!initialFetchingPositiveNegative ? (
@@ -1441,7 +1279,6 @@ function TestUIMVP() {
                         <div className="grid-item">
                           <div
                             onDoubleClick={() => {
-                              // console.log('double click: ' + item.info);
                               handleOpenCellBigPicture(item.cellPair);
                             }}
                             className="grid-item-content"
@@ -1476,11 +1313,6 @@ function TestUIMVP() {
                   width: "100%",
                   overflowY: "scroll",
                   overflowX: "hidden",
-
-                  // msOverflowY: 'scroll',
-                  // msOverflowStyle: 'none',
-
-                  // scrollbarWidth: 'none',
                 }}
               >
                 <GridDropZone
@@ -1515,7 +1347,6 @@ function TestUIMVP() {
                         <div className="grid-item">
                           <div
                             onDoubleClick={() => {
-                              // console.log('double click: ' + item.info);
                               handleOpenCellBigPicture(item.cellPair);
                             }}
                             className="grid-item-content"
@@ -1546,9 +1377,8 @@ function TestUIMVP() {
           </Row>
         </div>
       </div>
-      {/* </Paper> */}
     </GridContextProvider>
   );
 }
 
-export default TestUIMVP;
+export default Index;
