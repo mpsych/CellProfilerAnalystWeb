@@ -37,3 +37,18 @@ You could navigate to the website, but if you don't want to:
     * Evaluate (look at the confusion matrix on the training set)
     * Score All (calculate the enrichment scores with Empirical Bayes and look at/download the data)
     * Download the model spec and its corresponding weights files
+    
+    
+    
+### Cite us: ###
+```
+@inproceedings{baidak2021cellprofiler,
+  title={CellProfiler Analyst Web (CPAW)-Exploration, analysis, and classification of biological images on the web},
+  author={Baidak, Bella and Hussain, Yahiya and Kelminson, Emma and Jones, Thouis R and Franke, Loraine and Haehn, Daniel},
+  booktitle={2021 IEEE Visualization Conference (VIS)},
+  pages={131--135},
+  year={2021},
+  organization={IEEE}
+}
+```
+    
